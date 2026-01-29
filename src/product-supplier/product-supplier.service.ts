@@ -125,6 +125,27 @@ export class ProductSupplierService
     };
   }
 
+  async createMany(
+    dtos: CreateProductSupplierDto[],
+    userId: number,
+  ): Promise<Result<ProductSupplier[]>> {
+    const newProductSuppliers = dtos.map((dto) =>
+      this.repo.create({
+        ...dto,
+        product: { id: dto.product },
+        supplier: { id: dto.supplier },
+        createdBy: { id: userId },
+        updatedBy: { id: userId },
+      }),
+    );
+    const productSuppliers = await this.repo.save(newProductSuppliers);
+    return {
+      statusCode: HttpStatus.CREATED,
+      data: productSuppliers,
+      message: 'The Product Suppliers were created',
+    };
+  }
+
   async update(id: number, userId: number, changes: UpdateProductSupplierDto) {
     const { data } = await this.findOne(id);
     this.repo.merge(data as ProductSupplier, {

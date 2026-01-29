@@ -79,11 +79,13 @@ export class ProductSupplierController
     return this.productSupplierService.findAllBySupplier(+id);
   }
 
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @Post()
   create(@Body() payload: CreateProductSupplierDto, @UserId() userId: number) {
     return this.productSupplierService.create(payload, userId);
   }
 
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -93,6 +95,7 @@ export class ProductSupplierController
     return this.productSupplierService.update(+id, userId, updateCategoryDto);
   }
 
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number, @UserId() userId: number) {
     return this.productSupplierService.remove(+id, userId);

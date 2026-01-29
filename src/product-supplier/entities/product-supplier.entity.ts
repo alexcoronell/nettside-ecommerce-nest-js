@@ -13,7 +13,12 @@ export class ProductSupplier extends BaseEntity {
   })
   supplierProductCode: string;
 
-  @Column({ name: 'cost_price', type: 'decimal', precision: 10, default: 0 })
+  @Column('decimal', {
+    name: 'cost_price',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
   costPrice: number;
 
   @Column({ name: 'is_primary_supplier', type: 'boolean', default: false })
