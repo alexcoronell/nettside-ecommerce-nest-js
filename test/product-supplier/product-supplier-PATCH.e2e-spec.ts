@@ -170,6 +170,7 @@ describe('ProductSupplierController (e2e) [PATCH]', () => {
       expect(data.supplierProductCode).toBe(updatedData.supplierProductCode);
       expect(data.costPrice).toBe(150.75);
       expect(data.isPrimarySupplier).toBe(updatedData.isPrimarySupplier);
+      expect(data.updatedBy.id).toBeDefined();
     });
 
     it('/:id should return 401 if the user is seller', async () => {

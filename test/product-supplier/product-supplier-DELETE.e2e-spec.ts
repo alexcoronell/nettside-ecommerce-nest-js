@@ -19,7 +19,6 @@ import { UserModule } from '@user/user.module';
 import { Brand } from '@brand/entities/brand.entity';
 import { Category } from '@category/entities/category.entity';
 import { Product } from '@product/entities/product.entity';
-import { ProductSupplier } from '@product_supplier/entities/product-supplier.entity';
 import { Subcategory } from '@subcategory/entities/subcategory.entity';
 import { Supplier } from '@supplier/entities/supplier.entity';
 import { User } from '@user/entities/user.entity';
@@ -53,6 +52,8 @@ const API_KEY = process.env.API_KEY || 'api-e2e-key';
 
 const PATH = '/product-supplier';
 
+const ID = 1;
+
 describe('ProductSupplierController (e2e) [DELETE]', () => {
   let app: INestApplication<App>;
   let repo: any = undefined;
@@ -68,10 +69,9 @@ describe('ProductSupplierController (e2e) [DELETE]', () => {
   let customerAccessToken: string;
   let brand: Brand;
   let category: Category;
-  let product: Product;
+  let products: Product[];
   let subcategory: Subcategory;
-  let supplier: Supplier;
-  let productSupplier: ProductSupplier;
+  let suppliers: Supplier[];
 
   beforeAll(async () => {
     // Initialize database connection once for the entire test suite
@@ -126,7 +126,7 @@ describe('ProductSupplierController (e2e) [DELETE]', () => {
     const resLoginCustomer = await loginCustomer(app, repoUser);
     customerAccessToken = resLoginCustomer.access_token;
 
-    /* Create brand, category, subcategory, product and supplier for testing */
+    /* Create brand, category, subcategory, products and suppliers for testing */
     const newBrand = createBrand();
     brand = await repoBrand.save(newBrand);
 
@@ -136,31 +136,31 @@ describe('ProductSupplierController (e2e) [DELETE]', () => {
     const newSubcategory = createSubcategory();
     subcategory = await repoSubcategory.save(newSubcategory);
 
-    const newProduct = generateNewProducts(
-      1,
+    const newProducts = generateNewProducts(
+      10,
       brand.id,
       category.id,
       subcategory.id,
-    )[0];
-    product = await repoProduct.save(newProduct);
+    );
+    products = await repoProduct.save(newProducts);
 
-    const newSupplier = generateNewSuppliers(1)[0];
-    supplier = await repoSupplier.save(newSupplier);
+    const newSuppliers = generateNewSuppliers(10);
+    suppliers = await repoSupplier.save(newSuppliers);
 
     const newProductSupplier = generateProductSupplierE2E(
       1,
-      product,
-      supplier,
+      products[0],
+      suppliers[0],
       adminUser,
     );
-    productSupplier = await repo.save(newProductSupplier);
+
+    await repo.save(newProductSupplier);
   });
 
   describe('DELETE Product Supplier', () => {
     it('/ should return 401 with invalid api key', async () => {
-      const id = productSupplier.id;
       const res = await request(app.getHttpServer())
-        .delete(`${PATH}/${id}`)
+        .delete(`${PATH}/${ID}`)
         .set('x-api-key', 'invalid-api-key')
         .set('Authorization', `Bearer ${adminAccessToken}`);
       const { statusCode, data, message } = res.body;
@@ -170,9 +170,8 @@ describe('ProductSupplierController (e2e) [DELETE]', () => {
     });
 
     it('/ should return 401 without api key', async () => {
-      const id = productSupplier.id;
       const res = await request(app.getHttpServer())
-        .delete(`${PATH}/${id}`)
+        .delete(`${PATH}/${ID}`)
         .set('Authorization', `Bearer ${adminAccessToken}`);
 
       const { statusCode, data, message } = res.body;
@@ -182,15 +181,13 @@ describe('ProductSupplierController (e2e) [DELETE]', () => {
     });
 
     it('/ should delete a product supplier, return 200 with admin user', async () => {
-      const id = productSupplier.id;
-
       const existing = await repo.findOne({
-        where: { id, isDeleted: false },
+        where: { id: ID, isDeleted: false },
       });
       expect(existing).toBeDefined();
 
       const res = await request(app.getHttpServer())
-        .delete(`${PATH}/${id}`)
+        .delete(`${PATH}/${ID}`)
         .set('x-api-key', API_KEY)
         .set('Authorization', `Bearer ${adminAccessToken}`);
 
@@ -198,35 +195,35 @@ describe('ProductSupplierController (e2e) [DELETE]', () => {
 
       expect(statusCode).toBe(HTTP_STATUS.OK);
       expect(message).toEqual(
-        `The Product Supplier with id: ${id} has been deleted`,
+        `The Product Supplier with id: ${ID} has been deleted`,
       );
 
       // Verify soft delete - record should still exist but marked as deleted
       const deleted = await repo.findOne({
-        where: { id },
+        relations: ['deletedBy'],
+        where: { id: ID },
       });
       expect(deleted).toBeDefined();
       expect(deleted.isDeleted).toBe(true);
       expect(deleted.deletedAt).toBeDefined();
-      //expect(deleted.deletedBy.id).toBe(adminUser.id);
+      expect(deleted.deletedBy).toBeDefined();
+      expect(deleted.deletedBy.id).toBe(adminUser.id);
 
       // Verify it's not found when searching for non-deleted records
       const notFound = await repo.findOne({
-        where: { id, isDeleted: false },
+        where: { id: ID, isDeleted: false },
       });
       expect(notFound).toBeNull();
     });
 
     it('/ should return 401 with seller user', async () => {
-      const id = productSupplier.id;
-
       const existing = await repo.findOne({
-        where: { id, isDeleted: false },
+        where: { id: ID, isDeleted: false },
       });
       expect(existing).toBeDefined();
 
       const res = await request(app.getHttpServer())
-        .delete(`${PATH}/${id}`)
+        .delete(`${PATH}/${ID}`)
         .set('x-api-key', API_KEY)
         .set('Authorization', `Bearer ${sellerAccessToken}`);
 
@@ -239,22 +236,20 @@ describe('ProductSupplierController (e2e) [DELETE]', () => {
 
       // Verify record is still not deleted
       const after = await repo.findOne({
-        where: { id, isDeleted: false },
+        where: { id: ID, isDeleted: false },
       });
       expect(after).toBeDefined();
       expect(after.isDeleted).toBe(false);
     });
 
     it('/ should return 401 with customer user', async () => {
-      const id = productSupplier.id;
-
       const existing = await repo.findOne({
-        where: { id, isDeleted: false },
+        where: { id: ID, isDeleted: false },
       });
       expect(existing).toBeDefined();
 
       const res = await request(app.getHttpServer())
-        .delete(`${PATH}/${id}`)
+        .delete(`${PATH}/${ID}`)
         .set('x-api-key', API_KEY)
         .set('Authorization', `Bearer ${customerAccessToken}`);
 
@@ -267,22 +262,20 @@ describe('ProductSupplierController (e2e) [DELETE]', () => {
 
       // Verify record is still not deleted
       const after = await repo.findOne({
-        where: { id, isDeleted: false },
+        where: { id: ID, isDeleted: false },
       });
       expect(after).toBeDefined();
       expect(after.isDeleted).toBe(false);
     });
 
     it('/ should return 401 without user', async () => {
-      const id = productSupplier.id;
-
       const existing = await repo.findOne({
-        where: { id, isDeleted: false },
+        where: { id: ID, isDeleted: false },
       });
       expect(existing).toBeDefined();
 
       const res = await request(app.getHttpServer())
-        .delete(`${PATH}/${id}`)
+        .delete(`${PATH}/${ID}`)
         .set('x-api-key', API_KEY);
 
       const { statusCode, data, message } = res.body;
@@ -293,7 +286,7 @@ describe('ProductSupplierController (e2e) [DELETE]', () => {
 
       // Verify record is still not deleted
       const after = await repo.findOne({
-        where: { id, isDeleted: false },
+        where: { id: ID, isDeleted: false },
       });
       expect(after).toBeDefined();
       expect(after.isDeleted).toBe(false);
@@ -319,24 +312,22 @@ describe('ProductSupplierController (e2e) [DELETE]', () => {
     });
 
     it('/ should return 404 when trying to delete already deleted product supplier', async () => {
-      const id = productSupplier.id;
-
       // First delete the product supplier
       await request(app.getHttpServer())
-        .delete(`${PATH}/${id}`)
+        .delete(`${PATH}/${ID}`)
         .set('x-api-key', API_KEY)
         .set('Authorization', `Bearer ${adminAccessToken}`);
 
       // Try to delete again
       const res = await request(app.getHttpServer())
-        .delete(`${PATH}/${id}`)
+        .delete(`${PATH}/${ID}`)
         .set('x-api-key', API_KEY)
         .set('Authorization', `Bearer ${adminAccessToken}`);
 
       const { statusCode, message } = res.body;
 
       expect(statusCode).toBe(HTTP_STATUS.NOT_FOUND);
-      expect(message).toEqual(`The Product Supplier with id: ${id} not found`);
+      expect(message).toEqual(`The Product Supplier with id: ${ID} not found`);
     });
   });
 
