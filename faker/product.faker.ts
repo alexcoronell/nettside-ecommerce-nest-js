@@ -18,7 +18,7 @@ export const createProduct = (
   subcategory?: number,
   brand?: number,
 ): CreateProductDto => ({
-  name: faker.commerce.productName(),
+  name: faker.commerce.productName() + faker.number.int({ min: 100, max: 200 }),
   description: faker.commerce.productDescription(),
   price: parseInt(faker.commerce.price()),
   stock: faker.number.int({ min: 0, max: 1000 }),

@@ -11,7 +11,7 @@ import { generateBaseEntity } from '@faker/base.faker';
 import { generateUser } from './user.faker';
 
 export const createTag = (): CreateTagDto => ({
-  name: faker.commerce.productName(),
+  name: faker.commerce.productName() + faker.number.int({ min: 100, max: 200 }),
 });
 
 export const generateNewTags = (size: number = 1): CreateTagDto[] => {

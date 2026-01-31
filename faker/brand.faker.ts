@@ -14,7 +14,8 @@ import { generateUser } from './user.faker';
 import { createSlug } from '@commons/utils/create-slug.util';
 
 export const createBrand = (): CreateBrandDto => {
-  const name = faker.commerce.productName();
+  const name =
+    faker.commerce.productName() + faker.number.int({ min: 100, max: 200 });
   return {
     name,
     slug: createSlug(name),

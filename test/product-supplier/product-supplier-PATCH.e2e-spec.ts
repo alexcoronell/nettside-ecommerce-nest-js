@@ -113,6 +113,9 @@ describe('ProductSupplierController (e2e) [PATCH]', () => {
   });
 
   beforeEach(async () => {
+    // Clean all data before each test to ensure isolation
+    await cleanDB();
+
     /* Login Users */
     const resLoginAdmin = await loginAdmin(app, repoUser);
     adminAccessToken = resLoginAdmin.access_token;
@@ -306,11 +309,6 @@ describe('ProductSupplierController (e2e) [PATCH]', () => {
       expect(data.product.id).toBe(products[3].id);
       expect(data.supplier.id).toBe(suppliers[3].id);
     });
-  });
-
-  afterEach(async () => {
-    // Clean all data before each test to ensure isolation
-    await cleanDB();
   });
 
   afterAll(async () => {

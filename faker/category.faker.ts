@@ -14,7 +14,8 @@ import { generateUser } from './user.faker';
 import { createSlug } from '../src/commons/utils/create-slug.util';
 
 export const createCategory = (): CreateCategoryDto => {
-  const name = faker.commerce.productName();
+  const name =
+    faker.commerce.productName() + faker.number.int({ min: 100, max: 200 });
   return {
     name,
     slug: createSlug(name),

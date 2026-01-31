@@ -11,7 +11,7 @@ import { generateBaseEntity } from '@faker/base.faker';
 import { generateUser } from './user.faker';
 
 export const createDiscount = (): CreateDiscountDto => ({
-  code: faker.commerce.productName(),
+  code: faker.commerce.productName() + faker.number.int({ min: 100, max: 200 }),
   description: faker.lorem.sentence(),
   type: faker.lorem.word(),
   value: faker.number.float({ min: 10, max: 50, fractionDigits: 2 }),
