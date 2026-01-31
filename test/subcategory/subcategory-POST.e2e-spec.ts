@@ -115,6 +115,7 @@ describe('SubcategoryController (e2e) [GET]', () => {
       const newSubcategory = createSubcategory();
       const dto = {
         name: newSubcategory.name,
+        slug: newSubcategory.slug,
         categoryId: category.id,
       };
       const res = await request(app.getHttpServer())
