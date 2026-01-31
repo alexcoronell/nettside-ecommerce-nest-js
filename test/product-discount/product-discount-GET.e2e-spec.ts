@@ -27,7 +27,11 @@ import { User } from '@user/entities/user.entity';
 /* Interceptors */
 import { AuditInterceptor } from '@commons/interceptors/audit.interceptor';
 
-import { ERROR_MESSAGES, ERRORS, HTTP_STATUS } from '../constants';
+import {
+  ERROR_MESSAGES,
+  ERRORS,
+  HTTP_STATUS,
+} from '../../src/commons/constants';
 
 /* Seed */
 import { initDataSource, cleanDB, closeDataSource } from '../utils/seed';

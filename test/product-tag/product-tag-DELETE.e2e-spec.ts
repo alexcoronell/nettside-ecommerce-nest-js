@@ -26,7 +26,11 @@ import { User } from '@user/entities/user.entity';
 /* Interceptors */
 import { AuditInterceptor } from '@commons/interceptors/audit.interceptor';
 
-import { ERROR_MESSAGES, ERRORS, HTTP_STATUS } from '../constants';
+import {
+  ERROR_MESSAGES,
+  ERRORS,
+  HTTP_STATUS,
+} from '../../src/commons/constants';
 
 /* Seed */
 import { initDataSource, cleanDB, closeDataSource } from '../utils/seed';
@@ -343,7 +347,7 @@ describe('ProductTagController (e2e) [DELETE]', () => {
       const { statusCode, message } = res.body;
 
       expect(statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-      expect(message).toContain('validation');
+      expect(message).toBe(ERROR_MESSAGES.BAD_REQUEST_CRITERIA);
     });
 
     it('/ should return 400 when productId is missing', async () => {
@@ -358,7 +362,7 @@ describe('ProductTagController (e2e) [DELETE]', () => {
       const { statusCode, message } = res.body;
 
       expect(statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-      expect(message).toContain('productId');
+      expect(message).toBe(ERROR_MESSAGES.BAD_REQUEST_CRITERIA);
     });
 
     it('/ should return 400 when tagId is missing', async () => {
@@ -373,7 +377,7 @@ describe('ProductTagController (e2e) [DELETE]', () => {
       const { statusCode, message } = res.body;
 
       expect(statusCode).toBe(HTTP_STATUS.BAD_REQUEST);
-      expect(message).toContain('tagId');
+      expect(message).toBe(ERROR_MESSAGES.BAD_REQUEST_CRITERIA);
     });
   });
 

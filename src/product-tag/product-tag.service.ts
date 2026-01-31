@@ -3,6 +3,7 @@ import {
   NotFoundException,
   HttpStatus,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -17,6 +18,7 @@ import { CreateProductTagDto } from '@product_tag/dto/create-product-tag.dto';
 
 /* Types */
 import { Result } from '@commons/types/result.type';
+import { ERROR_MESSAGES } from '@commons/constants';
 
 @Injectable()
 export class ProductTagService {
@@ -182,6 +184,9 @@ export class ProductTagService {
   async delete(
     criteria: Partial<Pick<ProductTag, 'productId' | 'tagId'>>,
   ): Promise<Result<void>> {
+    if (!criteria || !criteria.productId || !criteria.tagId) {
+      throw new BadRequestException(ERROR_MESSAGES.BAD_REQUEST_CRITERIA);
+    }
     const productTag = await this.repo.findOne({
       where: criteria,
     });
