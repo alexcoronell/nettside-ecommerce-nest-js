@@ -1,32 +1,91 @@
+# ============================================
+# DOCKER COMPOSE -NESTJS ECOMMERCE
+# ============================================
+# Infrastructure services for local development and testing
+# Includes PostgreSQL, PgAdmin
+#
+# Author: Alex Coronell
+# Date: 2024-01-28
+# Version: 1.0.0
+
 services:
   postgres:
-    image: postgres:15
-    restart: always
+    image: postgres:16
+    container_name: nestjs-ecommerce-postgres
+    restart: unless-stopped
     environment:
-     - DATABASE_HOST=127.0.0.1
-     - POSTGRES_DB=nestjs_ecommerce
-     - POSTGRES_USER=root
-     - POSTGRES_PASSWORD=EXZTedK5V5rhaM9GQEJKvRApBT1wA5RCEXZTedK5V5rhaM9GQEJKvRApBT1wA5RC
+      POSTGRES_DB: nestjs_ecommerce_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
-      - ./postgres_data:/var/lib/postgresql/data
+      # Persistent data storage
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - nestjs-ecommerce-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d nestjs_ecommerce_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   postgres-e2e:
-    image: postgres:15
+    image: postgres:16
+    container_name: nestjs-ecommerce-postgres-test
+    restart: unless-stopped
     environment:
-      - POSTGRES_DB=db_e2e
+      - POSTGRES_DB=nestjs_ecommerce_db_e2e
       - POSTGRES_USER=e2e
       - POSTGRES_PASSWORD=e2e123
     ports:
       - 5433:5432
+    networks:
+      - nestjs-ecommerce-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U e2e -d nestjs_ecommerce_db_e2e"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   pgadmin:
-    image: dpage/pgadmin4
+    image: dpage/pgadmin4:latest
+    container_name: nest-ecommerce-pgadmin
+    restart: unless-stopped
     environment:
-     - PGADMIN_DEFAULT_EMAIL=root@admin.com
-     - PGADMIN_DEFAULT_PASSWORD=root
+      PGADMIN_DEFAULT_EMAIL: admin@nestjs-ecommerce.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      # Pre-configured servers
+      - ./docker/pgadmin/servers.json:/pgadmin4/servers.json
     ports:
       - "5050:80"
+    networks:
+      - nestjs-ecommerce-network
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+
+# ============================================
+# VOLUMES - Persistent Storage
+# ============================================
+volumes:
+  postgres_data:
+    driver: local
+    name: nestjs-ecommerce-postgres-data
+  pgadmin_data:
+    driver: local
+    name: nestjs-ecommerce-pgadmin-data
+
+# ============================================
+# NETWORKS
+# ============================================
+networks:
+  nestjs-ecommerce-network:
+    driver: bridge
+    name: nestjs-ecommerce-network
