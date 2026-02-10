@@ -62,7 +62,6 @@ export class SaleController {
     return this.saleService.findOne(+id);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Post()
   create(@Body() dto: CreateSaleDto, @UserId() userId: number) {
     return this.saleService.create(dto, userId);
