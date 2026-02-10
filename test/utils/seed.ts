@@ -28,7 +28,7 @@ export const dataSource = new DataSource({
   port: Number(process.env.POSTGRES_PORT) || 5433,
   username: process.env.POSTGRES_USER || 'e2e',
   password: process.env.POSTGRES_PASSWORD || 'e2e123',
-  database: process.env.POSTGRES_DB || 'db_e2e',
+  database: process.env.POSTGRES_DB || 'nestjs_ecommerce_db_e2e',
   entities: [
     Brand,
     Category,
