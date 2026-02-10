@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
 
 /* Interface */
@@ -25,7 +26,12 @@ import { Purchase } from './entities/purchase.entity';
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
 import { UpdatePurchaseDto } from './dto/update-purchase.dto';
 
+/* Guards */
+import { JwtAuthGuard } from '@auth/guards/jwt-auth/jwt-auth.guard';
+import { AdminGuard } from '@auth/guards/admin-auth/admin-auth.guard';
+
 @Controller('purchase')
+@UseGuards(JwtAuthGuard, AdminGuard)
 export class PurchaseController
   implements IBaseController<Purchase, CreatePurchaseDto, UpdatePurchaseDto>
 {
