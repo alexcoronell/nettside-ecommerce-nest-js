@@ -37,6 +37,14 @@ export const generateSale = (id: number = 1): Sale => ({
   isCancelled: false,
 });
 
+export const generateNewSales = (size: number): CreateSaleDto[] => {
+  const newSales: CreateSaleDto[] = [];
+  for (let i = 0; i < size; i++) {
+    newSales.push(createSale());
+  }
+  return newSales;
+};
+
 export const generateManySales = (size: number): Sale[] => {
   const sales: Sale[] = [];
   for (let i = 0; i < size; i++) {
