@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
 
 /* Services */
@@ -16,7 +17,12 @@ import { PurchaseDetailService } from './purchase-detail.service';
 import { CreatePurchaseDetailDto } from './dto/create-purchase-detail.dto';
 import { UpdatePurchaseDetailDto } from './dto/update-purchase-detail.dto';
 
+/* Guards */
+import { JwtAuthGuard } from '@auth/guards/jwt-auth/jwt-auth.guard';
+import { AdminGuard } from '@auth/guards/admin-auth/admin-auth.guard';
+
 @Controller('purchase-detail')
+@UseGuards(JwtAuthGuard, AdminGuard)
 export class PurchaseDetailController {
   constructor(private readonly purchaseDetailService: PurchaseDetailService) {}
 
