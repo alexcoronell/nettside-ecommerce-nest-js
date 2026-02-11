@@ -15,15 +15,30 @@ import { generateSale } from './sale.faker';
 import { generateShippingCompany } from './shippingCompany.faker';
 import { generateUser } from './user.faker';
 
-export const createShipment = (): CreateShipmentDto => {
+export const createShipment = (
+  saleId?: number,
+  shippingCompanyId?: number,
+): CreateShipmentDto => {
   return {
-    trackingNumber: faker.lorem.word({ length: 1 }),
+    trackingNumber: faker.string.alphanumeric(15),
     shipmentDate: faker.date.past(),
     estimatedDeliveryDate: faker.date.future(),
     status: faker.helpers.arrayElement(Object.values(ShipmentStatusEnum)),
-    sale: faker.number.int({ min: 1, max: 100 }),
-    shippingCompany: faker.number.int({ min: 1, max: 10 }),
+    sale: saleId || faker.number.int({ min: 1, max: 100 }),
+    shippingCompany: shippingCompanyId || faker.number.int({ min: 1, max: 10 }),
   };
+};
+
+export const generateNewShipments = (
+  size: number = 1,
+  saleId?: number,
+  shippingCompanyId?: number,
+): CreateShipmentDto[] => {
+  const newShipments: CreateShipmentDto[] = [];
+  for (let i = 0; i < size; i++) {
+    newShipments.push(createShipment(saleId, shippingCompanyId));
+  }
+  return newShipments;
 };
 
 export const generateShipment = (id: number = 1): Shipment => ({

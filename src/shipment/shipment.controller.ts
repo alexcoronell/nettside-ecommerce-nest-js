@@ -7,7 +7,12 @@ import {
   Param,
   Delete,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
+
+/* Guards */
+import { AdminGuard } from '@auth/guards/admin-auth/admin-auth.guard';
+import { JwtAuthGuard } from '@auth/guards/jwt-auth/jwt-auth.guard';
 
 /* Interface */
 import { IBaseController } from '@commons/interfaces/i-base-controller';
@@ -25,6 +30,7 @@ import { Shipment } from './entities/shipment.entity';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
 import { UpdateShipmentDto } from './dto/update-shipment.dto';
 
+@UseGuards(JwtAuthGuard, AdminGuard)
 @Controller('shipment')
 export class ShipmentController
   implements IBaseController<Shipment, CreateShipmentDto, UpdateShipmentDto>
