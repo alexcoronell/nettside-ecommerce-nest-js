@@ -6,12 +6,16 @@ import { ProductTagModule } from './product-tag.module';
 import { ProductTagService } from './product-tag.service';
 import { ProductTagController } from './product-tag.controller';
 import { ProductTag } from './entities/product-tag.entity';
+import { Product } from '@product/entities/product.entity';
+import { Tag } from '@tag/entities/tag.entity';
 
-describe('Category module', () => {
+describe('ProductTag module', () => {
   let module: TestingModule;
   let service: ProductTagService;
   let controller: ProductTagController;
   let repository: Repository<ProductTag>;
+  let productRepository: Repository<Product>;
+  let tagRepository: Repository<Tag>;
 
   beforeEach(async () => {
     module = await Test.createTestingModule({
@@ -23,6 +27,17 @@ describe('Category module', () => {
         save: jest.fn(),
         find: jest.fn(),
         delete: jest.fn(),
+        findAndCount: jest.fn(),
+        create: jest.fn(),
+        count: jest.fn(),
+      })
+      .overrideProvider(getRepositoryToken(Product))
+      .useValue({
+        findOne: jest.fn(),
+      })
+      .overrideProvider(getRepositoryToken(Tag))
+      .useValue({
+        findOne: jest.fn(),
       })
       .compile();
 
@@ -31,6 +46,10 @@ describe('Category module', () => {
     repository = module.get<Repository<ProductTag>>(
       getRepositoryToken(ProductTag),
     );
+    productRepository = module.get<Repository<Product>>(
+      getRepositoryToken(Product),
+    );
+    tagRepository = module.get<Repository<Tag>>(getRepositoryToken(Tag));
   });
 
   it('should be defined', () => {
@@ -38,6 +57,8 @@ describe('Category module', () => {
     expect(service).toBeDefined();
     expect(controller).toBeDefined();
     expect(repository).toBeDefined();
+    expect(productRepository).toBeDefined();
+    expect(tagRepository).toBeDefined();
   });
 
   it('should have ProductTagService and ProductTagController', () => {
