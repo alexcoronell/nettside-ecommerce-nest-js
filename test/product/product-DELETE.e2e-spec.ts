@@ -52,7 +52,7 @@ const API_KEY = process.env.API_KEY || 'api-e2e-key';
 const PATH = '/product';
 const ID = 1;
 
-describe('ProductController (e2e) [GET]', () => {
+describe('ProductController (e2e) [DELETE]', () => {
   let app: INestApplication<App>;
   let repo: any = undefined;
   let repoBrand: any = undefined;
@@ -135,7 +135,7 @@ describe('ProductController (e2e) [GET]', () => {
     await repo.save(newProducts);
   });
 
-  describe('DELETE Subcategory', () => {
+  describe('DELETE Product', () => {
     it('/:id should delete a Product with admin user', async () => {
       const res = await request(app.getHttpServer())
         .delete(`${PATH}/${ID}`)

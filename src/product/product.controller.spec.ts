@@ -29,17 +29,47 @@ describe('ProductController', () => {
   const mockNewProduct: CreateProductDto = createProduct();
 
   const mockService = {
-    countAll: jest.fn().mockResolvedValue(mockProducts.length),
-    count: jest.fn().mockResolvedValue(mockProducts.length),
-    findAll: jest.fn().mockResolvedValue(mockProducts),
-    findOne: jest.fn().mockResolvedValue(mockProduct),
-    findOneByName: jest.fn().mockResolvedValue(mockProduct),
-    findByBrand: jest.fn().mockResolvedValue(mockProducts),
-    findByCategory: jest.fn().mockResolvedValue(mockProducts),
-    findBySubcategory: jest.fn().mockResolvedValue(mockProducts),
-    create: jest.fn().mockResolvedValue(mockNewProduct),
-    update: jest.fn().mockResolvedValue(1),
-    remove: jest.fn().mockResolvedValue(1),
+    countAll: jest
+      .fn()
+      .mockResolvedValue({ statusCode: 200, total: mockProducts.length }),
+    count: jest
+      .fn()
+      .mockResolvedValue({ statusCode: 200, total: mockProducts.length }),
+    findAll: jest.fn().mockResolvedValue({
+      statusCode: 200,
+      data: mockProducts,
+      total: mockProducts.length,
+    }),
+    findOne: jest
+      .fn()
+      .mockResolvedValue({ statusCode: 200, data: mockProduct }),
+    findOneByName: jest
+      .fn()
+      .mockResolvedValue({ statusCode: 200, data: mockProduct }),
+    findByBrand: jest.fn().mockResolvedValue({
+      statusCode: 200,
+      data: mockProducts,
+      total: mockProducts.length,
+    }),
+    findByCategory: jest.fn().mockResolvedValue({
+      statusCode: 200,
+      data: mockProducts,
+      total: mockProducts.length,
+    }),
+    findBySubcategory: jest.fn().mockResolvedValue({
+      statusCode: 200,
+      data: mockProducts,
+      total: mockProducts.length,
+    }),
+    create: jest
+      .fn()
+      .mockResolvedValue({ statusCode: 201, data: mockNewProduct }),
+    update: jest
+      .fn()
+      .mockResolvedValue({ statusCode: 200, message: 'updated' }),
+    remove: jest
+      .fn()
+      .mockResolvedValue({ statusCode: 200, message: 'deleted' }),
   };
 
   beforeEach(async () => {
@@ -63,24 +93,37 @@ describe('ProductController', () => {
 
   describe('Count products controllers', () => {
     it('should call countAll product service', async () => {
-      expect(await controller.countAll()).toBe(mockProducts.length);
+      expect(await controller.countAll()).toEqual({
+        statusCode: 200,
+        total: mockProducts.length,
+      });
       expect(service.countAll).toHaveBeenCalledTimes(1);
     });
 
     it('should call count product service', async () => {
-      expect(await controller.count()).toBe(mockProducts.length);
+      expect(await controller.count()).toEqual({
+        statusCode: 200,
+        total: mockProducts.length,
+      });
       expect(service.count).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('Find products controllers', () => {
     it('should call findAll product service', async () => {
-      expect(await controller.findAll()).toBe(mockProducts);
+      expect(await controller.findAll()).toEqual({
+        statusCode: 200,
+        data: mockProducts,
+        total: mockProducts.length,
+      });
       expect(service.findAll).toHaveBeenCalledTimes(1);
     });
 
     it('should call findOne product service', async () => {
-      expect(await controller.findOne(1)).toBe(mockProduct);
+      expect(await controller.findOne(1)).toEqual({
+        statusCode: 200,
+        data: mockProduct,
+      });
       expect(service.findOne).toHaveBeenCalledTimes(1);
     });
 
@@ -90,18 +133,28 @@ describe('ProductController', () => {
     });
 
     it('should call findByBrand product service', async () => {
-      expect(await controller.findByBrand('brand-test')).toBe(mockProducts);
+      expect(await controller.findByBrand('brand-test')).toEqual({
+        statusCode: 200,
+        data: mockProducts,
+        total: mockProducts.length,
+      });
       expect(service.findByBrand).toHaveBeenCalledTimes(1);
     });
     it('should call findByCategory product service', async () => {
-      expect(await controller.findByCategory('category-test')).toBe(
-        mockProducts,
-      );
+      expect(await controller.findByCategory('category-test')).toEqual({
+        statusCode: 200,
+        data: mockProducts,
+        total: mockProducts.length,
+      });
       expect(service.findByCategory).toHaveBeenCalledTimes(1);
     });
 
     it('should call findBySubcategory product service', async () => {
-      expect(await controller.findBySubcategory(1)).toBe(mockProducts);
+      expect(await controller.findBySubcategory(1)).toEqual({
+        statusCode: 200,
+        data: mockProducts,
+        total: mockProducts.length,
+      });
       expect(service.findBySubcategory).toHaveBeenCalledTimes(1);
     });
   });

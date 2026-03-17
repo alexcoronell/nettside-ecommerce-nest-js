@@ -53,7 +53,7 @@ const API_KEY = process.env.API_KEY || 'api-e2e-key';
 
 const PATH = '/product';
 
-describe('ProductController (e2e) [GET]', () => {
+describe('ProductController (e2e) [POST]', () => {
   let app: INestApplication<App>;
   let repo: any = undefined;
   let repoBrand: any = undefined;

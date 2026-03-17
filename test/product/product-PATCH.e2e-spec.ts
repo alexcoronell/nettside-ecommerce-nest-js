@@ -54,7 +54,7 @@ const API_KEY = process.env.API_KEY || 'api-e2e-key';
 const PATH = '/product';
 const ID = 1;
 
-describe('ProductController (e2e) [GET]', () => {
+describe('ProductController (e2e) [PATCH]', () => {
   let app: INestApplication<App>;
   let repo: any = undefined;
   let repoBrand: any = undefined;
@@ -138,7 +138,7 @@ describe('ProductController (e2e) [GET]', () => {
     products = await repo.save(newProducts);
   });
 
-  describe('PATCH Subcategory', () => {
+  describe('PATCH Product', () => {
     it('/:id should update a product with admin user', async () => {
       const updatedData: UpdateProductDto = {
         name: 'Updated name',

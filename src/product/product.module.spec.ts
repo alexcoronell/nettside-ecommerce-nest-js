@@ -7,7 +7,7 @@ import { ProductService } from './product.service';
 import { ProductController } from './product.controller';
 import { Product } from './entities/product.entity';
 
-describe('Category module', () => {
+describe('Product module', () => {
   let module: TestingModule;
   let service: ProductService;
   let controller: ProductController;

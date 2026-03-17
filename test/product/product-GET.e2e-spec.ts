@@ -142,7 +142,7 @@ describe('ProductController (e2e) [GET]', () => {
     products = await repo.save(newProducts);
   });
 
-  xdescribe('GET Product - Count-All', () => {
+  describe('GET Product - Count-All', () => {
     it('/count-all should return 401 if api key is missing', async () => {
       const res: any = await request(app.getHttpServer()).get(COUNT_ALL);
       const { statusCode, message } = res.body;
@@ -203,7 +203,7 @@ describe('ProductController (e2e) [GET]', () => {
     });
   });
 
-  xdescribe('GET Product - Count', () => {
+  describe('GET Product - Count', () => {
     it('/count-all should return 401 if api key is missing', async () => {
       const res: any = await request(app.getHttpServer()).get(COUNT);
       const { statusCode, message } = res.body;
@@ -260,7 +260,7 @@ describe('ProductController (e2e) [GET]', () => {
     });
   });
 
-  xdescribe('GET Product - Find', () => {
+  describe('GET Product - Find', () => {
     it('/ should return 401 if api key is missing', async () => {
       const res: any = await request(app.getHttpServer()).get(`${PATH}`);
       const { statusCode, message } = res.body;
@@ -349,7 +349,7 @@ describe('ProductController (e2e) [GET]', () => {
     });
   });
 
-  xdescribe('GET Product - Find By Id', () => {
+  describe('GET Product - Find By Id', () => {
     it('/ should return 401 if api key is missing', async () => {
       const res: any = await request(app.getHttpServer()).get(`${PATH}/${ID}`);
       const { statusCode, message } = res.body;
@@ -422,7 +422,7 @@ describe('ProductController (e2e) [GET]', () => {
     });
   });
 
-  xdescribe('GET Product - Find By name', () => {
+  describe('GET Product - Find By name', () => {
     it('/ should return 401 if api key is missing', async () => {
       const name = products[0].name;
       const res: any = await request(app.getHttpServer()).get(
@@ -504,7 +504,7 @@ describe('ProductController (e2e) [GET]', () => {
     });
   });
 
-  xdescribe('GET Product - Find By Brand', () => {
+  describe('GET Product - Find By Brand', () => {
     it('/brand/:slug should return 401 if api key is missing', async () => {
       const slug = brand.slug;
       const res: any = await request(app.getHttpServer()).get(
@@ -585,7 +585,7 @@ describe('ProductController (e2e) [GET]', () => {
   });
 
   describe('GET Product - Find By Category', () => {
-    it('/brand/:slug should return 401 if api key is missing', async () => {
+    it('/category/:slug should return 401 if api key is missing', async () => {
       const slug = category.slug;
       const res: any = await request(app.getHttpServer()).get(
         `${FIND_BY_CATEGORY}/${slug}`,
@@ -595,7 +595,7 @@ describe('ProductController (e2e) [GET]', () => {
       expect(message).toBe(ERROR_MESSAGES.INVALID_API_KEY);
     });
 
-    it('/brand/:slug should return 401 if api key is invalid', async () => {
+    it('/category/:slug should return 401 if api key is invalid', async () => {
       const slug = category.slug;
       const res: any = await request(app.getHttpServer())
         .get(`${FIND_BY_CATEGORY}/${slug}`)
@@ -605,7 +605,7 @@ describe('ProductController (e2e) [GET]', () => {
       expect(message).toBe(ERROR_MESSAGES.INVALID_API_KEY);
     });
 
-    it('/brand/:slug should return an array of product by category slug with admin user', async () => {
+    it('/category/:slug should return an array of product by category slug with admin user', async () => {
       const slug = category.slug;
       const res = await request(app.getHttpServer())
         .get(`${FIND_BY_CATEGORY}/${slug}`)
@@ -617,7 +617,7 @@ describe('ProductController (e2e) [GET]', () => {
       expect(data[0].category.slug).toEqual(slug);
     });
 
-    it('/brand/:slug should return an array of product by category slug with seller user', async () => {
+    it('/category/:slug should return an array of product by category slug with seller user', async () => {
       const slug = category.slug;
       const res = await request(app.getHttpServer())
         .get(`${FIND_BY_CATEGORY}/${slug}`)
@@ -629,7 +629,7 @@ describe('ProductController (e2e) [GET]', () => {
       expect(data[0].category.slug).toEqual(slug);
     });
 
-    it('/brand/:slug should return an array of product by category slug with customer user', async () => {
+    it('/category/:slug should return an array of product by category slug with customer user', async () => {
       const slug = category.slug;
       const res = await request(app.getHttpServer())
         .get(`${FIND_BY_CATEGORY}/${slug}`)
@@ -641,7 +641,7 @@ describe('ProductController (e2e) [GET]', () => {
       expect(data[0].category.slug).toEqual(slug);
     });
 
-    it('/brand/:slug should return an array of product by category slug without user', async () => {
+    it('/category/:slug should return an array of product by category slug without user', async () => {
       const slug = category.slug;
       const res = await request(app.getHttpServer())
         .get(`${FIND_BY_CATEGORY}/${slug}`)
@@ -652,8 +652,8 @@ describe('ProductController (e2e) [GET]', () => {
       expect(data[0].category.slug).toEqual(slug);
     });
 
-    it('/brand/:slug should return an empty array of product by slug with no existing brand', async () => {
-      const slug = 'no-existing-brand';
+    it('/category/:slug should return an empty array of product by slug with no existing category', async () => {
+      const slug = 'no-existing-category';
       const res = await request(app.getHttpServer())
         .get(`${FIND_BY_CATEGORY}/${slug}`)
         .set('x-api-key', API_KEY);
