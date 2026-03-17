@@ -61,7 +61,7 @@ const COUNT = `${PATH}/count`;
 const FIND_ALL_BY_PRODUCT = `${PATH}/product`;
 const FIND_ALL_BY_SUPPLIER = `${PATH}/supplier`;
 
-describe('ProductSuplierController (e2e) [GET]', () => {
+describe('ProductSupplierController (e2e) [GET]', () => {
   let app: INestApplication<App>;
   let repo: any = undefined;
   let repoBrand: any = undefined;
