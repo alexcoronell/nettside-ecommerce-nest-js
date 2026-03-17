@@ -61,7 +61,7 @@ const FIND_BY_PRODUCT = `${PATH}/product`;
 const FIND_BY_DISCOUNT = `${PATH}/discount`;
 const FIND_ONE = `${PATH}/one`;
 
-describe('ProductController (e2e) [GET]', () => {
+describe('ProductDiscountController (e2e) [GET]', () => {
   let app: INestApplication<App>;
   let repo: any = undefined;
   let repoBrand: any = undefined;

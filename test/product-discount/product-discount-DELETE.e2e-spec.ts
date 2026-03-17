@@ -56,7 +56,7 @@ const API_KEY = process.env.API_KEY || 'api-e2e-key';
 
 const PATH = '/product-discount';
 
-describe('ProductController (e2e) [GET]', () => {
+describe('ProductDiscountController (e2e) [DELETE]', () => {
   let app: INestApplication<App>;
   let repo: any = undefined;
   let repoBrand: any = undefined;

@@ -59,7 +59,7 @@ const API_KEY = process.env.API_KEY || 'api-e2e-key';
 const PATH = '/product-discount';
 const MANY = `${PATH}/many`;
 
-describe('ProductController (e2e) [POST]', () => {
+describe('ProductDiscountController (e2e) [POST]', () => {
   let app: INestApplication<App>;
   let repo: any = undefined;
   let repoBrand: any = undefined;
