@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "skills": {
+    "jest-testing-expert": {
+      "source": "cin12211/orca-q",
+      "sourceType": "github",
+      "computedHash": "f070b432e1423b827414456beb44548164b17f4f21dbfb051bbc6ae55d871cae"
+    },
+    "nestjs-best-practices": {
+      "source": "kadajett/agent-nestjs-skills",
+      "sourceType": "github",
+      "computedHash": "1b6f82e889d19d305e38e35594de08eca0242321f353cafa4cf5e61dd3aa1a73"
+    }
+  }
+}

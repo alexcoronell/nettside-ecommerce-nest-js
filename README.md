@@ -1,98 +1,193 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# NestJS E-Commerce API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A robust, production-ready RESTful API built with NestJS for managing an e-commerce platform. Features comprehensive authentication, product management, order processing, and inventory tracking.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Tech Stack
 
-## Description
+- **Framework**: NestJS 11.x
+- **Language**: TypeScript
+- **Database**: PostgreSQL with TypeORM
+- **Authentication**: JWT with Refresh Tokens
+- **Testing**: Jest (Unit & E2E)
+- **Package Manager**: pnpm
+- **API Documentation**: Swagger/OpenAPI
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Features
 
-## Project setup
+### Core Modules
 
-```bash
-$ pnpm install
+- **User Management** - Multi-role authentication (Admin, Seller, Customer)
+- **Product Catalog** - Categories, subcategories, brands, tags
+- **Inventory Management** - Stock tracking, supplier management
+- **Order Processing** - Sales, purchases, detailed tracking
+- **Shipping** - Multiple shipping companies, shipment tracking
+- **Discounts** - Product and catalog-level promotions
+- **Wishlist** - Customer favorites management
+
+### Technical Features
+
+- Role-based access control (RBAC)
+- API Key authentication for external clients
+- Audit logging interceptor
+- Pagination and filtering support
+- Slug generation for SEO-friendly URLs
+- Comprehensive error handling
+
+## Project Structure
+
+```
+src/
+├── auth/                 # Authentication module (JWT, Login)
+├── brand/               # Brand management
+├── category/            # Product categories
+├── commons/             # Shared utilities, guards, interceptors
+├── config/              # Application configuration
+├── database/            # Database module & migrations
+├── discount/            # Discount management
+├── payment-method/     # Payment methods
+├── product/             # Product CRUD
+├── product-discount/    # Product-discount relationships
+├── product-images/      # Product image management
+├── product-supplier/    # Product-supplier relationships
+├── product-tag/         # Product-tag relationships
+├── purchase/            # Purchase orders
+├── purchase-detail/     # Purchase line items
+├── sale/                # Sales orders
+├── sale-detail/         # Sale line items
+├── shipment/            # Shipment tracking
+├── shipping-company/    # Shipping providers
+├── store-detail/        # Store configuration
+├── subcategory/         # Product subcategories
+├── supplier/            # Supplier management
+├── tag/                # Product tags
+├── user/               # User management
+└── wishlist/           # Customer wishlists
 ```
 
-## Compile and run the project
+## Getting Started
+
+### Prerequisites
+
+- Node.js 20+
+- PostgreSQL 14+
+- pnpm 8+
+
+### Installation
 
 ```bash
-# development
-$ pnpm run start
+# Install dependencies
+pnpm install
 
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+# Configure environment
+cp .env.dev .env
+# Edit .env with your database credentials
 ```
 
-## Run tests
+### Database Setup
 
 ```bash
-# unit tests
-$ pnpm run test
+# Generate migrations (after schema changes)
+pnpm run migration:generate MigrationName
 
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+# Run migrations
+pnpm run migration:run-dev
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Development
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+# Start development server with hot reload
+pnpm run start:dev
+
+# Start production server
+pnpm run start:prod
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## Testing
 
-## Resources
+```bash
+# Run unit tests
+pnpm run test
 
-Check out a few resources that may come in handy when working with NestJS:
+# Run unit tests with coverage
+pnpm run test:cov
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+# Run e2e tests
+pnpm run test:e2e
+```
 
-## Support
+## API Endpoints
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+| Module           | Endpoints                                  |
+| ---------------- | ------------------------------------------ |
+| Auth             | POST /auth/login, POST /auth/refresh-token |
+| Brand            | CRUD at /brands                            |
+| Category         | CRUD at /categories                        |
+| Discount         | CRUD at /discounts                         |
+| Payment Method   | CRUD at /payment-methods                   |
+| Product          | CRUD at /products                          |
+| Product Images   | CRUD at /product-images                    |
+| Product Discount | CRUD at /product-discounts                 |
+| Product Supplier | CRUD at /product-suppliers                 |
+| Product Tag      | CRUD at /product-tags                      |
+| Purchase         | CRUD at /purchases                         |
+| Purchase Detail  | CRUD at /purchase-details                  |
+| Sale             | CRUD at /sales                             |
+| Sale Detail      | CRUD at /sale-details                      |
+| Shipment         | CRUD at /shipments                         |
+| Shipping Company | CRUD at /shipping-companies                |
+| Store Detail     | GET/PATCH at /store-detail                 |
+| Subcategory      | CRUD at /subcategories                     |
+| Supplier         | CRUD at /suppliers                         |
+| Tag              | CRUD at /tags                              |
+| User             | CRUD at /users                             |
+| Wishlist         | CRUD at /wishlists                         |
 
-## Stay in touch
+## Environment Variables
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+```env
+# Database
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_USERNAME=postgres
+DATABASE_PASSWORD=secret
+DATABASE_NAME=ecommerce
+
+# JWT
+JWT_SECRET=your-secret-key
+JWT_EXPIRES_IN=1h
+JWT_REFRESH_SECRET=your-refresh-secret
+JWT_REFRESH_EXPIRES_IN=7d
+
+# API
+API_KEY=your-api-key-for-external-clients
+PORT=3000
+```
+
+## Available Scripts
+
+| Command                       | Description              |
+| ----------------------------- | ------------------------ |
+| `pnpm run build`              | Build the application    |
+| `pnpm run start`              | Start the application    |
+| `pnpm run start:dev`          | Start with hot reload    |
+| `pnpm run start:prod`         | Start production build   |
+| `pnpm run lint`               | Lint and fix code        |
+| `pnpm run test`               | Run unit tests           |
+| `pnpm run test:cov`           | Run tests with coverage  |
+| `pnpm run test:e2e`           | Run e2e tests            |
+| `pnpm run migration:generate` | Generate a new migration |
+
+## Architecture Patterns
+
+- **Service-Controller-Module** architecture per feature
+- **Repository Pattern** with TypeORM
+- **DTOs** for request validation
+- **Entity** models with proper relationships
+- **Guards** for authentication and authorization
+- **Interceptors** for audit logging
+- **Filters** for exception handling
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Private - All rights reserved
