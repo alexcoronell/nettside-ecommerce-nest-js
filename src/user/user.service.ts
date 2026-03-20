@@ -19,6 +19,7 @@ import { IBaseService } from '@commons/interfaces/i-base-service';
 import { User } from '@user/entities/user.entity';
 
 /* DTO's */
+import { ResponseUserDto } from './dto/response-user.dto';
 import { CreateUserDto } from '@user/dto/create-user.dto';
 import { UpdateUserDto } from '@user/dto/update-user.dto';
 import { UpdatePasswordDto } from '@user/dto/update-password-user';
@@ -31,7 +32,7 @@ import { Result } from '@commons/types/result.type';
 
 @Injectable()
 export class UserService
-  implements IBaseService<User, CreateUserDto, UpdateUserDto>
+  implements IBaseService<ResponseUserDto, CreateUserDto, UpdateUserDto>
 {
   constructor(
     @InjectRepository(User)
@@ -100,7 +101,7 @@ export class UserService
    * Note: Although this endpoint returns all users at once (no pagination),
    * the response includes `total` to maintain consistency with paginated endpoints.
    */
-  async findAll(): Promise<Result<User[]>> {
+  async findAll(): Promise<Result<ResponseUserDto[]>> {
     const [users, total] = await this.userRepo.findAndCount({
       where: {
         isDeleted: false,
@@ -109,14 +110,10 @@ export class UserService
         email: 'ASC',
       },
     });
-    const rta = users.map((user) => {
-      user.password = undefined;
-      return user;
-    });
 
     return {
       statusCode: HttpStatus.OK,
-      data: rta,
+      data: users as ResponseUserDto[],
       total,
     };
   }
@@ -192,7 +189,7 @@ export class UserService
    * @throws {NotFoundException} if no active user with the given ID exists.
    *
    */
-  async findOne(id: User['id']): Promise<Result<User>> {
+  async findOne(id: User['id']): Promise<Result<ResponseUserDto>> {
     const user = await this.userRepo.findOne({
       relations: ['createdBy', 'updatedBy'],
       where: { id, isDeleted: false },
@@ -203,7 +200,7 @@ export class UserService
     user.password = undefined;
     return {
       statusCode: HttpStatus.OK,
-      data: user,
+      data: user as ResponseUserDto,
     };
   }
 
@@ -303,7 +300,10 @@ export class UserService
    * the response, for maximum safety and maintainability, consider returning a
    * dedicated `UserResponseDto` instead of the raw entity.
    */
-  async create(dto: CreateUserDto, userId: number): Promise<Result<User>> {
+  async create(
+    dto: CreateUserDto,
+    userId: number,
+  ): Promise<Result<ResponseUserDto>> {
     const email = dto.email.toLowerCase();
 
     const existUserEmail = await this.userRepo.findOneBy({ email });
@@ -321,7 +321,7 @@ export class UserService
     user.password = undefined;
     return {
       statusCode: HttpStatus.CREATED,
-      data: user,
+      data: user as ResponseUserDto,
       message: 'The user was created',
     };
   }
@@ -397,7 +397,7 @@ export class UserService
     id: number,
     userId: number,
     changes: UpdateUserDto,
-  ): Promise<Result<User>> {
+  ): Promise<Result<ResponseUserDto>> {
     const { data } = await this.findOne(id);
     this.userRepo.merge(data as User, {
       ...changes,
@@ -407,7 +407,7 @@ export class UserService
     rta.password = undefined;
     return {
       statusCode: HttpStatus.OK,
-      data: rta,
+      data: rta as ResponseUserDto,
       message: `The User with ID: ${id} has been modified`,
     };
   }

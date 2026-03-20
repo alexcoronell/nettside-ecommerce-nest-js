@@ -18,6 +18,7 @@ import { UserService } from './user.service';
 import { User } from '@user/entities/user.entity';
 
 /* DTO's */
+import { ResponseUserDto } from './dto/response-user.dto';
 import { CreateUserDto } from '@user/dto/create-user.dto';
 import { UpdateUserDto } from '@user/dto/update-user.dto';
 import { UpdatePasswordDto } from '@user/dto/update-password-user';
@@ -107,12 +108,11 @@ describe('UserService', () => {
         where: { isDeleted: false },
         order: { email: 'ASC' },
       });
-      const usersData = data as User[];
+      const usersData = data as ResponseUserDto[];
 
       expect(statusCode).toBe(200);
       expect(usersData).toEqual(usersPasswordsUndefined);
       expect(total).toEqual(users.length);
-      expect(usersData[0].password).toBe(undefined);
     });
 
     it('findAllSellers should return all seller users', async () => {

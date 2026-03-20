@@ -24,6 +24,7 @@ import { UserService } from './user.service';
 import { User } from './entities/user.entity';
 
 /* DTO's */
+import { ResponseUserDto } from './dto/response-user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdatePasswordDto } from './dto/update-password-user';
@@ -40,7 +41,7 @@ import { OwnerOrAdminGuard } from '@auth/guards/owner-or-admin-auth/owner-or-adm
  * Implements the IBaseController interface for User entity.
  */
 export class UserController
-  implements IBaseController<User, CreateUserDto, UpdateUserDto>
+  implements IBaseController<ResponseUserDto, CreateUserDto, UpdateUserDto>
 {
   constructor(private userService: UserService) {}
   /**
