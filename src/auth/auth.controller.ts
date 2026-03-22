@@ -1,18 +1,26 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
-import { Controller, Post, Req, UseGuards } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
-import { Request } from 'express';
+
+// External dependencies - NestJS core
+import {
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Res,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+
+// External dependencies - Third-party
+import { Request, Response } from 'express';
 
 /* Services */
 import { AuthService } from './auth.service';
 
-/* Entities */
-import { User } from '@user/entities/user.entity';
-
 /* Guards */
 import { LocalAuthGuard } from './guards/local-auth/local-auth.guard';
-import { RefreshJwtAuthGuard } from './guards/refresh-jwt-auth/refresh-jwt-auth.guard';
 
 /* Decorators */
 import { NoAudit } from '@commons/decorators/no-audit.decorator';
@@ -23,16 +31,24 @@ import { NoAudit } from '@commons/decorators/no-audit.decorator';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'User login (HttpOnly Cookie strategy)',
+  })
+  @ApiResponse({ status: 200, description: 'Login successful' })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
   @UseGuards(LocalAuthGuard)
   @Post('user/login')
-  login(@Req() req: Request) {
+  login(@Req() req: Request, @Res({ passthrough: true }) response: Response) {
     const { user } = req as any;
-    return this.authService.generateJWT(user as User);
+    return this.authService.login(user, response);
   }
 
-  @UseGuards(RefreshJwtAuthGuard)
-  @Post('refresh-token')
-  refreshToken(@Req() req: Request) {
-    return this.authService.refreshToken(req.body);
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Clear auth cookies' })
+  @ApiResponse({ status: 200, description: 'Logged out successfully' })
+  @Post('user/logout')
+  logout(@Res({ passthrough: true }) response: Response) {
+    return this.authService.logout(response);
   }
 }
