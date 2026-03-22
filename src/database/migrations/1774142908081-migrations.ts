@@ -1,18 +1,17 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-/* Complete Migrations */
-export class Migrations1759880643535 implements MigrationInterface {
-  name = 'Migrations1759880643535';
+export class Migrations1774142908081 implements MigrationInterface {
+  name = 'Migrations1774142908081';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `CREATE TABLE "subcategories" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP, "is_deleted" boolean NOT NULL DEFAULT false, "name" character varying(255) NOT NULL, "category_id" integer, "created_by_user_id" integer, "updated_by_user_id" integer, "deleted_by_user_id" integer, CONSTRAINT "PK_793ef34ad0a3f86f09d4837007c" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "subcategories" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP, "is_deleted" boolean NOT NULL DEFAULT false, "name" character varying(255) NOT NULL, "slug" character varying(255) NOT NULL, "category_id" integer, "created_by_user_id" integer, "updated_by_user_id" integer, "deleted_by_user_id" integer, CONSTRAINT "UQ_290ef46936579a55f65f81f5e4c" UNIQUE ("slug"), CONSTRAINT "PK_793ef34ad0a3f86f09d4837007c" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
-      `CREATE TABLE "categories" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP, "is_deleted" boolean NOT NULL DEFAULT false, "name" character varying(255) NOT NULL, "created_by_user_id" integer, "updated_by_user_id" integer, "deleted_by_user_id" integer, CONSTRAINT "UQ_8b0be371d28245da6e4f4b61878" UNIQUE ("name"), CONSTRAINT "PK_24dbc6126a28ff948da33e97d3b" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "categories" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP, "is_deleted" boolean NOT NULL DEFAULT false, "name" character varying(255) NOT NULL, "slug" character varying(255) NOT NULL, "created_by_user_id" integer, "updated_by_user_id" integer, "deleted_by_user_id" integer, CONSTRAINT "UQ_8b0be371d28245da6e4f4b61878" UNIQUE ("name"), CONSTRAINT "UQ_420d9f679d41281f282f5bc7d09" UNIQUE ("slug"), CONSTRAINT "PK_24dbc6126a28ff948da33e97d3b" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
-      `CREATE TABLE "product_discounts" ("product_id" integer NOT NULL, "discount_id" integer NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "created_by_user_id" integer NOT NULL, CONSTRAINT "PK_fb73d2ec2c65bb88066e43a7d03" PRIMARY KEY ("product_id", "discount_id"))`,
+      `CREATE TABLE "product_discounts" ("product_id" integer NOT NULL, "discount_id" integer NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "created_by_user_id" integer NOT NULL, CONSTRAINT "UQ_fb73d2ec2c65bb88066e43a7d03" UNIQUE ("product_id", "discount_id"), CONSTRAINT "PK_fb73d2ec2c65bb88066e43a7d03" PRIMARY KEY ("product_id", "discount_id"))`,
     );
     await queryRunner.query(
       `CREATE TABLE "discounts" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP, "is_deleted" boolean NOT NULL DEFAULT false, "code" character varying(255) NOT NULL, "description" text NOT NULL, "type" character varying(50) NOT NULL, "value" numeric(10,2) NOT NULL, "start_date" TIMESTAMP NOT NULL, "end_date" TIMESTAMP, "minimum_order_amount" numeric(10,2) NOT NULL DEFAULT '0', "usage_limit" integer, "usage_limit_per_user" integer, "active" boolean NOT NULL DEFAULT false, "created_by_user_id" integer, "updated_by_user_id" integer, "deleted_by_user_id" integer, CONSTRAINT "PK_66c522004212dc814d6e2f14ecc" PRIMARY KEY ("id"))`,
@@ -24,31 +23,34 @@ export class Migrations1759880643535 implements MigrationInterface {
       `CREATE TYPE "public"."shipments_status_enum" AS ENUM('Label Created', 'In Transit', 'Out for Delivery', 'Delivered', 'Attempted Delivery', 'Held at Facility', 'Lost', 'Returned to Sender')`,
     );
     await queryRunner.query(
-      `CREATE TABLE "shipments" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP, "is_deleted" boolean NOT NULL DEFAULT false, "tracking_number" character varying(100) NOT NULL, "shipment_date" TIMESTAMP, "estimated_delivery_date" TIMESTAMP, "status" "public"."shipments_status_enum" NOT NULL DEFAULT 'Label Created', "sale_id" integer, "shipping_company_id" integer, "created_by_user_id" integer, "updated_by_user_id" integer, "deleted_by_user_id" integer, CONSTRAINT "UQ_832ea4b3ec94a18cd3f0e21b9c3" UNIQUE ("sale_id", "shipping_company_id"), CONSTRAINT "PK_6deda4532ac542a93eab214b564" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "shipments" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP, "is_deleted" boolean NOT NULL DEFAULT false, "tracking_number" character varying(100) NOT NULL, "shipment_date" TIMESTAMP, "estimated_delivery_date" TIMESTAMP, "status" "public"."shipments_status_enum" NOT NULL DEFAULT 'Label Created', "sale_id" integer, "shipping_company_id" integer, "created_by_user_id" integer, "updated_by_user_id" integer, "deleted_by_user_id" integer, CONSTRAINT "UQ_376e793e69f13a28648e1741b70" UNIQUE ("tracking_number", "shipping_company_id"), CONSTRAINT "PK_6deda4532ac542a93eab214b564" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
       `CREATE TABLE "sale_detail" ("id" SERIAL NOT NULL, "quantity" integer NOT NULL DEFAULT '1', "unit_price" numeric(10,2) NOT NULL, "subtotal" numeric(10,2) NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "sale_id" integer NOT NULL, "product_id" integer NOT NULL, CONSTRAINT "UQ_5c834a675e4e5161cd1d221459a" UNIQUE ("sale_id", "product_id"), CONSTRAINT "PK_4a2e151a26169857b1f3d47c198" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
-      `CREATE TABLE "sales" ("id" SERIAL NOT NULL, "sale_date" TIMESTAMP NOT NULL DEFAULT now(), "total_amount" numeric(10,2) NOT NULL DEFAULT '0', "shipping_address" character varying(255) NOT NULL, "billing_status" character varying(100) NOT NULL, "cancelled_at" TIMESTAMP DEFAULT now(), "is_cancelled" boolean NOT NULL DEFAULT false, "customer_id" integer, "cancelled_by_user_id" integer, "payment_method_id" integer, "shipping_company_id" integer, CONSTRAINT "PK_4f0bc990ae81dba46da680895ea" PRIMARY KEY ("id"))`,
+      `CREATE TYPE "public"."sales_shipping_status_enum" AS ENUM('Pending Payment', 'Pending Failed', 'Processing', 'Ready for Shipment', 'Shipped', 'Delivered', 'Completed', 'Cancelled', 'Refunded', 'Failed')`,
+    );
+    await queryRunner.query(
+      `CREATE TABLE "sales" ("id" SERIAL NOT NULL, "sale_date" TIMESTAMP NOT NULL DEFAULT now(), "total_amount" numeric(10,2) NOT NULL DEFAULT '0', "shipping_address" character varying(255) NOT NULL, "shipping_status" "public"."sales_shipping_status_enum" NOT NULL DEFAULT 'Pending Payment', "cancelled_at" TIMESTAMP DEFAULT now(), "is_cancelled" boolean NOT NULL DEFAULT false, "user_id" integer, "cancelled_by_user_id" integer, "payment_method_id" integer, CONSTRAINT "PK_4f0bc990ae81dba46da680895ea" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
       `CREATE TABLE "payment_methods" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP, "is_deleted" boolean NOT NULL DEFAULT false, "name" character varying(255) NOT NULL, "created_by_user_id" integer, "updated_by_user_id" integer, "deleted_by_user_id" integer, CONSTRAINT "UQ_a793d7354d7c3aaf76347ee5a66" UNIQUE ("name"), CONSTRAINT "PK_34f9b8c6dfb4ac3559f7e2820d1" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
-      `CREATE TABLE "product_images" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP, "is_deleted" boolean NOT NULL DEFAULT false, "file_path" character varying(256) NOT NULL, "title" character varying(256) NOT NULL, "is_main" boolean NOT NULL DEFAULT false, "product_id" integer, "uploaded_by_user_id" integer, CONSTRAINT "PK_1974264ea7265989af8392f63a1" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "product_images" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP, "is_deleted" boolean NOT NULL DEFAULT false, "file_path" character varying(256) NOT NULL, "title" character varying(256) NOT NULL, "is_main" boolean NOT NULL DEFAULT false, "is_active" boolean NOT NULL DEFAULT true, "product_id" integer, "uploaded_by" integer, "updated_by" integer, CONSTRAINT "PK_1974264ea7265989af8392f63a1" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
-      `CREATE TABLE "purchase_details" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP, "is_deleted" boolean NOT NULL DEFAULT false, "quantity" integer NOT NULL DEFAULT '1', "unit_price" numeric(10,2) NOT NULL, "subtotal" numeric(10,2) NOT NULL, "purchase_id" integer NOT NULL, "product_id" integer NOT NULL, "created_by_user_id" integer NOT NULL, "updated_by_user_id" integer, "deleted_by_user_id" integer, CONSTRAINT "UQ_de27b4793e5a45ab80f2160ea06" UNIQUE ("purchase_id", "product_id"), CONSTRAINT "PK_d3ebfb1c6f9af260a2a63af7204" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "purchase_details" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP, "is_deleted" boolean NOT NULL DEFAULT false, "quantity" integer NOT NULL DEFAULT '1', "unit_price" numeric(10,2) NOT NULL, "subtotal" numeric(10,2) NOT NULL, "purchase_id" integer NOT NULL, "product_id" integer NOT NULL, CONSTRAINT "UQ_de27b4793e5a45ab80f2160ea06" UNIQUE ("purchase_id", "product_id"), CONSTRAINT "PK_d3ebfb1c6f9af260a2a63af7204" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
-      `CREATE TABLE "purchases" ("id" SERIAL NOT NULL, "purchase_date" TIMESTAMP NOT NULL DEFAULT now(), "total_amount" numeric(10,2) NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP, "is_deleted" boolean NOT NULL DEFAULT false, "created_by_user_id" integer NOT NULL, "updated_by_user_id" integer NOT NULL, "deleted_by_user_id" integer, "supplier_id" integer NOT NULL, CONSTRAINT "PK_1d55032f37a34c6eceacbbca6b8" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "purchases" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP, "is_deleted" boolean NOT NULL DEFAULT false, "purchase_date" TIMESTAMP NOT NULL DEFAULT now(), "total_amount" numeric(10,2) NOT NULL, "created_by_user_id" integer NOT NULL, "updated_by_user_id" integer NOT NULL, "deleted_by_user_id" integer, "supplier_id" integer NOT NULL, CONSTRAINT "PK_1d55032f37a34c6eceacbbca6b8" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
       `CREATE TABLE "suppliers" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP, "is_deleted" boolean NOT NULL DEFAULT false, "name" character varying(255) NOT NULL, "contact_name" character varying(255) NOT NULL, "phone_number" character varying(255) NOT NULL, "email" character varying(255) NOT NULL, "created_by_user_id" integer, "updated_by_user_id" integer, "deleted_by_user_id" integer, CONSTRAINT "UQ_5b5720d9645cee7396595a16c93" UNIQUE ("name"), CONSTRAINT "UQ_973ef1681425ad1146fbbeafe1d" UNIQUE ("contact_name"), CONSTRAINT "UQ_66181e465a65c2ddcfa9c00c9c7" UNIQUE ("email"), CONSTRAINT "PK_b70ac51766a9e3144f778cfe81e" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
-      `CREATE TABLE "product_suppliers" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP, "is_deleted" boolean NOT NULL DEFAULT false, "supplier_product_code" character varying(256) NOT NULL, "cost_price" numeric(10) NOT NULL DEFAULT '0', "is_primary_supplier" boolean NOT NULL DEFAULT false, "product_id" integer, "supplier_id" integer, "created_by_user_id" integer, "updated_by_user_id" integer, "deleted_by_user_id" integer, CONSTRAINT "PK_96f9e4cfe1a097fdd2a9a67257a" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "product_suppliers" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP, "is_deleted" boolean NOT NULL DEFAULT false, "supplier_product_code" character varying(256) NOT NULL, "cost_price" numeric(10,2) NOT NULL DEFAULT '0', "is_primary_supplier" boolean NOT NULL DEFAULT false, "product_id" integer, "supplier_id" integer, "created_by_user_id" integer, "updated_by_user_id" integer, "deleted_by_user_id" integer, CONSTRAINT "PK_96f9e4cfe1a097fdd2a9a67257a" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
       `CREATE TABLE "tags" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP, "is_deleted" boolean NOT NULL DEFAULT false, "name" character varying(255) NOT NULL, "created_by_user_id" integer, "updated_by_user_id" integer, "deleted_by_user_id" integer, CONSTRAINT "UQ_d90243459a697eadb8ad56e9092" UNIQUE ("name"), CONSTRAINT "PK_e7dc17249a1148a1970748eda99" PRIMARY KEY ("id"))`,
@@ -66,7 +68,7 @@ export class Migrations1759880643535 implements MigrationInterface {
       `CREATE TABLE "users" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP, "is_deleted" boolean NOT NULL DEFAULT false, "first_name" character varying(255) NOT NULL, "last_name" character varying(255) NOT NULL, "email" character varying(255) NOT NULL, "password" character varying(255) NOT NULL, "phone_number" character varying(255) NOT NULL, "isActive" boolean NOT NULL DEFAULT true, "role" "public"."users_role_enum" NOT NULL DEFAULT 'customer', "department" character varying(100) NOT NULL, "city" character varying(100) NOT NULL, "address" character varying(255) NOT NULL, "neighborhood" character varying(255) NOT NULL, "created_by_user_id" integer, "updated_by_user_id" integer, "deleted_by_user_id" integer, CONSTRAINT "UQ_97672ac88f789774dd47f7c8be3" UNIQUE ("email"), CONSTRAINT "PK_a3ffb1c0c8416b9fc6f907b7433" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
-      `CREATE TABLE "brands" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP, "is_deleted" boolean NOT NULL DEFAULT false, "name" character varying(255) NOT NULL, "created_by_user_id" integer, "updated_by_user_id" integer, "deleted_by_user_id" integer, CONSTRAINT "UQ_96db6bbbaa6f23cad26871339b6" UNIQUE ("name"), CONSTRAINT "PK_b0c437120b624da1034a81fc561" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "brands" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP, "is_deleted" boolean NOT NULL DEFAULT false, "name" character varying(255) NOT NULL, "slug" character varying(255) NOT NULL, "created_by_user_id" integer, "updated_by_user_id" integer, "deleted_by_user_id" integer, CONSTRAINT "UQ_96db6bbbaa6f23cad26871339b6" UNIQUE ("name"), CONSTRAINT "UQ_b15428f362be2200922952dc268" UNIQUE ("slug"), CONSTRAINT "PK_b0c437120b624da1034a81fc561" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
       `CREATE TABLE "products" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP, "is_deleted" boolean NOT NULL DEFAULT false, "name" character varying(255) NOT NULL, "description" text NOT NULL, "price" numeric(10) NOT NULL DEFAULT '0', "stock" integer NOT NULL DEFAULT '0', "category_id" integer, "subcategory_id" integer, "brand_id" integer, "created_by_user_id" integer, "updated_by_user_id" integer, "deleted_by_user_id" integer, CONSTRAINT "PK_0806c755e0aca124e67c0cf6d7d" PRIMARY KEY ("id"))`,
@@ -144,16 +146,13 @@ export class Migrations1759880643535 implements MigrationInterface {
       `ALTER TABLE "sale_detail" ADD CONSTRAINT "FK_6f193a6e12bed09dc343ad057ab" FOREIGN KEY ("product_id") REFERENCES "products"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
     );
     await queryRunner.query(
-      `ALTER TABLE "sales" ADD CONSTRAINT "FK_c51005b2b06cec7aa17462c54f5" FOREIGN KEY ("customer_id") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
+      `ALTER TABLE "sales" ADD CONSTRAINT "FK_5f282f3656814ec9ca2675aef6f" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
     );
     await queryRunner.query(
       `ALTER TABLE "sales" ADD CONSTRAINT "FK_6cb2ccd2a3b2aa23c6ab9564a22" FOREIGN KEY ("cancelled_by_user_id") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
     );
     await queryRunner.query(
       `ALTER TABLE "sales" ADD CONSTRAINT "FK_b53046ece141355db11e7750c11" FOREIGN KEY ("payment_method_id") REFERENCES "payment_methods"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "sales" ADD CONSTRAINT "FK_c5b6b9a50d9e34202257be33f1c" FOREIGN KEY ("shipping_company_id") REFERENCES "shipping_companies"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
     );
     await queryRunner.query(
       `ALTER TABLE "payment_methods" ADD CONSTRAINT "FK_f6ab518f1ef0ac2ad221399b99b" FOREIGN KEY ("created_by_user_id") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
@@ -168,22 +167,16 @@ export class Migrations1759880643535 implements MigrationInterface {
       `ALTER TABLE "product_images" ADD CONSTRAINT "FK_4f166bb8c2bfcef2498d97b4068" FOREIGN KEY ("product_id") REFERENCES "products"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
     );
     await queryRunner.query(
-      `ALTER TABLE "product_images" ADD CONSTRAINT "FK_433a2be51a1f46991fcf210ba23" FOREIGN KEY ("uploaded_by_user_id") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
+      `ALTER TABLE "product_images" ADD CONSTRAINT "FK_c94df37f1df2bbbbe6212e04d5d" FOREIGN KEY ("uploaded_by") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "product_images" ADD CONSTRAINT "FK_a985ebba9c49418bf96d6ec99a5" FOREIGN KEY ("updated_by") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
     );
     await queryRunner.query(
       `ALTER TABLE "purchase_details" ADD CONSTRAINT "FK_7769941f7424a0030e1f6c7b7d3" FOREIGN KEY ("purchase_id") REFERENCES "purchases"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
     );
     await queryRunner.query(
       `ALTER TABLE "purchase_details" ADD CONSTRAINT "FK_802cd8f2a3c2e09932fc1bfad88" FOREIGN KEY ("product_id") REFERENCES "products"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "purchase_details" ADD CONSTRAINT "FK_12a79156fe302c9bd6e92a5c8b5" FOREIGN KEY ("created_by_user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "purchase_details" ADD CONSTRAINT "FK_6df107b3911f837c3b906c6cf49" FOREIGN KEY ("updated_by_user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE NO ACTION`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "purchase_details" ADD CONSTRAINT "FK_f7a65d6e51dba96a7c457e4d76d" FOREIGN KEY ("deleted_by_user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE NO ACTION`,
     );
     await queryRunner.query(
       `ALTER TABLE "purchases" ADD CONSTRAINT "FK_3d9bbd03998046359d6557f7526" FOREIGN KEY ("created_by_user_id") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
@@ -393,22 +386,16 @@ export class Migrations1759880643535 implements MigrationInterface {
       `ALTER TABLE "purchases" DROP CONSTRAINT "FK_3d9bbd03998046359d6557f7526"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "purchase_details" DROP CONSTRAINT "FK_f7a65d6e51dba96a7c457e4d76d"`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "purchase_details" DROP CONSTRAINT "FK_6df107b3911f837c3b906c6cf49"`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "purchase_details" DROP CONSTRAINT "FK_12a79156fe302c9bd6e92a5c8b5"`,
-    );
-    await queryRunner.query(
       `ALTER TABLE "purchase_details" DROP CONSTRAINT "FK_802cd8f2a3c2e09932fc1bfad88"`,
     );
     await queryRunner.query(
       `ALTER TABLE "purchase_details" DROP CONSTRAINT "FK_7769941f7424a0030e1f6c7b7d3"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "product_images" DROP CONSTRAINT "FK_433a2be51a1f46991fcf210ba23"`,
+      `ALTER TABLE "product_images" DROP CONSTRAINT "FK_a985ebba9c49418bf96d6ec99a5"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "product_images" DROP CONSTRAINT "FK_c94df37f1df2bbbbe6212e04d5d"`,
     );
     await queryRunner.query(
       `ALTER TABLE "product_images" DROP CONSTRAINT "FK_4f166bb8c2bfcef2498d97b4068"`,
@@ -423,16 +410,13 @@ export class Migrations1759880643535 implements MigrationInterface {
       `ALTER TABLE "payment_methods" DROP CONSTRAINT "FK_f6ab518f1ef0ac2ad221399b99b"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "sales" DROP CONSTRAINT "FK_c5b6b9a50d9e34202257be33f1c"`,
-    );
-    await queryRunner.query(
       `ALTER TABLE "sales" DROP CONSTRAINT "FK_b53046ece141355db11e7750c11"`,
     );
     await queryRunner.query(
       `ALTER TABLE "sales" DROP CONSTRAINT "FK_6cb2ccd2a3b2aa23c6ab9564a22"`,
     );
     await queryRunner.query(
-      `ALTER TABLE "sales" DROP CONSTRAINT "FK_c51005b2b06cec7aa17462c54f5"`,
+      `ALTER TABLE "sales" DROP CONSTRAINT "FK_5f282f3656814ec9ca2675aef6f"`,
     );
     await queryRunner.query(
       `ALTER TABLE "sale_detail" DROP CONSTRAINT "FK_6f193a6e12bed09dc343ad057ab"`,
@@ -518,6 +502,7 @@ export class Migrations1759880643535 implements MigrationInterface {
     await queryRunner.query(`DROP TABLE "product_images"`);
     await queryRunner.query(`DROP TABLE "payment_methods"`);
     await queryRunner.query(`DROP TABLE "sales"`);
+    await queryRunner.query(`DROP TYPE "public"."sales_shipping_status_enum"`);
     await queryRunner.query(`DROP TABLE "sale_detail"`);
     await queryRunner.query(`DROP TABLE "shipments"`);
     await queryRunner.query(`DROP TYPE "public"."shipments_status_enum"`);

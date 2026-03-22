@@ -32,6 +32,7 @@ import { ShipmentModule } from './shipment/shipment.module';
 
 /* Guards */
 import { ApiKeyGuard } from '@commons/guards/api-key.guard';
+import { BootstrapModule } from './bootstrap/bootstrap.module';
 
 /* Config */
 import config from './config';
@@ -65,6 +66,7 @@ import config from './config';
     PurchaseModule,
     PurchaseDetailModule,
     ShipmentModule,
+    BootstrapModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ApiKeyGuard }],

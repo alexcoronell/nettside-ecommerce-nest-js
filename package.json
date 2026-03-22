@@ -21,7 +21,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "NODE_ENV=e2e jest --config ./test/jest-e2e.json --verbose --forceExit --runInBand --detectOpenHandles",
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js -d typeorm.config.ts",
-    "migrations:create": "cross-env NODE_ENV=dev npm run typeorm -- migration:create -n",
+    "migration:create": "cross-env NODE_ENV=dev npm run typeorm -- migration:create -n",
     "migration:generate": "cross-env NODE_ENV=dev npm run typeorm migration:generate ./src/database/migrations/$npm_config_name",
     "migration:run-dev": "cross-env NODE_ENV=dev npm run typeorm -- migration:run",
     "migration:revert": "npm run typeorm -- migration:revert",
