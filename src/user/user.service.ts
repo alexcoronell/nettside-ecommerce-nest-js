@@ -93,7 +93,7 @@ export class UserService
   /**
    * Retrieves a list of all active (non-deleted) users, sorted by email.
    *
-   * @returns {Promise<Result<User[]>>} A standardized paginated-like response containing:
+   * @returns {Promise<Result<ResponseUserDto[]>>} A standardized paginated-like response containing:
    * - `statusCode`: 200 OK — indicates successful retrieval.
    * - `data`: an array of user objects (with sensitive fields like `password` omitted).
    * - `total`: the total number of active users in the system (useful for pagination).

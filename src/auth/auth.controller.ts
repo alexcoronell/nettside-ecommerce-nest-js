@@ -38,7 +38,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   @UseGuards(LocalAuthGuard)
-  @Post('user/login')
+  @Post('login')
   login(@Req() req: Request, @Res({ passthrough: true }) response: Response) {
     const { user } = req as any;
     return this.authService.login(user, response);
@@ -47,7 +47,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Clear auth cookies' })
   @ApiResponse({ status: 200, description: 'Logged out successfully' })
-  @Post('user/logout')
+  @Post('logout')
   logout(@Res({ passthrough: true }) response: Response) {
     return this.authService.logout(response);
   }

@@ -171,6 +171,7 @@ export class AuthService {
 
     return {
       statusCode: HttpStatus.OK,
+      data: user,
       message: 'Logged in successfully',
     };
   }
