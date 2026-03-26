@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { UserSeeder } from 'src/database/seeders/user.seeder';
+import { UserSeeder } from '../database/seeders/user.seeder';
 
 @Injectable()
 export class BootstrapService implements OnModuleInit {
