@@ -91,7 +91,7 @@ describe('UserService', () => {
   });
 
   describe('find users services', () => {
-    it('findAll should return all users', async () => {
+    it('findAll should return all users with pagination', async () => {
       const users = generateManyUsers(50);
       const usersPasswordsUndefined = users.map((user) => {
         user.password = undefined;
@@ -99,12 +99,13 @@ describe('UserService', () => {
       });
       jest
         .spyOn(repository, 'findAndCount')
-        .mockResolvedValue([users, users.length]);
+        .mockResolvedValue([users.slice(0, 10), users.length]);
 
       const { statusCode, data, meta } = await service.findAll();
       expect(repository.findAndCount).toHaveBeenCalledTimes(1);
       expect(repository.findAndCount).toHaveBeenCalledWith({
         where: { isDeleted: false },
+        relations: ['createdBy', 'updatedBy'],
         order: { createdAt: 'DESC' },
         skip: 0,
         take: 10,

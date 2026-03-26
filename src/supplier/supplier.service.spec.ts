@@ -63,22 +63,25 @@ describe('SupplierService', () => {
   });
 
   describe('find suppliers services', () => {
-    it('findAll should return all suppliers', async () => {
+    it('findAll should return all suppliers with pagination', async () => {
       const suppliers = generateManySuppliers(50);
 
       jest
         .spyOn(repository, 'findAndCount')
-        .mockResolvedValue([suppliers, suppliers.length]);
+        .mockResolvedValue([suppliers.slice(0, 10), suppliers.length]);
 
-      const { statusCode, data, total } = await service.findAll();
+      const { statusCode, data, meta } = await service.findAll();
       expect(repository.findAndCount).toHaveBeenCalledTimes(1);
       expect(repository.findAndCount).toHaveBeenCalledWith({
         where: { isDeleted: false },
         order: { name: 'ASC' },
+        relations: ['createdBy', 'updatedBy'],
+        skip: 0,
+        take: 10,
       });
       expect(statusCode).toBe(200);
-      expect(total).toEqual(suppliers.length);
-      expect(data).toEqual(suppliers);
+      expect(meta.total).toEqual(suppliers.length);
+      expect(data).toEqual(suppliers.slice(0, 10));
     });
 
     it('findOne should return a supplier', async () => {

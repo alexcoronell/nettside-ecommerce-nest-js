@@ -69,21 +69,24 @@ describe('SubcategoryService', () => {
   });
 
   describe('find subcategories services', () => {
-    it('findAll should return all subcategories', async () => {
+    it('findAll should return all subcategories with pagination', async () => {
       const mock = generateManySubcategories(50);
       jest
         .spyOn(repository, 'findAndCount')
-        .mockResolvedValue([mock, mock.length]);
+        .mockResolvedValue([mock.slice(0, 10), mock.length]);
 
-      const { statusCode, data, total } = await service.findAll();
+      const { statusCode, data, meta } = await service.findAll();
       expect(repository.findAndCount).toHaveBeenCalledTimes(1);
       expect(repository.findAndCount).toHaveBeenCalledWith({
         where: { isDeleted: false },
         order: { name: 'ASC' },
+        relations: ['category', 'createdBy', 'updatedBy'],
+        skip: 0,
+        take: 10,
       });
       expect(statusCode).toBe(200);
-      expect(total).toEqual(mock.length);
-      expect(data).toEqual(mock);
+      expect(meta.total).toEqual(mock.length);
+      expect(data).toEqual(mock.slice(0, 10));
     });
 
     it('findAll by category should returns all subcategories by category', async () => {

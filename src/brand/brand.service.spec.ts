@@ -64,22 +64,25 @@ describe('BrandService', () => {
   });
 
   describe('find brands services', () => {
-    it('findAll should return all brands', async () => {
+    it('findAll should return all brands with pagination', async () => {
       const brands = generateManyBrands(50);
 
       jest
         .spyOn(repository, 'findAndCount')
-        .mockResolvedValue([brands, brands.length]);
+        .mockResolvedValue([brands.slice(0, 10), brands.length]);
 
-      const { statusCode, data, total } = await service.findAll();
+      const { statusCode, data, meta } = await service.findAll();
       expect(repository.findAndCount).toHaveBeenCalledTimes(1);
       expect(repository.findAndCount).toHaveBeenCalledWith({
         where: { isDeleted: false },
+        relations: ['createdBy', 'updatedBy'],
         order: { name: 'ASC' },
+        skip: 0,
+        take: 10,
       });
       expect(statusCode).toBe(200);
-      expect(total).toEqual(brands.length);
-      expect(data).toEqual(brands);
+      expect(meta.total).toEqual(brands.length);
+      expect(data).toEqual(brands.slice(0, 10));
     });
 
     it('findAllWithRelations should return all brands', async () => {

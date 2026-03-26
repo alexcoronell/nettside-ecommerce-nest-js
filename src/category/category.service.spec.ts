@@ -66,22 +66,25 @@ describe('CategoryService', () => {
   });
 
   describe('find categories services', () => {
-    it('findAll should return all categories', async () => {
+    it('findAll should return all categories with pagination', async () => {
       const categories = generateManyCategories(50);
 
       jest
         .spyOn(repository, 'findAndCount')
-        .mockResolvedValue([categories, categories.length]);
+        .mockResolvedValue([categories.slice(0, 10), categories.length]);
 
-      const { statusCode, data, total } = await service.findAll();
+      const { statusCode, data, meta } = await service.findAll();
       expect(repository.findAndCount).toHaveBeenCalledTimes(1);
       expect(repository.findAndCount).toHaveBeenCalledWith({
         where: { isDeleted: false },
+        relations: ['createdBy', 'updatedBy'],
         order: { name: 'ASC' },
+        skip: 0,
+        take: 10,
       });
       expect(statusCode).toBe(200);
-      expect(total).toEqual(categories.length);
-      expect(data).toEqual(categories);
+      expect(meta.total).toEqual(categories.length);
+      expect(data).toEqual(categories.slice(0, 10));
     });
 
     it('findAllWithRelations should return all categories', async () => {

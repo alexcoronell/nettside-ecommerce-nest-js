@@ -253,6 +253,7 @@ describe('AuthService', () => {
         const result = await service.login(user, mockResponse);
         expect(result).toEqual({
           statusCode: 200,
+          data: user,
           message: 'Logged in successfully',
         });
         expect(mockResponse.cookie).toHaveBeenCalledTimes(2);

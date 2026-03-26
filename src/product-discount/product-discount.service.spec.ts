@@ -56,19 +56,24 @@ describe('ProductDiscountService', () => {
   });
 
   describe('find product discounts services', () => {
-    it('findAll should return all product discoutns', async () => {
+    it('findAll should return all product discoutns with pagination', async () => {
       const mocks = generateManyProductDiscounts(50);
 
       jest
         .spyOn(repository, 'findAndCount')
-        .mockResolvedValue([mocks, mocks.length]);
+        .mockResolvedValue([mocks.slice(0, 10), mocks.length]);
 
-      const { statusCode, data, total } = await service.findAll();
+      const { statusCode, data, meta } = await service.findAll();
       expect(repository.findAndCount).toHaveBeenCalledTimes(1);
-      expect(repository.findAndCount).toHaveBeenCalledWith();
+      expect(repository.findAndCount).toHaveBeenCalledWith({
+        relations: ['product', 'discount', 'createdBy'],
+        order: { createdAt: 'DESC' },
+        skip: 0,
+        take: 10,
+      });
       expect(statusCode).toBe(200);
-      expect(total).toEqual(mocks.length);
-      expect(data).toEqual(mocks);
+      expect(meta.total).toEqual(mocks.length);
+      expect(data).toEqual(mocks.slice(0, 10));
     });
 
     it('findOne should return a product discount by criteria', async () => {
