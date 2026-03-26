@@ -8,7 +8,9 @@ import {
   Delete,
   ParseIntPipe,
   UseGuards,
+  Query,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 import { IBaseController } from '@commons/interfaces/i-base-controller';
 
@@ -24,6 +26,7 @@ import { Brand } from './entities/brand.entity';
 /* DTO's */
 import { CreateBrandDto } from '@brand/dto/create-brand.dto';
 import { UpdateBrandDto } from '@brand/dto/update-brand.dto';
+import { PaginationDto } from '@commons/dtos/Pagination.dto';
 
 /* Guards */
 import { AdminGuard } from '@auth/guards/admin-auth/admin-auth.guard';
@@ -69,12 +72,20 @@ export class BrandController
   }
 
   /**
-   * Retrieves the list of all brands.
-   * @returns Array of Brand objects.
+   * Retrieves the list of all brands with optional pagination and search.
+   *
+   * @param paginationDto - Optional pagination and search parameters.
+   * @returns Array of Brand objects or paginated result.
    */
+  @ApiTags('Brands')
+  @ApiOperation({ summary: 'Get all brands with pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns paginated list of brands',
+  })
   @Get()
-  findAll() {
-    return this.brandService.findAll();
+  findAll(@Query() paginationDto?: PaginationDto) {
+    return this.brandService.findAll(paginationDto);
   }
 
   /**

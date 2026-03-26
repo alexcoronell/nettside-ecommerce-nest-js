@@ -12,6 +12,11 @@ import { Supplier } from '@supplier/entities/supplier.entity';
 /* DTO's */
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
 import { UpdatePurchaseDto } from './dto/update-purchase.dto';
+import {
+  PaginationDto,
+  PaginatedResult,
+  PaginationHelper,
+} from '@commons/dtos/Pagination.dto';
 
 /* Types */
 import { Result } from '@commons/types/result.type';
@@ -39,20 +44,42 @@ export class PurchaseService
     return { statusCode: HttpStatus.OK, total };
   }
 
-  async findAll() {
-    const [purchases, total] = await this.repo.findAndCount({
+  /**
+   * Retrieves a list of all active (non-deleted) purchases, sorted by purchaseDate.
+   *
+   * Supports optional pagination via PaginationDto.
+   * When no pagination options are provided, all purchases are returned.
+   *
+   * @param paginationDto - Optional pagination parameters.
+   * @returns {Promise<PaginatedResult<Purchase>>} A standardized paginated response.
+   */
+  async findAll(
+    paginationDto?: PaginationDto,
+  ): Promise<PaginatedResult<Purchase>> {
+    const { page, limit, skip } = PaginationHelper.normalizePagination(
+      paginationDto?.page,
+      paginationDto?.limit,
+    );
+
+    // Determine sort field and order
+    const sortBy = paginationDto?.sortBy || 'purchaseDate';
+    const sortOrder = paginationDto?.sortOrder || 'DESC';
+
+    // Execute query
+    const [data, total] = await this.repo.findAndCount({
       where: {
         isDeleted: false,
       },
+      relations: ['supplier', 'createdBy', 'updatedBy'],
       order: {
-        purchaseDate: 'DESC',
+        [sortBy]: sortOrder,
       },
+      skip,
+      take: limit,
     });
-    return {
-      statusCode: HttpStatus.OK,
-      data: purchases,
-      total,
-    };
+
+    // Return paginated result
+    return PaginationHelper.createPaginatedResult(data, total, page, limit);
   }
 
   async findOne(id: number) {

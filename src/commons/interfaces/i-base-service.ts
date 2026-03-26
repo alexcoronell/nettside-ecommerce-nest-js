@@ -1,12 +1,12 @@
 /* Types */
 import { Result } from '@commons/types/result.type';
-import { PaginationOptions } from '@commons/types/pagination-options.type';
+import { PaginatedResult, PaginationDto } from '@commons/dtos/Pagination.dto';
 import { User } from '@user/entities/user.entity';
 
 export interface IBaseService<ResponseDto, CreateDto, UpdateDto> {
   countAll(): Promise<Result<number>>;
   count(): Promise<Result<number>>;
-  findAll(options?: PaginationOptions): Promise<Result<ResponseDto[]>>;
+  findAll(options?: PaginationDto): Promise<PaginatedResult<ResponseDto>>;
   findOne(id: number): Promise<Result<ResponseDto>>;
   create(
     data: CreateDto | CreateDto[],

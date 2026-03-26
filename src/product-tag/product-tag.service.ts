@@ -15,6 +15,11 @@ import { Tag } from '@tag/entities/tag.entity';
 
 /* DTO's */
 import { CreateProductTagDto } from '@product_tag/dto/create-product-tag.dto';
+import {
+  PaginationDto,
+  PaginatedResult,
+  PaginationHelper,
+} from '@commons/dtos/Pagination.dto';
 
 /* Types */
 import { Result } from '@commons/types/result.type';
@@ -36,13 +41,39 @@ export class ProductTagService {
     return { statusCode: HttpStatus.OK, total };
   }
 
-  async findAll(): Promise<Result<ProductTag[]>> {
-    const [productTags, total] = await this.repo.findAndCount();
-    return {
-      statusCode: HttpStatus.OK,
-      data: productTags,
-      total,
-    };
+  /**
+   * Retrieves a list of all product tags with optional pagination.
+   *
+   * Supports optional pagination via PaginationDto.
+   * When no pagination options are provided, all product tags are returned.
+   *
+   * @param paginationDto - Optional pagination parameters.
+   * @returns {Promise<PaginatedResult<ProductTag>>} A standardized paginated response.
+   */
+  async findAll(
+    paginationDto?: PaginationDto,
+  ): Promise<PaginatedResult<ProductTag>> {
+    const { page, limit, skip } = PaginationHelper.normalizePagination(
+      paginationDto?.page,
+      paginationDto?.limit,
+    );
+
+    // Determine sort field and order
+    const sortBy = paginationDto?.sortBy || 'createdAt';
+    const sortOrder = paginationDto?.sortOrder || 'DESC';
+
+    // Execute query
+    const [data, total] = await this.repo.findAndCount({
+      relations: ['product', 'tag', 'createdBy'],
+      order: {
+        [sortBy]: sortOrder,
+      },
+      skip,
+      take: limit,
+    });
+
+    // Return paginated result
+    return PaginationHelper.createPaginatedResult(data, total, page, limit);
   }
 
   async findOne(

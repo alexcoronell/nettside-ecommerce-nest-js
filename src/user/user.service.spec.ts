@@ -18,7 +18,6 @@ import { UserService } from './user.service';
 import { User } from '@user/entities/user.entity';
 
 /* DTO's */
-import { ResponseUserDto } from './dto/response-user.dto';
 import { CreateUserDto } from '@user/dto/create-user.dto';
 import { UpdateUserDto } from '@user/dto/update-user.dto';
 import { UpdatePasswordDto } from '@user/dto/update-password-user';
@@ -102,17 +101,19 @@ describe('UserService', () => {
         .spyOn(repository, 'findAndCount')
         .mockResolvedValue([users, users.length]);
 
-      const { statusCode, data, total } = await service.findAll();
+      const { statusCode, data, meta } = await service.findAll();
       expect(repository.findAndCount).toHaveBeenCalledTimes(1);
       expect(repository.findAndCount).toHaveBeenCalledWith({
         where: { isDeleted: false },
-        order: { email: 'ASC' },
+        order: { createdAt: 'DESC' },
+        skip: 0,
+        take: 10,
       });
-      const usersData = data as ResponseUserDto[];
+      const usersData = data;
 
       expect(statusCode).toBe(200);
-      expect(usersData).toEqual(usersPasswordsUndefined);
-      expect(total).toEqual(users.length);
+      expect(usersData).toEqual(usersPasswordsUndefined.slice(0, 10));
+      expect(meta.total).toEqual(users.length);
     });
 
     it('findAllSellers should return all seller users', async () => {

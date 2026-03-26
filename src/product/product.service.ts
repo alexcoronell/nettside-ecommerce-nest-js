@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 
 /* Interfaces */
 import { IBaseService } from '@commons/interfaces/i-base-service';
@@ -14,6 +14,11 @@ import { Subcategory } from '@subcategory/entities/subcategory.entity';
 /* DTO's */
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import {
+  PaginationDto,
+  PaginatedResult,
+  PaginationHelper,
+} from '@commons/dtos/Pagination.dto';
 
 /* Types */
 import { Result } from '@commons/types/result.type';
@@ -41,21 +46,55 @@ export class ProductService
     return { statusCode: HttpStatus.OK, total };
   }
 
-  async findAll() {
-    const [products, total] = await this.repo.findAndCount({
-      where: {
-        isDeleted: false,
-      },
+  /**
+   * Retrieves a list of all active (non-deleted) products, sorted by name.
+   *
+   * Supports optional pagination and search via PaginationDto.
+   * When no pagination options are provided, all products are returned.
+   *
+   * @param paginationDto - Optional pagination and search parameters.
+   * @returns {Promise<PaginatedResult<Product>>} A standardized paginated response.
+   */
+  async findAll(
+    paginationDto?: PaginationDto,
+  ): Promise<PaginatedResult<Product>> {
+    const { page, limit, skip } = PaginationHelper.normalizePagination(
+      paginationDto?.page,
+      paginationDto?.limit,
+    );
+
+    // Build where clause with filters
+    const where: FindOptionsWhere<Product> = {
+      isDeleted: false,
+    };
+
+    // Build search conditions
+    const searchConditions: FindOptionsWhere<Product>[] = [];
+    if (paginationDto?.search) {
+      const searchTerm = `%${paginationDto.search}%`;
+      searchConditions.push(
+        { ...where, name: ILike(searchTerm) },
+        { ...where, description: ILike(searchTerm) },
+      );
+    }
+
+    // Determine sort field and order
+    const sortBy = paginationDto?.sortBy || 'name';
+    const sortOrder = paginationDto?.sortOrder || 'ASC';
+
+    // Execute query
+    const [data, total] = await this.repo.findAndCount({
+      where: searchConditions.length > 0 ? searchConditions : where,
+      relations: ['createdBy', 'updatedBy', 'brand', 'category', 'subcategory'],
       order: {
-        name: 'ASC',
+        [sortBy]: sortOrder,
       },
+      skip,
+      take: limit,
     });
 
-    return {
-      statusCode: HttpStatus.OK,
-      data: products,
-      total,
-    };
+    // Return paginated result
+    return PaginationHelper.createPaginatedResult(data, total, page, limit);
   }
 
   async findOne(id: Product['id']): Promise<Result<Product>> {

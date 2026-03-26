@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -9,16 +10,23 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 
 /* Interfaces */
 import { IBaseService } from '@commons/interfaces/i-base-service';
 
+/* Types */
+
 /* Entities */
 import { User } from '@user/entities/user.entity';
 
 /* DTO's */
+import {
+  PaginationDto,
+  PaginatedResult,
+  PaginationHelper,
+} from '@commons/dtos/Pagination.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
 import { CreateUserDto } from '@user/dto/create-user.dto';
 import { UpdateUserDto } from '@user/dto/update-user.dto';
@@ -93,29 +101,70 @@ export class UserService
   /**
    * Retrieves a list of all active (non-deleted) users, sorted by email.
    *
-   * @returns {Promise<Result<ResponseUserDto[]>>} A standardized paginated-like response containing:
+   * Supports optional pagination via `page` and `limit` parameters.
+   * When no pagination options are provided, all users are returned.
+   *
+   * @param options - Optional pagination parameters (`page`, `limit`).
+   * @returns {Promise<Result<ResponseUserDto[]>>} A standardized paginated response containing:
    * - `statusCode`: 200 OK — indicates successful retrieval.
    * - `data`: an array of user objects (with sensitive fields like `password` omitted).
-   * - `total`: the total number of active users in the system (useful for pagination).
-   *
-   * Note: Although this endpoint returns all users at once (no pagination),
-   * the response includes `total` to maintain consistency with paginated endpoints.
+   * - `total`: the total number of active users in the system.
+   * - `page`: current page number (only when paginated).
+   * - `lastPage`: total number of pages (only when paginated).
    */
-  async findAll(): Promise<Result<ResponseUserDto[]>> {
-    const [users, total] = await this.userRepo.findAndCount({
-      where: {
-        isDeleted: false,
-      },
+  async findAll(
+    paginationDto?: PaginationDto,
+  ): Promise<PaginatedResult<ResponseUserDto>> {
+    const { page, limit, skip } = PaginationHelper.normalizePagination(
+      paginationDto?.page,
+      paginationDto?.limit,
+    );
+
+    // Build where clause with filters
+    const where: FindOptionsWhere<User> = {
+      isDeleted: false,
+    };
+
+    // Build search conditions
+    const searchConditions: FindOptionsWhere<User>[] = [];
+    if (paginationDto?.search) {
+      const searchTerm = `%${paginationDto.search}%`;
+      searchConditions.push(
+        { ...where, firstname: ILike(searchTerm) },
+        { ...where, lastname: ILike(searchTerm) },
+        { ...where, email: ILike(searchTerm) },
+        { ...where, phoneNumber: ILike(searchTerm) },
+      );
+    }
+
+    // Determine sort field and order
+    const sortBy = paginationDto?.sortBy || 'createdAt';
+    const sortOrder = paginationDto?.sortOrder || 'DESC';
+
+    // Execute query
+    const [data, total] = await this.userRepo.findAndCount({
+      where: searchConditions.length > 0 ? searchConditions : where,
+      relations: ['createdBy', 'updatedBy'],
       order: {
-        email: 'ASC',
+        [sortBy]: sortOrder,
       },
+      skip,
+      take: limit,
     });
 
-    return {
-      statusCode: HttpStatus.OK,
-      data: users as ResponseUserDto[],
+    // Remove password from results
+    const sanitizedData = data.map((user) => {
+      const { password, ...userWithoutPassword } = user;
+      return userWithoutPassword as ResponseUserDto;
+    });
+
+    // Return paginated result
+    return PaginationHelper.createPaginatedResult(
+      sanitizedData,
       total,
-    };
+      page,
+      limit,
+    );
   }
 
   /**

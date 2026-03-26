@@ -6,7 +6,9 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 /* Services */
 import { ProductTagService } from './product-tag.service';
@@ -16,6 +18,7 @@ import { UserId } from '@auth/decorators/user-id.decorator';
 
 /* DTO's */
 import { CreateProductTagDto } from './dto/create-product-tag.dto';
+import { PaginationDto } from '@commons/dtos/Pagination.dto';
 
 /* Guards */
 import { JwtAuthGuard } from '@auth/guards/jwt-auth/jwt-auth.guard';
@@ -32,10 +35,22 @@ export class ProductTagController {
     return this.productTagService.countAll();
   }
 
+  /**
+   * Retrieves a list of all product tags with optional pagination.
+   *
+   * @param paginationDto - Optional pagination parameters.
+   * @returns Array of ProductTag objects or paginated result.
+   */
   @UseGuards(JwtAuthGuard, IsNotCustomerGuard)
+  @ApiTags('Product Tags')
+  @ApiOperation({ summary: 'Get all product tags with pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns paginated list of product tags',
+  })
   @Get()
-  findAll() {
-    return this.productTagService.findAll();
+  findAll(@Query() paginationDto?: PaginationDto) {
+    return this.productTagService.findAll(paginationDto);
   }
 
   @Get('product/:id')

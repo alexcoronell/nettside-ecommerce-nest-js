@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 
 /* Interfaces */
 import { IBaseService } from '@commons/interfaces/i-base-service';
@@ -11,6 +11,11 @@ import { Tag } from '@tag/entities/tag.entity';
 /* DTO's */
 import { CreateTagDto } from '@tag/dto/create-tag.dto';
 import { UpdateTagDto } from '@tag/dto/update-tag.dto';
+import {
+  PaginationDto,
+  PaginatedResult,
+  PaginationHelper,
+} from '@commons/dtos/Pagination.dto';
 
 /* Types */
 import { Result } from '@commons/types/result.type';
@@ -38,21 +43,50 @@ export class TagService
     return { statusCode: HttpStatus.OK, total };
   }
 
-  async findAll() {
+  /**
+   * Retrieves a list of all active (non-deleted) tags, sorted by name.
+   *
+   * Supports optional pagination and search via PaginationDto.
+   * When no pagination options are provided, all tags are returned.
+   *
+   * @param paginationDto - Optional pagination and search parameters.
+   * @returns {Promise<PaginatedResult<Tag>>} A standardized paginated response.
+   */
+  async findAll(paginationDto?: PaginationDto): Promise<PaginatedResult<Tag>> {
+    const { page, limit, skip } = PaginationHelper.normalizePagination(
+      paginationDto?.page,
+      paginationDto?.limit,
+    );
+
+    // Build where clause with filters
+    const where: FindOptionsWhere<Tag> = {
+      isDeleted: false,
+    };
+
+    // Build search conditions
+    const searchConditions: FindOptionsWhere<Tag>[] = [];
+    if (paginationDto?.search) {
+      const searchTerm = `%${paginationDto.search}%`;
+      searchConditions.push({ ...where, name: ILike(searchTerm) });
+    }
+
+    // Determine sort field and order
+    const sortBy = paginationDto?.sortBy || 'name';
+    const sortOrder = paginationDto?.sortOrder || 'ASC';
+
+    // Execute query
     const [data, total] = await this.repo.findAndCount({
-      where: {
-        isDeleted: false,
-      },
+      where: searchConditions.length > 0 ? searchConditions : where,
+      relations: ['createdBy', 'updatedBy'],
       order: {
-        name: 'ASC',
+        [sortBy]: sortOrder,
       },
+      skip,
+      take: limit,
     });
 
-    return {
-      statusCode: HttpStatus.OK,
-      data,
-      total,
-    };
+    // Return paginated result
+    return PaginationHelper.createPaginatedResult(data, total, page, limit);
   }
 
   async findOne(id: Tag['id']): Promise<Result<Tag>> {

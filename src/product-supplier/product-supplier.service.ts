@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 
 /* Interfaces */
 import { IBaseService } from '@commons/interfaces/i-base-service';
@@ -13,6 +13,11 @@ import { Supplier } from '@supplier/entities/supplier.entity';
 /* DTO's */
 import { CreateProductSupplierDto } from './dto/create-product-supplier.dto';
 import { UpdateProductSupplierDto } from './dto/update-product-supplier.dto';
+import {
+  PaginationDto,
+  PaginatedResult,
+  PaginationHelper,
+} from '@commons/dtos/Pagination.dto';
 
 /* Types */
 import { Result } from '@commons/types/result.type';
@@ -45,21 +50,55 @@ export class ProductSupplierService
     return { statusCode: HttpStatus.OK, total };
   }
 
-  async findAll() {
-    const [productSuppliers, total] = await this.repo.findAndCount({
-      where: {
-        isDeleted: false,
-      },
+  /**
+   * Retrieves a list of all active (non-deleted) product suppliers, sorted by id.
+   *
+   * Supports optional pagination and search via PaginationDto.
+   * When no pagination options are provided, all product suppliers are returned.
+   *
+   * @param paginationDto - Optional pagination and search parameters.
+   * @returns {Promise<PaginatedResult<ProductSupplier>>} A standardized paginated response.
+   */
+  async findAll(
+    paginationDto?: PaginationDto,
+  ): Promise<PaginatedResult<ProductSupplier>> {
+    const { page, limit, skip } = PaginationHelper.normalizePagination(
+      paginationDto?.page,
+      paginationDto?.limit,
+    );
+
+    // Build where clause with filters
+    const where: FindOptionsWhere<ProductSupplier> = {
+      isDeleted: false,
+    };
+
+    // Build search conditions
+    const searchConditions: FindOptionsWhere<ProductSupplier>[] = [];
+    if (paginationDto?.search) {
+      const searchTerm = `%${paginationDto.search}%`;
+      searchConditions.push({
+        ...where,
+        supplierProductCode: ILike(searchTerm),
+      });
+    }
+
+    // Determine sort field and order
+    const sortBy = paginationDto?.sortBy || 'id';
+    const sortOrder = paginationDto?.sortOrder || 'DESC';
+
+    // Execute query
+    const [data, total] = await this.repo.findAndCount({
+      where: searchConditions.length > 0 ? searchConditions : where,
+      relations: ['product', 'supplier', 'createdBy', 'updatedBy'],
       order: {
-        id: 'DESC',
+        [sortBy]: sortOrder,
       },
+      skip,
+      take: limit,
     });
 
-    return {
-      statusCode: HttpStatus.OK,
-      data: productSuppliers,
-      total,
-    };
+    // Return paginated result
+    return PaginationHelper.createPaginatedResult(data, total, page, limit);
   }
 
   async findOne(id: ProductSupplier['id']): Promise<Result<ProductSupplier>> {

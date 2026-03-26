@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 
 /* Interfaces */
 import { IBaseService } from '@commons/interfaces/i-base-service';
@@ -11,6 +11,11 @@ import { PaymentMethod } from '@payment_method/entities/payment-method.entity';
 /* DTO's */
 import { CreatePaymentMethodDto } from '@payment_method/dto/create-payment-method.dto';
 import { UpdatePaymentMethodDto } from '@payment_method/dto/update-payment-method.dto';
+import {
+  PaginationDto,
+  PaginatedResult,
+  PaginationHelper,
+} from '@commons/dtos/Pagination.dto';
 
 /* Types */
 import { Result } from '@commons/types/result.type';
@@ -63,26 +68,51 @@ export class PaymentMethodService
   }
 
   /**
-   * Retrieves all PaymentMethod records that are not marked as deleted,
-   * ordered by name in ascending order.
+   * Retrieves a list of all active (non-deleted) payment methods, sorted by name.
    *
-   * @returns An object containing the list of payment methods, total count, and HTTP status code.
+   * Supports optional pagination and search via PaginationDto.
+   * When no pagination options are provided, all payment methods are returned.
+   *
+   * @param paginationDto - Optional pagination and search parameters.
+   * @returns {Promise<PaginatedResult<PaymentMethod>>} A standardized paginated response.
    */
-  async findAll() {
-    const [paymentMethod, total] = await this.repo.findAndCount({
-      where: {
-        isDeleted: false,
-      },
+  async findAll(
+    paginationDto?: PaginationDto,
+  ): Promise<PaginatedResult<PaymentMethod>> {
+    const { page, limit, skip } = PaginationHelper.normalizePagination(
+      paginationDto?.page,
+      paginationDto?.limit,
+    );
+
+    // Build where clause with filters
+    const where: FindOptionsWhere<PaymentMethod> = {
+      isDeleted: false,
+    };
+
+    // Build search conditions
+    const searchConditions: FindOptionsWhere<PaymentMethod>[] = [];
+    if (paginationDto?.search) {
+      const searchTerm = `%${paginationDto.search}%`;
+      searchConditions.push({ ...where, name: ILike(searchTerm) });
+    }
+
+    // Determine sort field and order
+    const sortBy = paginationDto?.sortBy || 'name';
+    const sortOrder = paginationDto?.sortOrder || 'ASC';
+
+    // Execute query
+    const [data, total] = await this.repo.findAndCount({
+      where: searchConditions.length > 0 ? searchConditions : where,
+      relations: ['createdBy', 'updatedBy'],
       order: {
-        name: 'ASC',
+        [sortBy]: sortOrder,
       },
+      skip,
+      take: limit,
     });
 
-    return {
-      statusCode: HttpStatus.OK,
-      data: paymentMethod,
-      total,
-    };
+    // Return paginated result
+    return PaginationHelper.createPaginatedResult(data, total, page, limit);
   }
 
   /**

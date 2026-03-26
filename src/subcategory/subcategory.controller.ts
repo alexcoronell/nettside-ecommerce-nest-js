@@ -8,7 +8,9 @@ import {
   Delete,
   ParseIntPipe,
   UseGuards,
+  Query,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 /* Interface */
 import { IBaseController } from '@commons/interfaces/i-base-controller';
@@ -25,6 +27,7 @@ import { Subcategory } from './entities/subcategory.entity';
 /* DTO's */
 import { CreateSubcategoryDto } from './dto/create-subcategory.dto';
 import { UpdateSubcategoryDto } from './dto/update-subcategory.dto';
+import { PaginationDto } from '@commons/dtos/Pagination.dto';
 
 /* Guards */
 import { JwtAuthGuard } from '@auth/guards/jwt-auth/jwt-auth.guard';
@@ -50,10 +53,22 @@ export class SubcategoryController
     return this.subcategoryService.count();
   }
 
+  /**
+   * Retrieves a list of all subcategories with optional pagination and search.
+   *
+   * @param paginationDto - Optional pagination and search parameters.
+   * @returns Array of Subcategory objects or paginated result.
+   */
   @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiTags('Subcategories')
+  @ApiOperation({ summary: 'Get all subcategories with pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns paginated list of subcategories',
+  })
   @Get()
-  findAll() {
-    return this.subcategoryService.findAll();
+  findAll(@Query() paginationDto?: PaginationDto) {
+    return this.subcategoryService.findAll(paginationDto);
   }
 
   @Get('category/:category')

@@ -8,7 +8,9 @@ import {
   Delete,
   ParseIntPipe,
   UseGuards,
+  Query,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 /* Interface */
 import { IBaseController } from '@commons/interfaces/i-base-controller';
@@ -25,6 +27,7 @@ import { Supplier } from './entities/supplier.entity';
 /* DTO's */
 import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
+import { PaginationDto } from '@commons/dtos/Pagination.dto';
 
 /* Guards */
 import { AdminGuard } from '@auth/guards/admin-auth/admin-auth.guard';
@@ -69,12 +72,20 @@ export class SupplierController
   }
 
   /**
-   * Retrieves a list of all suppliers.
-   * @returns An array of supplier entities.
+   * Retrieves a list of all suppliers with optional pagination and search.
+   *
+   * @param paginationDto - Optional pagination and search parameters.
+   * @returns Array of Supplier objects or paginated result.
    */
+  @ApiTags('Suppliers')
+  @ApiOperation({ summary: 'Get all suppliers with pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns paginated list of suppliers',
+  })
   @Get()
-  findAll() {
-    return this.supplierService.findAll();
+  findAll(@Query() paginationDto?: PaginationDto) {
+    return this.supplierService.findAll(paginationDto);
   }
 
   /**

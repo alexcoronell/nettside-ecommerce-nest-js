@@ -8,7 +8,9 @@ import {
   Delete,
   ParseIntPipe,
   UseGuards,
+  Query,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 /* Interface */
 import { IBaseController } from '@commons/interfaces/i-base-controller';
@@ -22,6 +24,7 @@ import { CategoryService } from './category.service';
 /* DTO's */
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { PaginationDto } from '@commons/dtos/Pagination.dto';
 import { Category } from './entities/category.entity';
 
 /* Guards */
@@ -68,13 +71,20 @@ export class CategoryController
   }
 
   /**
-   * Retrieves a list of all categories.
+   * Retrieves a list of all categories with optional pagination and search.
    *
-   * @returns An array of all categories.
+   * @param paginationDto - Optional pagination and search parameters.
+   * @returns An array of all categories or paginated result.
    */
+  @ApiTags('Categories')
+  @ApiOperation({ summary: 'Get all categories with pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns paginated list of categories',
+  })
   @Get()
-  findAll() {
-    return this.categoryService.findAll();
+  findAll(@Query() paginationDto?: PaginationDto) {
+    return this.categoryService.findAll(paginationDto);
   }
   /**
    * Retrieves a list of all categories.
