@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { JwtRefreshTokenStrategy } from './jwt-refresh-token.strategy';
+import { Request } from 'express';
+import {
+  JwtRefreshTokenStrategy,
+  refreshTokenCookieExtractor,
+} from './jwt-refresh-token.strategy';
 
 import { PayloadToken } from '@auth/interfaces/token.interface';
 import { UserRoleEnum } from '@commons/enums/user-role.enum';
@@ -34,5 +38,29 @@ describe('JwtRefreshTokenStrategy', () => {
   it('should return payload on validate', () => {
     const payload: PayloadToken = { user: 1, role: UserRoleEnum.ADMIN };
     expect(strategy.validate(payload)).toEqual(payload);
+  });
+
+  describe('refreshTokenCookieExtractor', () => {
+    it('should extract refresh_token from cookies', () => {
+      const req = {
+        cookies: { refresh_token: 'test-refresh-token' },
+      } as Request;
+      expect(refreshTokenCookieExtractor(req)).toBe('test-refresh-token');
+    });
+
+    it('should return null if no cookies', () => {
+      const req = {} as Request;
+      expect(refreshTokenCookieExtractor(req)).toBeNull();
+    });
+
+    it('should return null if cookies exist but no refresh_token', () => {
+      const req = { cookies: { other: 'value' } } as Request;
+      expect(refreshTokenCookieExtractor(req)).toBeNull();
+    });
+
+    it('should return null if cookies is undefined', () => {
+      const req = { cookies: undefined } as Request;
+      expect(refreshTokenCookieExtractor(req)).toBeNull();
+    });
   });
 });

@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { JwtStrategy } from './jwt.strategy';
+import { Request } from 'express';
+import { JwtStrategy, cookieExtractor } from './jwt.strategy';
 
 import { PayloadToken } from '@auth/interfaces/token.interface';
 import { UserRoleEnum } from '@commons/enums/user-role.enum';
@@ -33,5 +34,27 @@ describe('JwtStrategy', () => {
   it('should return payload on validate', () => {
     const payload: PayloadToken = { user: 1, role: UserRoleEnum.ADMIN };
     expect(strategy.validate(payload)).toEqual(payload);
+  });
+
+  describe('cookieExtractor', () => {
+    it('should extract access_token from cookies', () => {
+      const req = { cookies: { access_token: 'test-token' } } as Request;
+      expect(cookieExtractor(req)).toBe('test-token');
+    });
+
+    it('should return null if no cookies', () => {
+      const req = {} as Request;
+      expect(cookieExtractor(req)).toBeNull();
+    });
+
+    it('should return null if cookies exist but no access_token', () => {
+      const req = { cookies: { other: 'value' } } as Request;
+      expect(cookieExtractor(req)).toBeNull();
+    });
+
+    it('should return null if cookies is undefined', () => {
+      const req = { cookies: undefined } as Request;
+      expect(cookieExtractor(req)).toBeNull();
+    });
   });
 });

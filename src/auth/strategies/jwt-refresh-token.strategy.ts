@@ -13,7 +13,7 @@ import config from '@config/index';
 /**
  * Custom extractor to get refresh token from httpOnly cookie
  */
-const refreshTokenCookieExtractor = (req: Request): string | null => {
+export const refreshTokenCookieExtractor = (req: Request): string | null => {
   if (req && req.cookies) {
     return req.cookies['refresh_token'] || null;
   }

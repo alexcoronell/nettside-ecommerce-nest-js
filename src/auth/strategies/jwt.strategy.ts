@@ -15,7 +15,7 @@ import config from '@config/index';
  * @param req Express Request object
  * @returns JWT token from cookie or null
  */
-const cookieExtractor = (req: Request): string | null => {
+export const cookieExtractor = (req: Request): string | null => {
   if (req && req.cookies) {
     return req.cookies['access_token'] || null;
   }
