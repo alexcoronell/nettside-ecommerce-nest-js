@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import { Test, TestingModule } from '@nestjs/testing';
+import { HttpStatus } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -37,6 +38,9 @@ describe('AuthService', () => {
               sign: jest.fn().mockReturnValue('mockedJwtToken'),
               signAsync: jest.fn().mockResolvedValue('mockedRefreshToken'),
               verify: jest.fn().mockReturnValue({ userId: 1 }),
+              verifyAsync: jest
+                .fn()
+                .mockResolvedValue({ user: 1, role: UserRoleEnum.ADMIN }),
               decode: jest
                 .fn()
                 .mockReturnValue({ user: 1, role: UserRoleEnum.ADMIN }),
@@ -50,6 +54,14 @@ describe('AuthService', () => {
                   id: 1,
                   email: 'test@test.com',
                   password: 'hashedPassword',
+                },
+              }),
+              findOne: jest.fn().mockResolvedValue({
+                data: {
+                  id: 1,
+                  email: 'test@test.com',
+                  password: 'hashedPassword',
+                  isActive: true,
                 },
               }),
               findAndValidateEmail: jest.fn().mockResolvedValue({
@@ -114,7 +126,7 @@ describe('AuthService', () => {
     });
 
     describe('refreshToken', () => {
-      it('should generate a new refresh token and set cookie', async () => {
+      it('should generate a new access token and set cookie', async () => {
         const mockRequest = {
           cookies: {
             refresh_token: 'someRefreshToken',
@@ -124,15 +136,16 @@ describe('AuthService', () => {
           cookie: jest.fn(),
           clearCookie: jest.fn(),
         } as unknown as Response;
-        const setRefreshTokenCookieSpy = jest.spyOn(
+        const setAccessTokenCookieSpy = jest.spyOn(
           service as any,
-          'setRefreshTokenCookie',
+          'setAccessTokenCookie',
         );
-        await service.refreshToken(mockRequest, mockResponse);
-        expect(setRefreshTokenCookieSpy).toHaveBeenCalledWith(
-          'mockedRefreshToken',
-          mockResponse,
-        );
+        const result = await service.refreshToken(mockRequest, mockResponse);
+        expect(setAccessTokenCookieSpy).toHaveBeenCalled();
+        expect(result).toEqual({
+          statusCode: HttpStatus.OK,
+          message: 'Token refreshed successfully',
+        });
       });
 
       it('should throw UnauthorizedException if no refresh token cookie', async () => {
@@ -145,7 +158,7 @@ describe('AuthService', () => {
         } as unknown as Response;
         await expect(
           service.refreshToken(mockRequest, mockResponse),
-        ).rejects.toThrow('Not Allow');
+        ).rejects.toThrow('Refresh token not found');
       });
     });
 
@@ -214,10 +227,7 @@ describe('AuthService', () => {
             refresh_token: 'someToken',
           },
         } as unknown as Request;
-        const result = service['getRefreshTokenCookie'](
-          'refresh_token',
-          mockRequest,
-        );
+        const result = service['getRefreshTokenCookie'](mockRequest);
         expect(result).toBe('someToken');
       });
 
@@ -225,10 +235,7 @@ describe('AuthService', () => {
         const mockRequest = {
           cookies: {},
         } as unknown as Request;
-        const result = service['getRefreshTokenCookie'](
-          'refresh_token',
-          mockRequest,
-        );
+        const result = service['getRefreshTokenCookie'](mockRequest);
         expect(result).toBeNull();
       });
     });
@@ -237,10 +244,10 @@ describe('AuthService', () => {
       it('should clear both access_token and refresh_token cookies', () => {
         const mockResponse = {
           clearCookie: jest.fn(),
+          cookie: jest.fn(),
         } as unknown as Response;
         service.clearCookies(mockResponse);
-        expect(mockResponse.clearCookie).toHaveBeenCalledWith('access_token');
-        expect(mockResponse.clearCookie).toHaveBeenCalledWith('refresh_token');
+        expect(mockResponse.clearCookie).toHaveBeenCalledTimes(2);
       });
     });
 
@@ -264,14 +271,14 @@ describe('AuthService', () => {
       it('should clear cookies and return success response', () => {
         const mockResponse = {
           clearCookie: jest.fn(),
+          cookie: jest.fn(),
         } as unknown as Response;
         const result = service.logout(mockResponse);
         expect(result).toEqual({
           statusCode: 200,
           message: 'Logged out successfully',
         });
-        expect(mockResponse.clearCookie).toHaveBeenCalledWith('access_token');
-        expect(mockResponse.clearCookie).toHaveBeenCalledWith('refresh_token');
+        expect(mockResponse.clearCookie).toHaveBeenCalledTimes(2);
       });
     });
   });

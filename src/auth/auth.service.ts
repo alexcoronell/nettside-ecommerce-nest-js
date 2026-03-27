@@ -1,7 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+// auth.service.ts - Método refreshToken actualizado
 import {
   Injectable,
   Inject,
@@ -10,19 +12,12 @@ import {
 } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-
 import { Response, Request } from 'express';
 import * as bcrypt from 'bcrypt';
 
 import config from '@config/index';
-
-/* Services */
 import { UserService } from '@user/user.service';
-
-/* Entities */
 import { User } from '@user/entities/user.entity';
-
-/* Interfaces */
 import { PayloadToken } from '@auth/interfaces/token.interface';
 
 @Injectable()
@@ -44,11 +39,6 @@ export class AuthService {
     this.cookieDomain = configService.cookieDomain;
   }
 
-  /**
-   * @param email
-   * @param password
-   * @returns user
-   */
   async validateUser(email: string, password: string) {
     const { data } = await this.userService.findAndValidateEmail(email);
     const user = data as User;
@@ -57,13 +47,9 @@ export class AuthService {
       user.password = undefined;
       return user;
     }
+    return null;
   }
 
-  /**
-   *
-   * @param access_token
-   * @param response
-   */
   private setAccessTokenCookie(access_token: string, response: Response) {
     response.cookie('access_token', access_token, {
       httpOnly: true,
@@ -71,15 +57,10 @@ export class AuthService {
       sameSite: this.isProduction ? 'none' : 'lax',
       domain: this.cookieDomain,
       path: '/',
-      maxAge: 15 * 60 * 1000, // 15 minutes in milliseconds
+      maxAge: 15 * 60 * 1000, // 15 minutes
     });
   }
 
-  /**
-   *
-   * @param refresh_token
-   * @param response
-   */
   private setRefreshTokenCookie(refresh_token: string, response: Response) {
     response.cookie('refresh_token', refresh_token, {
       httpOnly: true,
@@ -87,21 +68,14 @@ export class AuthService {
       sameSite: this.isProduction ? 'none' : 'lax',
       domain: this.cookieDomain,
       path: '/',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
   }
 
-  private getRefreshTokenCookie(
-    cookieName: string,
-    request: Request,
-  ): string | null {
-    return (request.cookies?.[cookieName] as string) || null;
+  private getRefreshTokenCookie(request: Request): string | null {
+    return request.cookies?.['refresh_token'] || null;
   }
 
-  /**
-   * @param user
-   * @returns access_token and refresh_token
-   */
   async generateJWT(user: User) {
     const payload: PayloadToken = {
       user: user.id,
@@ -113,56 +87,88 @@ export class AuthService {
     };
   }
 
-  /**
-   * @param payload
-   * @returns refreshToken
-   */
   private async generateRefreshToken(payload: PayloadToken) {
     const secret = this.jwtRefreshTokenSecret;
     if (!secret) {
       throw new Error('JWT refresh token secret is not defined');
     }
-    const refreshToken = this.jwtService.signAsync(payload, {
+    return await this.jwtService.signAsync(payload, {
       secret,
+      expiresIn: '7d',
     });
-    return await refreshToken;
   }
 
   /**
-   * @param payload
-   * @returns refreshToken
+   * Refreshes the access token using the refresh token from cookie
+   * ✅ UPDATED METHOD
    */
   async refreshToken(request: Request, response: Response) {
-    const cookie = this.getRefreshTokenCookie('refresh_token', request);
-    if (!cookie) {
-      throw new UnauthorizedException('Not Allow');
+    // Get refresh token from cookie
+    const refreshToken = this.getRefreshTokenCookie(request);
+
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token not found');
     }
-    const userToken = this.jwtService.decode(cookie['refresh_token']);
 
-    const { user } = userToken as PayloadToken;
-    const payload: PayloadToken = {
-      user,
-      role: userToken.role,
-    };
-    const refreshToken = await this.generateRefreshToken(payload);
-    this.setRefreshTokenCookie(refreshToken, response);
+    try {
+      // Verify refresh token
+      const secret = this.jwtRefreshTokenSecret;
+      if (!secret) {
+        throw new Error('JWT refresh token secret is not defined');
+      }
+
+      const decoded = await this.jwtService.verifyAsync<PayloadToken>(
+        refreshToken,
+        { secret },
+      );
+
+      // Validate user still exists and is active
+      const { data } = await this.userService.findOne(decoded.user);
+      const user = data as User;
+
+      if (!user || !user.isActive) {
+        throw new UnauthorizedException('User not found or inactive');
+      }
+
+      // Generate new access token
+      const payload: PayloadToken = {
+        user: user.id,
+        role: user.role,
+      };
+
+      const newAccessToken = this.jwtService.sign(payload);
+
+      // Set new access token in cookie
+      this.setAccessTokenCookie(newAccessToken, response);
+
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Token refreshed successfully',
+      };
+    } catch (error) {
+      // Clear cookies if refresh token is invalid
+      this.clearCookies(response);
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
   }
 
-  /**
-   *
-   * @param response
-   */
   clearCookies(response: Response) {
-    response.clearCookie('access_token');
-    response.clearCookie('refresh_token');
+    const cookieOptions = {
+      httpOnly: true,
+      secure: this.isProduction,
+      sameSite: this.isProduction ? ('none' as const) : ('lax' as const),
+      domain: this.cookieDomain,
+      path: '/',
+    };
+
+    response.clearCookie('access_token', cookieOptions);
+    response.clearCookie('refresh_token', cookieOptions);
+
+    // Backup: set expired cookies
+    response.cookie('access_token', '', { ...cookieOptions, maxAge: 0 });
+    response.cookie('refresh_token', '', { ...cookieOptions, maxAge: 0 });
   }
 
-  /**
-   *
-   * @param user
-   * @param response
-   * @returns
-   */
   async login(user: User, response: Response) {
     const { access_token, refresh_token } = await this.generateJWT(user);
 
