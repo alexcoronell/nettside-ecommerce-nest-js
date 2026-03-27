@@ -38,7 +38,9 @@ describe('JwtStrategy', () => {
 
   describe('cookieExtractor', () => {
     it('should extract access_token from cookies', () => {
-      const req = { cookies: { access_token: 'test-token' } } as Request;
+      const req = {
+        cookies: { access_token: 'test-token' },
+      } as unknown as Request;
       expect(cookieExtractor(req)).toBe('test-token');
     });
 
@@ -48,12 +50,12 @@ describe('JwtStrategy', () => {
     });
 
     it('should return null if cookies exist but no access_token', () => {
-      const req = { cookies: { other: 'value' } } as Request;
+      const req = { cookies: { other: 'value' } } as unknown as Request;
       expect(cookieExtractor(req)).toBeNull();
     });
 
     it('should return null if cookies is undefined', () => {
-      const req = { cookies: undefined } as Request;
+      const req = { cookies: undefined } as unknown as Request;
       expect(cookieExtractor(req)).toBeNull();
     });
   });

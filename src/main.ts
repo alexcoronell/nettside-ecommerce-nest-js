@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
 import { NestFactory, Reflector } from '@nestjs/core';
+import * as cookieParser from 'cookie-parser';
+
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from '@commons/filters/http-exception-filter';
 import { AuditInterceptor } from '@commons/interceptors/audit.interceptor';
@@ -11,6 +13,7 @@ async function bootstrap() {
     origin: ['http://localhost:4200'],
     credentials: true,
   });
+  app.use(cookieParser());
   app.setGlobalPrefix('api/v1');
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new AuditInterceptor(reflector));

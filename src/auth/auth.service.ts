@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
@@ -50,26 +51,35 @@ export class AuthService {
     return null;
   }
 
-  private setAccessTokenCookie(access_token: string, response: Response) {
-    response.cookie('access_token', access_token, {
+  private getCookieOptions() {
+    const options: any = {
       httpOnly: true,
-      secure: this.isProduction,
-      sameSite: this.isProduction ? 'none' : 'lax',
-      domain: this.cookieDomain,
       path: '/',
-      maxAge: 15 * 60 * 1000, // 15 minutes
-    });
+      secure: this.isProduction, // Solo true en HTTPS (producción)
+      sameSite: this.isProduction ? 'none' : 'lax',
+    };
+
+    if (this.cookieDomain && this.cookieDomain !== '') {
+      options.domain = this.cookieDomain;
+    }
+
+    return options;
+  }
+
+  private setAccessTokenCookie(access_token: string, response: Response) {
+    const options = {
+      ...this.getCookieOptions(),
+      maxAge: 15 * 60 * 60 * 1000, // 15 minutes
+    };
+    response.cookie('access_token', access_token, options);
   }
 
   private setRefreshTokenCookie(refresh_token: string, response: Response) {
-    response.cookie('refresh_token', refresh_token, {
-      httpOnly: true,
-      secure: this.isProduction,
-      sameSite: this.isProduction ? 'none' : 'lax',
-      domain: this.cookieDomain,
-      path: '/',
+    const options = {
+      ...this.getCookieOptions(),
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+    };
+    response.cookie('refresh_token', refresh_token, options);
   }
 
   private getRefreshTokenCookie(request: Request): string | null {
@@ -153,20 +163,14 @@ export class AuthService {
   }
 
   clearCookies(response: Response) {
-    const cookieOptions = {
-      httpOnly: true,
-      secure: this.isProduction,
-      sameSite: this.isProduction ? ('none' as const) : ('lax' as const),
-      domain: this.cookieDomain,
-      path: '/',
-    };
+    const options = this.getCookieOptions();
 
-    response.clearCookie('access_token', cookieOptions);
-    response.clearCookie('refresh_token', cookieOptions);
+    response.clearCookie('access_token', options);
+    response.clearCookie('refresh_token', options);
 
     // Backup: set expired cookies
-    response.cookie('access_token', '', { ...cookieOptions, maxAge: 0 });
-    response.cookie('refresh_token', '', { ...cookieOptions, maxAge: 0 });
+    response.cookie('access_token', '', { ...options, maxAge: 0 });
+    response.cookie('refresh_token', '', { ...options, maxAge: 0 });
   }
 
   async login(user: User, response: Response) {
