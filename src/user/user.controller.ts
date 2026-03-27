@@ -78,7 +78,7 @@ export class UserController
    * @param paginationDto - Pagination and filter parameters
    * @returns An array of all users, or a paginated subset if page/limit are provided.
    */
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get all users with pagination' })
   @ApiResponse({
     status: 200,

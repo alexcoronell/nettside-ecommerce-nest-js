@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Request } from 'express';
@@ -39,6 +38,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
    * The returned value will be attached to the request object as req.user
    */
   validate(payload: PayloadToken): PayloadToken {
+    const logger = new Logger(JSON.stringify(payload));
+    logger.log(payload);
     return payload;
   }
 }
