@@ -1,4 +1,4 @@
-import { faker } from '@faker-js/faker/.';
+import { faker } from '@faker-js/faker';
 
 /* Entity */
 import { PurchaseDetail } from '@purchase_detail/entities/purchase-detail.entity';

@@ -138,7 +138,7 @@ export class UserService
     }
 
     // Determine sort field and order
-    const sortBy = paginationDto?.sortBy || 'createdAt';
+    const sortBy = paginationDto?.sortBy || 'id';
     const sortOrder = paginationDto?.sortOrder || 'DESC';
 
     // Execute query

@@ -7,7 +7,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 
 /* Faker */
-import { faker } from '@faker-js/faker/.';
+import { faker } from '@faker-js/faker';
 
 const jwt = faker.internet.jwt();
 
