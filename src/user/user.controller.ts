@@ -85,7 +85,7 @@ export class UserController
     description: 'Returns paginated list of users',
   })
   @Get()
-  findAll(@Query('page') paginationDto?: PaginationDto) {
+  findAll(@Query() paginationDto?: PaginationDto) {
     return this.userService.findAll(paginationDto);
   }
 
