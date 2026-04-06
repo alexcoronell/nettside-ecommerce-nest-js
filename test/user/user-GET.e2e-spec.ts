@@ -43,9 +43,9 @@ describe('UserControler (e2e) [GET]', () => {
   let repo: any = undefined;
   let sellerUser: User | null = null;
   let customerUser: User | null = null;
-  let adminAccessToken: string;
-  let sellerAccessToken: string;
-  let customerAccessToken: string;
+  let adminCookies: string[];
+  let sellerCookies: string[];
+  let customerCookies: string[];
 
   beforeAll(async () => {
     // Initialize database connection once for the entire test suite
@@ -86,15 +86,15 @@ describe('UserControler (e2e) [GET]', () => {
 
     /* Login Users */
     const resLoginAdmin = await loginAdmin(app, repo);
-    adminAccessToken = resLoginAdmin.access_token;
+    adminCookies = resLoginAdmin.cookies;
 
     const resLoginSeller = await loginSeller(app, repo);
     sellerUser = resLoginSeller.sellerUser;
-    sellerAccessToken = resLoginSeller.access_token;
+    sellerCookies = resLoginSeller.cookies;
 
     const resLoginCustomer = await loginCustomer(app, repo);
     customerUser = resLoginCustomer.customerUser;
-    customerAccessToken = resLoginCustomer.access_token;
+    customerCookies = resLoginCustomer.cookies;
   });
 
   describe('GET User - Count', () => {
@@ -103,7 +103,7 @@ describe('UserControler (e2e) [GET]', () => {
       const data = await request(app.getHttpServer())
         .get('/user/count')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, total } = data.body;
       expect(statusCode).toBe(200);
       expect(total).toEqual(seedUsers.length);
@@ -130,7 +130,7 @@ describe('UserControler (e2e) [GET]', () => {
       const data: any = await request(app.getHttpServer())
         .get('/user/count')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
+        .set('Cookie', sellerCookies);
       const { statusCode, error } = data.body;
       expect(statusCode).toBe(401);
       expect(error).toBe('Unauthorized');
@@ -141,7 +141,7 @@ describe('UserControler (e2e) [GET]', () => {
       const data: any = await request(app.getHttpServer())
         .get('/user/count')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
+        .set('Cookie', customerCookies);
       const { statusCode, error, message } = data.body;
       expect(statusCode).toBe(401);
       expect(error).toBe('Unauthorized');
@@ -155,7 +155,7 @@ describe('UserControler (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .get('/user')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
       expect(data.length).toEqual(seedUsers.length);
@@ -189,27 +189,26 @@ describe('UserControler (e2e) [GET]', () => {
       expect(body).toHaveProperty('message', 'Invalid API key');
     });
 
-    it('/ should return 401 with the user is seller user', async () => {
+    it('/ should return 200 with seller user (any authenticated user can list users)', async () => {
       await repo.save(seedUsers);
       const res = await request(app.getHttpServer())
         .get('/user')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
-      const { statusCode, error } = res.body;
-      expect(statusCode).toBe(401);
-      expect(error).toBe('Unauthorized');
+        .set('Cookie', sellerCookies);
+      const { statusCode, data } = res.body;
+      expect(statusCode).toBe(200);
+      expect(data.length).toEqual(seedUsers.length);
     });
 
-    it('/ should return 401 if the user is a customer user', async () => {
+    it('/ should return 200 if the user is a customer user (any authenticated user can list users)', async () => {
       await repo.save(seedUsers);
       const data: any = await request(app.getHttpServer())
         .get('/user')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
-      const { statusCode, error, message } = data.body;
-      expect(statusCode).toBe(401);
-      expect(error).toBe('Unauthorized');
-      expect(message).toBe('Unauthorized: Admin access required');
+        .set('Cookie', customerCookies);
+      const { statusCode, data: userData } = data.body;
+      expect(statusCode).toBe(200);
+      expect(userData.length).toEqual(seedUsers.length);
     });
 
     it('/:id should return 200 and the user details with admin user', async () => {
@@ -217,7 +216,7 @@ describe('UserControler (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .get(`/user/${seedUser.id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
       expect(data.id).toEqual(seedUser.id);
@@ -250,7 +249,7 @@ describe('UserControler (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .get(`/user/${seedUser.id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
+        .set('Cookie', sellerCookies);
       const { statusCode, error } = res.body;
       expect(statusCode).toBe(401);
       expect(error).toBe('Unauthorized');
@@ -260,7 +259,7 @@ describe('UserControler (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .get(`/user/${sellerUser?.id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
+        .set('Cookie', sellerCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
       expect(data.id).toEqual(sellerUser?.id);
@@ -275,7 +274,7 @@ describe('UserControler (e2e) [GET]', () => {
       const data: any = await request(app.getHttpServer())
         .get(`/user/${id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
+        .set('Cookie', customerCookies);
       const { statusCode } = data.body;
       expect(statusCode).toBe(200);
     });
@@ -285,7 +284,7 @@ describe('UserControler (e2e) [GET]', () => {
       const data: any = await request(app.getHttpServer())
         .get('/user/1')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
+        .set('Cookie', customerCookies);
       const { statusCode, error, message } = data.body;
       expect(statusCode).toBe(401);
       expect(error).toBe('Unauthorized');
@@ -299,7 +298,7 @@ describe('UserControler (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .get(`/user/email/${seedUser.email}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
       expect(data.id).toEqual(seedUser.id);
@@ -334,7 +333,7 @@ describe('UserControler (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .get(`/user/email/${seedUser.email}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
+        .set('Cookie', sellerCookies);
       const { statusCode, error } = res.body;
       expect(statusCode).toBe(401);
       expect(error).toBe('Unauthorized');
@@ -345,7 +344,7 @@ describe('UserControler (e2e) [GET]', () => {
       const data: any = await request(app.getHttpServer())
         .get(`/user/${seedUser.email}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
+        .set('Cookie', customerCookies);
       const { statusCode, error, message } = data.body;
       expect(statusCode).toBe(401);
       expect(error).toBe('Unauthorized');
