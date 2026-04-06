@@ -4,6 +4,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import * as cookieParser from 'cookie-parser';
 import { App } from 'supertest/types';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -35,7 +36,6 @@ describe('AuthController (e2e) ADMIN USER', () => {
   let userAdmin: any = undefined;
 
   beforeAll(async () => {
-    // Initialize database connection once for the entire test suite
     await initDataSource();
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -74,22 +74,21 @@ describe('AuthController (e2e) ADMIN USER', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.use(cookieParser());
     await app.init();
     repo = app.get('UserRepository');
   });
 
   beforeEach(async () => {
-    // Clean all data before each test to ensure isolation
     await cleanDB();
 
-    // Create a fresh admin user for each test
     userAdmin = await seedNewAdminUser();
     await repo.save(userAdmin);
   });
 
   const API_KEY = process.env.API_KEY || 'api-e2e-key';
 
-  describe('POST /user/login  Auth Login Admin Users', () => {
+  describe('POST /auth/login  Auth Login Admin Users', () => {
     it('should return an access token with Admin User', async () => {
       const user = {
         email: userAdmin.email,
@@ -97,14 +96,24 @@ describe('AuthController (e2e) ADMIN USER', () => {
       };
 
       const data: any = await request(app.getHttpServer())
-        .post('/auth/user/login')
+        .post('/auth/login')
         .set('x-api-key', API_KEY)
         .send(user);
       const { body, statusCode } = data;
-      expect(statusCode).toBe(201);
-      expect(body).toHaveProperty('access_token');
-      expect(body.access_token).toBeTruthy();
-      expect(body.refresh_token).toBeTruthy();
+      expect(statusCode).toBe(200);
+
+      const cookies = data.headers['set-cookie'];
+      expect(cookies).toBeDefined();
+      expect(cookies.some((c: string) => c.startsWith('access_token='))).toBe(
+        true,
+      );
+      expect(cookies.some((c: string) => c.startsWith('refresh_token='))).toBe(
+        true,
+      );
+
+      expect(body).toHaveProperty('data');
+      expect(body).toHaveProperty('message');
+      expect(body.data.email).toBe(userAdmin.email);
     });
 
     it('should return 401 if user password is incorrect', async () => {
@@ -114,7 +123,7 @@ describe('AuthController (e2e) ADMIN USER', () => {
       };
 
       const data: any = await request(app.getHttpServer())
-        .post('/auth/user/login')
+        .post('/auth/login')
         .set('x-api-key', API_KEY)
         .send(user);
       const { body, statusCode } = data;
@@ -129,7 +138,7 @@ describe('AuthController (e2e) ADMIN USER', () => {
       };
 
       const data: any = await request(app.getHttpServer())
-        .post('/auth/user/login')
+        .post('/auth/login')
         .send(user);
       const { body, statusCode } = data;
       expect(statusCode).toBe(401);
@@ -143,7 +152,7 @@ describe('AuthController (e2e) ADMIN USER', () => {
       };
 
       const data: any = await request(app.getHttpServer())
-        .post('/auth/user/login')
+        .post('/auth/login')
         .set('x-api-key', 'invalid-api-key')
         .send(user);
       const { body, statusCode } = data;
@@ -154,7 +163,6 @@ describe('AuthController (e2e) ADMIN USER', () => {
 
   afterAll(async () => {
     await app.close();
-    // Close database connection after all tests
     await closeDataSource();
   });
 });

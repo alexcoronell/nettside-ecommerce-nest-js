@@ -123,7 +123,11 @@ export class AuthService {
       configService.jwtRefreshTokenExpirationTime as unknown as number;
     this.isProduction = configService.isProduction === 'production';
     this.cookieDomain = configService.cookieDomain;
+    this.jwtExpirationTime =
+      configService.jwtExpirationTime as unknown as number;
   }
+
+  jwtExpirationTime: number | null = null;
 
   /**
    * Validates user credentials
@@ -259,8 +263,13 @@ export class AuthService {
       user: user.id,
       role: user.role,
     };
+    const expirationTime = this.jwtExpirationTime
+      ? `${this.jwtExpirationTime}s`
+      : '15m';
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: this.jwtService.sign(payload, {
+        expiresIn: expirationTime,
+      }),
       refresh_token: await this.generateRefreshToken(payload),
     };
   }
@@ -280,9 +289,12 @@ export class AuthService {
     if (!secret) {
       throw new Error('JWT refresh token secret is not defined');
     }
+    const expirationTime = this.jwtRefreshTokenExpirationTime
+      ? `${this.jwtRefreshTokenExpirationTime}s`
+      : '7d';
     return await this.jwtService.signAsync(payload, {
       secret,
-      expiresIn: '7d',
+      expiresIn: expirationTime,
     });
   }
 

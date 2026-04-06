@@ -270,7 +270,8 @@ export class AuthController {
     description: 'Unauthorized - access token missing or invalid',
   })
   getProfile(@Req() req: Request) {
-    const user = req.user as unknown as PayloadToken;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const user = (req as any)['user'] as PayloadToken;
 
     return {
       statusCode: HttpStatus.OK,

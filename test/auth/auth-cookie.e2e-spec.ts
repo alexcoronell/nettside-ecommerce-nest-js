@@ -9,10 +9,12 @@ import * as request from 'supertest';
 import * as cookieParser from 'cookie-parser';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { APP_GUARD } from '@nestjs/core';
 
 import config from '@config/index';
 import { AuthModule } from '@auth/auth.module';
 import { UserModule } from '@user/user.module';
+import { ApiKeyGuard } from '@commons/guards/api-key.guard';
 import {
   initDataSource,
   cleanDB,
@@ -43,6 +45,12 @@ describe('Auth HttpOnly Cookie Strategy (e2e)', () => {
         }),
         AuthModule,
         UserModule,
+      ],
+      providers: [
+        {
+          provide: APP_GUARD,
+          useClass: ApiKeyGuard,
+        },
       ],
     }).compile();
 
@@ -116,6 +124,7 @@ describe('Auth HttpOnly Cookie Strategy (e2e)', () => {
       .get('/auth/me')
       .set('x-api-key', API_KEY)
       .set('Cookie', authCookies)
+      .withCredentials()
       .send();
 
     expect(meResponse.status).toBe(200);

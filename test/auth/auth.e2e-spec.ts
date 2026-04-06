@@ -4,6 +4,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import * as cookieParser from 'cookie-parser';
 import { App } from 'supertest/types';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -42,7 +43,6 @@ describe('AuthController (e2e)', () => {
   const API_KEY = process.env.API_KEY || 'api-e2e-key';
 
   beforeAll(async () => {
-    // Initialize database connection once for the entire test suite
     await initDataSource();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
@@ -80,15 +80,14 @@ describe('AuthController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.use(cookieParser());
     await app.init();
     repo = app.get('UserRepository');
   });
 
   beforeEach(async () => {
-    // Clean all data before each test to ensure isolation
     await cleanDB();
 
-    // Create fresh users for each test
     userAdmin = await seedNewAdminUser();
     userSeller = await seedNewSellerUser();
     userCustomer = await seedNewCustomerUser();
@@ -97,7 +96,7 @@ describe('AuthController (e2e)', () => {
     await repo.save(userAdmin);
   });
 
-  describe('POST /user/login  Auth Login with unknown user', () => {
+  describe('POST /auth/login  Auth Login with unknown user', () => {
     it('should return 401 if user is not found', async () => {
       const user = {
         email: 'unknown@example.com',
@@ -105,7 +104,7 @@ describe('AuthController (e2e)', () => {
       };
 
       const data: any = await request(app.getHttpServer())
-        .post('/auth/user/login')
+        .post('/auth/login')
         .set('x-api-key', API_KEY)
         .send(user);
       const { body, statusCode } = data;
@@ -116,7 +115,6 @@ describe('AuthController (e2e)', () => {
 
   afterAll(async () => {
     await app.close();
-    // Close database connection after all tests
     await closeDataSource();
   });
 });
