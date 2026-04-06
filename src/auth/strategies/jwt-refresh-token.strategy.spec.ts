@@ -44,22 +44,22 @@ describe('JwtRefreshTokenStrategy', () => {
     it('should extract refresh_token from cookies', () => {
       const req = {
         cookies: { refresh_token: 'test-refresh-token' },
-      } as Request;
+      } as unknown as Request;
       expect(refreshTokenCookieExtractor(req)).toBe('test-refresh-token');
     });
 
     it('should return null if no cookies', () => {
-      const req = {} as Request;
+      const req = {} as unknown as Request;
       expect(refreshTokenCookieExtractor(req)).toBeNull();
     });
 
     it('should return null if cookies exist but no refresh_token', () => {
-      const req = { cookies: { other: 'value' } } as Request;
+      const req = { cookies: { other: 'value' } } as unknown as Request;
       expect(refreshTokenCookieExtractor(req)).toBeNull();
     });
 
     it('should return null if cookies is undefined', () => {
-      const req = { cookies: undefined } as Request;
+      const req = { cookies: undefined } as unknown as Request;
       expect(refreshTokenCookieExtractor(req)).toBeNull();
     });
   });

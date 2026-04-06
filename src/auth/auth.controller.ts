@@ -1,7 +1,19 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-// auth.controller.ts
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
+
+/**
+ * @fileoverview AuthController - HTTP Authentication Controller
+ *
+ * This controller exposes authentication endpoints:
+ * - POST /auth/login - Login user
+ * - POST /auth/refresh - Refresh access token
+ * - POST /auth/logout - Logout user
+ * - GET /auth/me - Get current user
+ *
+ * @module AuthController
+ * @version 1.0.0
+ * @author Nettside E-commerce Team
+ */
 
 import {
   Controller,
@@ -31,43 +43,87 @@ import { PayloadToken } from './interfaces/token.interface';
 
 /**
  * Authentication Controller
- * Handles user authentication endpoints using httpOnly cookies
  *
- * **Security Features:**
- * - httpOnly cookies prevent XSS attacks
- * - Secure flag ensures HTTPS in production
- * - SameSite prevents CSRF attacks
+ * Handles HTTP authentication endpoints using secure httpOnly cookies.
+ * All methods return standard JSON responses.
+ *
+ * @class AuthController
+ * @extends Controller
+ *
+ * @example
+ * // Frontend calls
+ * // Login
+ * fetch('/auth/login', {
+ *   method: 'POST',
+ *   credentials: 'include',
+ *   headers: { 'Content-Type': 'application/json' },
+ *   body: JSON.stringify({ email: 'user@test.com', password: 'password' })
+ * });
+ *
+ * // Refresh token (called automatically before 15 min)
+ * fetch('/auth/refresh', {
+ *   method: 'POST',
+ *   credentials: 'include'
+ * });
+ *
+ * // Logout
+ * fetch('/auth/logout', {
+ *   method: 'POST',
+ *   credentials: 'include'
+ * });
+ *
+ * // Get current user
+ * fetch('/auth/me', {
+ *   method: 'GET',
+ *   credentials: 'include'
+ * });
  */
 @NoAudit()
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
+  /**
+   * AuthController Constructor
+   *
+   * @constructor
+   * @param {AuthService} authService - Injected authentication service
+   */
   constructor(private authService: AuthService) {}
 
   /**
-   * User login endpoint
+   * Login endpoint
    *
-   * **Flow:**
-   * 1. LocalAuthGuard validates credentials
-   * 2. User object is attached to request
-   * 3. AuthService generates tokens and sets httpOnly cookies
+   * Authenticates user and sets httpOnly cookies with tokens.
+   * Uses LocalAuthGuard for credential validation.
    *
-   * **Changes from Bearer token approach:**
-   * - Tokens are now stored in httpOnly cookies instead of response body
-   * - Frontend doesn't need to handle token storage
-   * - More secure against XSS attacks
+   * @method login
+   * @post /auth/login
+   * @ HttpCode(HttpStatus.OK)
+   * @param {Request} req - Request with user validated by LocalAuthGuard
+   * @param {Response} response - Response to set cookies
+   * @returns {Promise<Object>} Validated user (no tokens in body)
    *
-   * @param req - Express Request containing validated user
-   * @param response - Express Response to set cookies
-   * @returns Success response with user data (no tokens in body)
+   * @api
+   * @apiName AuthController_login
+   * @apiDescription Authenticates user and sets httpOnly cookies
+   * @apiVersion 1.0.0
    *
-   * @example
-   * // Frontend request:
-   * fetch('/auth/login', {
-   *   method: 'POST',
-   *   credentials: 'include', // Important for cookies
-   *   body: JSON.stringify({ email, password })
-   * });
+   * @apiParam {String} email User email
+   * @apiParam {String} password User password
+   *
+   * @apiSuccess {Number} statusCode 200
+   * @apiSuccess {Object} data Authenticated user
+   * @apiSuccess {String} message Success message
+   *
+   * @apiSuccessExample {json} Success-Response:
+   * {
+   *   "statusCode": 200,
+   *   "data": { "id": 1, "email": "user@test.com", "role": "ADMIN" },
+   *   "message": "Logged in successfully"
+   * }
+   *
+   * @apiError {Number} statusCode 401
+   * @apiError {String} message Invalid credentials
    */
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -94,28 +150,30 @@ export class AuthController {
   }
 
   /**
-   * Refresh access token endpoint
+   * Refresh endpoint
    *
-   * **Purpose:**
-   * When the access token expires (15 minutes), this endpoint generates
-   * a new one using the refresh token from the cookie
+   * Uses refresh token from httpOnly cookie to generate
+   * new access token without credentials.
    *
-   * **Changes:**
-   * - Now extracts refresh token from httpOnly cookie
-   * - Validates user still exists and is active
-   * - Better error handling
+   * @method refresh
+   * @post /auth/refresh
+   * @ HttpCode(HttpStatus.OK)
+   * @param {Request} req - Request with refresh_token cookie
+   * @param {Response} response - Response for new access token
+   * @returns {Object} Success message
    *
-   * @param req - Express Request containing refresh_token cookie
-   * @param response - Express Response to set new access_token cookie
-   * @returns Success message
-   * @throws UnauthorizedException if refresh token is missing or invalid
+   * @api
+   * @apiName AuthController_refresh
+   * @apiDescription Refreshes access token using refresh token
+   * @apiVersion 1.0.0
    *
-   * @example
-   * // Frontend request (automatic retry on 401):
-   * fetch('/auth/refresh', {
-   *   method: 'POST',
-   *   credentials: 'include' // Sends cookies
-   * });
+   * @apiHeader {Cookie} refresh_token httpOnly cookie with refresh token
+   *
+   * @apiSuccess {Number} statusCode 200
+   * @apiSuccess {String} message Token refreshed
+   *
+   * @apiError {Number} statusCode 401
+   * @apiError {String} message Token invalid or expired
    */
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -142,20 +200,22 @@ export class AuthController {
 
   /**
    * Logout endpoint
-   * Clears all authentication cookies
    *
-   * **Optional:** Can add JwtAuthGuard to require authentication
-   * Currently allows logout without authentication for flexibility
+   * Clears all authentication cookies.
    *
-   * @param response - Express Response to clear cookies
-   * @returns Success message
+   * @method logout
+   * @post /auth/logout
+   * @ HttpCode(HttpStatus.OK)
+   * @param {Response} response - Response to clear cookies
+   * @returns {Object} Success message
    *
-   * @example
-   * // Frontend request:
-   * fetch('/auth/logout', {
-   *   method: 'POST',
-   *   credentials: 'include'
-   * });
+   * @api
+   * @apiName AuthController_logout
+   * @apiDescription Logout user and clear cookies
+   * @apiVersion 1.0.0
+   *
+   * @apiSuccess {Number} statusCode 200
+   * @apiSuccess {String} message Logged out
    */
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -172,21 +232,28 @@ export class AuthController {
   }
 
   /**
-   * Get current user profile
-   * Protected endpoint that requires valid access token
+   * Get current user endpoint
    *
-   * **Purpose:**
-   * Allows frontend to check if user is authenticated and get user data
+   * Returns user data from JWT token payload.
+   * Requires valid access token.
    *
-   * @param req - Express Request with user payload from JWT
-   * @returns Current user data from token
+   * @method getProfile
+   * @get /auth/me
+   * @param {Request} req - Request with user from JWT
+   * @returns {Object} User data from token
    *
-   * @example
-   * // Frontend request:
-   * fetch('/auth/me', {
-   *   method: 'GET',
-   *   credentials: 'include'
-   * });
+   * @api
+   * @apiName AuthController_getProfile
+   * @apiDescription Gets current user from token
+   * @apiVersion 1.0.0
+   *
+   * @apiHeader {Cookie} access_token httpOnly cookie with access token
+   *
+   * @apiSuccess {Number} statusCode 200
+   * @apiSuccess {Object} data Token payload
+   *
+   * @apiError {Number} statusCode 401
+   * @apiError {String} message Unauthorized
    */
   @UseGuards(JwtAuthGuard)
   @Get('me')
@@ -203,7 +270,7 @@ export class AuthController {
     description: 'Unauthorized - access token missing or invalid',
   })
   getProfile(@Req() req: Request) {
-    const user = (req as any).user as PayloadToken;
+    const user = req.user as unknown as PayloadToken;
 
     return {
       statusCode: HttpStatus.OK,
