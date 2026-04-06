@@ -13,8 +13,9 @@ export class BootstrapService implements OnModuleInit {
 
   async onModuleInit() {
     const isProduction = process.env.IS_PRODUCTION;
+    const isE2E = process.env.NODE_ENV === 'e2e';
 
-    if (!isProduction || process.env.RUN_SEEDS === 'true') {
+    if (!isProduction || process.env.RUN_SEEDS === 'true' || !isE2E) {
       this.logger.log('🌱 Running database seeds...');
       await this.userSeeder.seed();
       this.logger.log('✅ Seeds completed');
