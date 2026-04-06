@@ -1,7 +1,16 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 // src/commons/dto/pagination.dto.ts
-import { IsOptional, IsInt, Min, Max, IsString, IsIn } from 'class-validator';
+import {
+  IsOptional,
+  IsInt,
+  Min,
+  Max,
+  IsString,
+  IsIn,
+  IsObject,
+} from 'class-validator';
 import { HttpStatus } from '@nestjs/common';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
@@ -62,10 +71,20 @@ export class PaginationDto {
 
   @ApiPropertyOptional({
     description: 'Filter term for filtering',
-    example: '{field: name}',
+    example: '{"role": "admin"}',
   })
   @IsOptional()
-  @IsString()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    }
+    return value;
+  })
+  @IsObject()
   filterBy?: Record<string, string>;
 }
 

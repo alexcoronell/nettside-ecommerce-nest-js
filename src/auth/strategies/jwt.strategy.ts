@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
+
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
@@ -10,14 +10,33 @@ import { PayloadToken } from '@auth/interfaces/token.interface';
 import config from '@config/index';
 
 /**
- * Custom extractor to get JWT from httpOnly cookie
+ * Custom extractor to get JWT from httpOnly cookie OR Authorization header
  * @param req Express Request object
- * @returns JWT token from cookie or null
+ * @returns JWT token from cookie/header or null
  */
 export const cookieExtractor = (req: Request): string | null => {
+  console.log('REQUEST COOKIES:', req.cookies);
+  console.log('REQUEST HEADERS:', req.headers.authorization);
+
   if (req && req.cookies) {
-    return req.cookies['access_token'] || null;
+    const cookies = req.cookies as Record<string, string>;
+    const tokenFromCookie = cookies['access_token'] || null;
+    if (tokenFromCookie) {
+      console.log('TOKEN FROM COOKIE:', tokenFromCookie);
+      return tokenFromCookie;
+    }
   }
+
+  if (req && req.headers.authorization) {
+    const authHeader = req.headers.authorization;
+    console.log('AUTH HEADER:', authHeader);
+    if (authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      console.log('TOKEN FROM HEADER:', token);
+      return token;
+    }
+  }
+
   return null;
 };
 

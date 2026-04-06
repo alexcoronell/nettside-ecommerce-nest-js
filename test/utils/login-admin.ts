@@ -14,14 +14,25 @@ async function loginAdmin(app: INestApplication<App>, repo: any) {
   const adminUser = await repo.save(await seedNewAdminUser());
 
   const login = await request(app.getHttpServer())
-    .post('/auth/user/login')
+    .post('/auth/login')
     .set('x-api-key', API_KEY)
     .send({
       email: adminUser?.email,
       password: adminPassword,
     });
-  const { access_token } = login.body;
-  return { adminUser, access_token };
+
+  const setCookieHeader = login.headers['set-cookie'] as unknown as
+    | string[]
+    | undefined;
+  const access_token =
+    setCookieHeader
+      ?.find((c: string) => c.startsWith('access_token='))
+      ?.split(';')[0]
+      ?.replace('access_token=', '') || '';
+
+  const cookies = setCookieHeader || [];
+
+  return { adminUser, access_token, cookies };
 }
 
 export { loginAdmin };

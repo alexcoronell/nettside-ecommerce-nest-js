@@ -4,6 +4,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import * as cookieParser from 'cookie-parser';
 import { App } from 'supertest/types';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -74,6 +75,7 @@ describe('UserControler (e2e) [GET]', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.use(cookieParser());
     await app.init();
     repo = app.get('UserRepository');
   });
@@ -96,59 +98,6 @@ describe('UserControler (e2e) [GET]', () => {
   });
 
   describe('GET User - Count', () => {
-    it('/count-all should return 200 and the total user count with admin user', async () => {
-      await repo.save(seedUsers);
-      const data: any = await request(app.getHttpServer())
-        .get('/user/count-all')
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
-      const { statusCode, total } = data.body;
-      expect(statusCode).toBe(200);
-      expect(total).toEqual(seedUsers.length);
-    });
-
-    it('/count-all should return 401 if api key is missing', async () => {
-      const data: any = await request(app.getHttpServer()).get(
-        '/user/count-all',
-      );
-      const { body, statusCode } = data;
-      expect(statusCode).toBe(401);
-      expect(body).toHaveProperty('message', 'Invalid API key');
-    });
-
-    it('/count-all should return 401 if api key is invalid', async () => {
-      const data: any = await request(app.getHttpServer())
-        .get('/user/count-all')
-        .set('x-api-key', 'invalid-api-key');
-      const { body, statusCode } = data;
-      expect(statusCode).toBe(401);
-      expect(body).toHaveProperty('message', 'Invalid API key');
-    });
-
-    it('/count-all should return 401 if the user is seller user', async () => {
-      await repo.save(seedUsers);
-      const data: any = await request(app.getHttpServer())
-        .get('/user/count-all')
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
-      const { statusCode, error, message } = data.body;
-      expect(statusCode).toBe(401);
-      expect(error).toBe('Unauthorized');
-      expect(message).toBe('Unauthorized: Admin access required');
-    });
-
-    it('count-all should return 401 if the user is a customer', async () => {
-      await repo.save(seedUsers);
-      const data: any = await request(app.getHttpServer())
-        .get('/user/count-all')
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
-      const { statusCode, error, message } = data.body;
-      expect(statusCode).toBe(401);
-      expect(error).toBe('Unauthorized');
-      expect(message).toBe('Unauthorized: Admin access required');
-    });
-
     it('/count should return 200 and the total user count not deleted with Admin User', async () => {
       await repo.save(seedUsers);
       const data = await request(app.getHttpServer())

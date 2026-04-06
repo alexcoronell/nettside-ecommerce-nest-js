@@ -72,11 +72,6 @@ describe('UserController', () => {
   });
 
   describe('Count users controllers', () => {
-    it('should call countAll user service', async () => {
-      expect(await controller.countAll()).toBe(mockUsers.length);
-      expect(service.countAll).toHaveBeenCalledTimes(1);
-    });
-
     it('should call count user service', async () => {
       expect(await controller.count()).toBe(mockUsers.length);
       expect(service.count).toHaveBeenCalledTimes(1);
@@ -92,16 +87,6 @@ describe('UserController', () => {
     it('should call findAll user service', async () => {
       expect(await controller.findAll()).toBe(mockUsers);
       expect(service.findAll).toHaveBeenCalledTimes(1);
-    });
-
-    it('should call findAllSellers users service', async () => {
-      expect(await controller.findAllSellers()).toBe(mockUsers);
-      expect(service.findAllSellers).toHaveBeenCalledTimes(1);
-    });
-
-    it('should call findAllCustomers users service', async () => {
-      expect(await controller.findAllCustomers()).toBe(mockUsers);
-      expect(service.findAllCustomers).toHaveBeenCalledTimes(1);
     });
 
     it('should call findOne user service', async () => {

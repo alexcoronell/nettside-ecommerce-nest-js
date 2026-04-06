@@ -4,7 +4,6 @@ import { PaginatedResult, PaginationDto } from '@commons/dtos/Pagination.dto';
 import { User } from '@user/entities/user.entity';
 
 export interface IBaseService<ResponseDto, CreateDto, UpdateDto> {
-  countAll(): Promise<Result<number>>;
   count(): Promise<Result<number>>;
   findAll(options?: PaginationDto): Promise<PaginatedResult<ResponseDto>>;
   findOne(id: number): Promise<Result<ResponseDto>>;

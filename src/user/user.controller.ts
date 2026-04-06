@@ -46,15 +46,6 @@ export class UserController
   implements IBaseController<ResponseUserDto, CreateUserDto, UpdateUserDto>
 {
   constructor(private userService: UserService) {}
-  /**
-   * Counts all users in the system.
-   * @returns The total number of users.
-   */
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  @Get('count-all')
-  countAll() {
-    return this.userService.countAll();
-  }
 
   /**
    * Counts specific users based on certain criteria.
@@ -90,22 +81,6 @@ export class UserController
   }
 
   /**
-   * Retrieves all active users from the system.
-   * @returns An array of active users.
-   */
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  @Get('sellers')
-  findAllSellers() {
-    return this.userService.findAllSellers();
-  }
-
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  @Get('customers')
-  findAllCustomers() {
-    return this.userService.findAllCustomers();
-  }
-
-  /**
    * Retrieves a single user by their ID.
    * @param id - The ID of the user to retrieve.
    * @returns The user with the specified ID.
@@ -114,12 +89,6 @@ export class UserController
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: User['id']) {
     return this.userService.findOne(+id);
-  }
-
-  @UseGuards(JwtAuthGuard, OwnerOrAdminGuard)
-  @Get('no-relations/:id')
-  findOneWithoutRelations(@Param('id', ParseIntPipe) id: User['id']) {
-    return this.userService.findOneWithoutRelations(id);
   }
 
   /**

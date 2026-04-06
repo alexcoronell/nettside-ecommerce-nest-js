@@ -1,7 +1,6 @@
 import { Result } from '@commons/types/result.type';
 
 export interface IBaseController<T, CreateDto, UpdateDto> {
-  countAll(): Promise<Result<number>>;
   count(): Promise<Result<number>>;
   findAll(): Promise<Result<T[]>>;
   findOne(id: number): Promise<Result<T>>;

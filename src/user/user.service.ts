@@ -48,18 +48,6 @@ export class UserService
   ) {}
 
   /**
-   * Retrieves the total number of users in the system.
-   *
-   * @returns {Promise<Result<number>>} A standardized response where:
-   * - `statusCode`: 200 OK
-   * - `total`: the total count of users (as a number)
-   */
-  async countAll(): Promise<Result<number>> {
-    const total = await this.userRepo.count();
-    return { statusCode: HttpStatus.OK, total };
-  }
-
-  /**
    * Retrieves the total number of not deleted users in the system.
    *
    * @returns {Promise<Result<number>>} A standardized response where:
@@ -125,15 +113,31 @@ export class UserService
       isDeleted: false,
     };
 
+    // Apply filterBy filters
+    const filterByFields = [
+      'role',
+      'firstname',
+      'lastname',
+      'email',
+      'phoneNumber',
+    ];
+    if (paginationDto?.filterBy) {
+      for (const [key, value] of Object.entries(paginationDto.filterBy)) {
+        if (filterByFields.includes(key)) {
+          (where as any)[key] = value;
+        }
+      }
+    }
+
     // Build search conditions
     const searchConditions: FindOptionsWhere<User>[] = [];
     if (paginationDto?.search) {
       const searchTerm = `%${paginationDto.search}%`;
       searchConditions.push(
-        { ...where, firstname: ILike(searchTerm) },
-        { ...where, lastname: ILike(searchTerm) },
-        { ...where, email: ILike(searchTerm) },
-        { ...where, phoneNumber: ILike(searchTerm) },
+        { isDeleted: false, firstname: ILike(searchTerm) },
+        { isDeleted: false, lastname: ILike(searchTerm) },
+        { isDeleted: false, email: ILike(searchTerm) },
+        { isDeleted: false, phoneNumber: ILike(searchTerm) },
       );
     }
 
@@ -141,9 +145,14 @@ export class UserService
     const sortBy = paginationDto?.sortBy || 'id';
     const sortOrder = paginationDto?.sortOrder || 'DESC';
 
+    let finalWhere: FindOptionsWhere<User> | FindOptionsWhere<User>[] = where;
+    if (searchConditions.length > 0) {
+      finalWhere = searchConditions;
+    }
+
     // Execute query
     const [data, total] = await this.userRepo.findAndCount({
-      where: searchConditions.length > 0 ? searchConditions : where,
+      where: finalWhere,
       relations: ['createdBy', 'updatedBy'],
       order: {
         [sortBy]: sortOrder,
@@ -165,66 +174,6 @@ export class UserService
       page,
       limit,
     );
-  }
-
-  /**
-   * Retrieves a list of all users role SELLER, sorted by email.
-   *
-   * @returns {Promise<Result<User[]>>} A standardized paginated-like response containing:
-   * - `statusCode`: 200 OK — indicates successful retrieval.
-   * - `data`: an array of user objects (with sensitive fields like `password` omitted).
-   * - `total`: the total number of users in the system (useful for pagination).
-   *
-   * Note: Although this endpoint returns all users at once (no pagination),
-   * the response includes `total` to maintain consistency with paginated endpoints.
-   */
-  async findAllSellers(): Promise<Result<User[]>> {
-    const [users, total] = await this.userRepo.findAndCount({
-      where: {
-        isDeleted: false,
-        role: UserRoleEnum.SELLER,
-      },
-      order: { email: 'ASC' },
-    });
-    const rta = users.map((user) => {
-      user.password = undefined;
-      return user;
-    });
-    return {
-      statusCode: HttpStatus.OK,
-      data: rta,
-      total,
-    };
-  }
-
-  /**
-   * Retrieves a list of all users role CUSTOMER, sorted by email.
-   *
-   * @returns {Promise<Result<User[]>>} A standardized paginated-like response containing:
-   * - `statusCode`: 200 OK — indicates successful retrieval.
-   * - `data`: an array of user objects (with sensitive fields like `password` omitted).
-   * - `total`: the total number of active users in the system (useful for pagination).
-   *
-   * Note: Although this endpoint returns all users at once (no pagination),
-   * the response includes `total` to maintain consistency with paginated endpoints.
-   */
-  async findAllCustomers(): Promise<Result<User[]>> {
-    const [users, total] = await this.userRepo.findAndCount({
-      where: {
-        isDeleted: false,
-        role: UserRoleEnum.CUSTOMER,
-      },
-      order: { email: 'ASC' },
-    });
-    const rta = users.map((user) => {
-      user.password = undefined;
-      return user;
-    });
-    return {
-      statusCode: HttpStatus.OK,
-      data: rta,
-      total,
-    };
   }
 
   /**
@@ -250,31 +199,6 @@ export class UserService
     return {
       statusCode: HttpStatus.OK,
       data: user as ResponseUserDto,
-    };
-  }
-
-  /**
-   * Retrieves a single active user by ID, without related entities.
-   *
-   * @param id - The ID of the user to retrieve.
-   * @returns {Promise<Result<User>>} A standardized response containing:
-   * - `statusCode`: 200 OK — indicates successful retrieval.
-   * - `data`: a single user object with sensitive fields (e.g., `password`) omitted.
-   *
-   * @throws {NotFoundException} if no active user with the given ID exists.
-   *
-   */
-  async findOneWithoutRelations(id: User['id']): Promise<Result<User>> {
-    const user = await this.userRepo.findOne({
-      where: { id, isDeleted: false },
-    });
-    if (!user) {
-      throw new NotFoundException(`The User with id: ${id} not found`);
-    }
-    user.password = undefined;
-    return {
-      statusCode: HttpStatus.OK,
-      data: user,
     };
   }
 
@@ -498,7 +422,7 @@ export class UserService
 
   /* Remove */
   async remove(id: User['id'], userId: number) {
-    const { data } = await this.findOneWithoutRelations(id);
+    const { data } = await this.findOne(id);
     const user = data as User;
 
     const changes = {
