@@ -19,6 +19,7 @@ export const createBrand = (): CreateBrandDto => {
   return {
     name,
     slug: createSlug(name),
+    logo: faker.image.url(),
   };
 };
 
