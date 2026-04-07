@@ -43,6 +43,7 @@
       "@supplier/*": ["src/supplier/*"],
       "@tag/*": ["src/tag/*"],
       "@user/*": ["src/user/*"],
+      "@upload/*": ["src/upload/*"],
       "@wishlist/*": ["src/wishlist/*"]
     }
   }

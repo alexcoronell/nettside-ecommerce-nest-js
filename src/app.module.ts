@@ -29,6 +29,7 @@ import { SaleDetailModule } from './sale-detail/sale-detail.module';
 import { PurchaseModule } from './purchase/purchase.module';
 import { PurchaseDetailModule } from './purchase-detail/purchase-detail.module';
 import { ShipmentModule } from './shipment/shipment.module';
+import { UploadModule } from '@upload/upload.module';
 
 /* Guards */
 import { ApiKeyGuard } from '@commons/guards/api-key.guard';
@@ -66,6 +67,7 @@ import config from './config';
     PurchaseModule,
     PurchaseDetailModule,
     ShipmentModule,
+    UploadModule,
     BootstrapModule,
   ],
   controllers: [AppController],
