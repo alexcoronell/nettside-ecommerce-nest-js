@@ -354,6 +354,286 @@ describe('UserControler (e2e) [GET]', () => {
     });
   });
 
+  describe('GET User - Pagination & Filtering', () => {
+    beforeEach(async () => {
+      await repo.save(seedUsers);
+    });
+
+    it('/ should return paginated users with default page and limit', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/user')
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies);
+      const { statusCode, data, meta } = res.body;
+      expect(statusCode).toBe(200);
+      expect(data).toBeInstanceOf(Array);
+      expect(meta).toEqual(
+        expect.objectContaining({
+          page: 1,
+          limit: 10,
+          total: seedUsers.length,
+        }),
+      );
+    });
+
+    it('/ should return paginated users with custom page and limit', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/user?page=1&limit=2')
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies);
+      const { statusCode, data, meta } = res.body;
+      expect(statusCode).toBe(200);
+      expect(data.length).toBeLessThanOrEqual(2);
+      expect(meta.page).toBe(1);
+      expect(meta.limit).toBe(2);
+    });
+
+    it('/ should return correct page data', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/user?page=2&limit=5')
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies);
+      const { statusCode, data, meta } = res.body;
+      expect(statusCode).toBe(200);
+      expect(data).toBeInstanceOf(Array);
+      expect(meta.page).toBe(2);
+      expect(meta.limit).toBe(5);
+    });
+
+    it('/ should calculate totalPages correctly', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/user?limit=5')
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies);
+      const { statusCode, meta } = res.body;
+      expect(statusCode).toBe(200);
+      const expectedTotalPages = Math.ceil(seedUsers.length / 5);
+      expect(meta.totalPages).toBe(expectedTotalPages);
+    });
+
+    it('/ should indicate hasNextPage correctly', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/user?page=1&limit=10')
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies);
+      const { statusCode, meta } = res.body;
+      expect(statusCode).toBe(200);
+      expect(meta.hasNextPage).toBe(seedUsers.length > 10);
+    });
+
+    it('/ should indicate hasPreviousPage correctly on first page', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/user?page=1')
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies);
+      const { statusCode, meta } = res.body;
+      expect(statusCode).toBe(200);
+      expect(meta.hasPreviousPage).toBe(false);
+    });
+
+    it('/ should indicate hasPreviousPage correctly on later page', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/user?page=2')
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies);
+      const { statusCode, meta } = res.body;
+      expect(statusCode).toBe(200);
+      expect(meta.hasPreviousPage).toBe(true);
+    });
+
+    it('/ should sort by createdAt ASC', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/user?sortBy=createdAt&sortOrder=ASC')
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies);
+      const { statusCode, data } = res.body;
+      expect(statusCode).toBe(200);
+      expect(data.length).toBeGreaterThan(0);
+    });
+
+    it('/ should sort by createdAt DESC', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/user?sortBy=createdAt&sortOrder=DESC')
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies);
+      const { statusCode } = res.body;
+      expect(statusCode).toBe(200);
+    });
+
+    it('/ should sort by email ASC', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/user?sortBy=email&sortOrder=ASC')
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies);
+      const { statusCode, data } = res.body;
+      expect(statusCode).toBe(200);
+      const emails = data.map((u: User) => u.email);
+      const sortedEmails = [...emails].sort();
+      expect(emails).toEqual(sortedEmails);
+    });
+
+    it('/ should filter by search term in firstname', async () => {
+      const searchTerm = seedUsers[0].firstname.substring(0, 3);
+      const res = await request(app.getHttpServer())
+        .get(`/user?search=${searchTerm}`)
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies);
+      const { statusCode, data } = res.body;
+      expect(statusCode).toBe(200);
+      data.forEach((user: User) => {
+        expect(user.firstname.toLowerCase()).toContain(
+          searchTerm.toLowerCase(),
+        );
+      });
+    });
+
+    it('/ should filter by search term in lastname', async () => {
+      const searchTerm = seedUsers[0].lastname.substring(0, 3);
+      const res = await request(app.getHttpServer())
+        .get(`/user?search=${searchTerm}`)
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies);
+      const { statusCode, data } = res.body;
+      expect(statusCode).toBe(200);
+      const hasMatch = data.some((user: User) =>
+        user.lastname.toLowerCase().includes(searchTerm.toLowerCase()),
+      );
+      expect(hasMatch).toBe(true);
+    });
+
+    it('/ should filter by search term in email', async () => {
+      const searchTerm = '@';
+      const res = await request(app.getHttpServer())
+        .get(`/user?search=${searchTerm}`)
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies);
+      const { statusCode, meta } = res.body;
+      expect(statusCode).toBe(200);
+      expect(meta.total).toBeGreaterThan(0);
+    });
+
+    it('/ should filter by role using filterBy JSON', async () => {
+      const res = await request(app.getHttpServer())
+        .get(
+          `/user?filterBy=${encodeURIComponent(JSON.stringify({ role: 'Seller' }))}`,
+        )
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies);
+      expect(res.body.statusCode).toBe(200);
+      expect(res.body.data).toBeInstanceOf(Array);
+    });
+
+    it('/ should filter by isActive using filterBy JSON', async () => {
+      const isActive = true;
+      const res = await request(app.getHttpServer())
+        .get(
+          `/user?filterBy=${encodeURIComponent(JSON.stringify({ isActive }))}`,
+        )
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies);
+      const { statusCode, data } = res.body;
+      expect(statusCode).toBe(200);
+      data.forEach((user: User) => {
+        expect(user.isActive).toBe(isActive);
+      });
+    });
+
+    it('/ should combine pagination and search', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/user?page=1&limit=2&search=test')
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies);
+      const { statusCode, data, meta } = res.body;
+      expect(statusCode).toBe(200);
+      expect(data.length).toBeLessThanOrEqual(2);
+      expect(meta.page).toBe(1);
+      expect(meta.limit).toBe(2);
+    });
+
+    it('/ should combine pagination and sort', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/user?page=1&limit=5&sortBy=email&sortOrder=ASC')
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies);
+      const { statusCode, meta } = res.body;
+      expect(statusCode).toBe(200);
+      expect(meta.limit).toBe(5);
+    });
+
+    it('/ should return empty data when page exceeds total', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/user?page=100&limit=10')
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies);
+      const { statusCode, data, meta } = res.body;
+      expect(statusCode).toBe(200);
+      expect(data).toEqual([]);
+      expect(meta.page).toBe(100);
+    });
+
+    it('/ should handle limit of 1', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/user?limit=1')
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies);
+      const { statusCode, data, meta } = res.body;
+      expect(statusCode).toBe(200);
+      expect(data.length).toBe(1);
+      expect(meta.limit).toBe(1);
+    });
+
+    it('/ should handle limit of 100 (max)', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/user?limit=100')
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies);
+      const { statusCode, meta } = res.body;
+      expect(statusCode).toBe(200);
+      expect(meta.limit).toBe(100);
+    });
+
+    it('/ should cap limit at 100', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/user?limit=500')
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies);
+      const { statusCode, meta } = res.body;
+      expect(statusCode).toBe(200);
+      expect(meta.limit).toBe(100);
+    });
+
+    it('/ should normalize page 0 to 1', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/user?page=0')
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies);
+      const { statusCode, meta } = res.body;
+      expect(statusCode).toBe(200);
+      expect(meta.page).toBe(1);
+    });
+
+    it('/ should sort by firstname ASC', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/user?sortBy=firstname&sortOrder=ASC')
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies);
+      const { statusCode, data } = res.body;
+      expect(statusCode).toBe(200);
+      const firstnames = data.map((u: User) => u.firstname);
+      const sortedFirstnames = [...firstnames].sort();
+      expect(firstnames).toEqual(sortedFirstnames);
+    });
+
+    it('/ should sort by lastname DESC', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/user?sortBy=lastname&sortOrder=DESC')
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies);
+      const { statusCode } = res.body;
+      expect(statusCode).toBe(200);
+    });
+  });
+
   afterAll(async () => {
     await app.close();
     // Close database connection after all tests
