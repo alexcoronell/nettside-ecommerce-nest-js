@@ -8,7 +8,12 @@ describe('BootstrapService', () => {
   let userSeeder: { seed: jest.Mock };
   let fakeUsersSeeder: { seed: jest.Mock };
 
+  const originalEnv = { ...process.env };
+  const originalNodeEnv = process.env.NODE_ENV;
+
   beforeEach(async () => {
+    process.env = { ...originalEnv };
+
     userSeeder = {
       seed: jest.fn().mockResolvedValue(undefined),
     };
@@ -35,9 +40,8 @@ describe('BootstrapService', () => {
   });
 
   afterEach(() => {
-    delete process.env.IS_PRODUCTION;
-    delete process.env.RUN_SEEDS;
-    delete process.env.FAKE_DATA;
+    process.env = originalEnv;
+    process.env.NODE_ENV = originalNodeEnv;
   });
 
   it('should be defined', () => {
@@ -45,8 +49,9 @@ describe('BootstrapService', () => {
   });
 
   describe('onModuleInit', () => {
-    it('should run userSeeder and fakeUsersSeeder when IS_PRODUCTION is not set', async () => {
+    it('should run userSeeder when not in production (default)', async () => {
       delete process.env.IS_PRODUCTION;
+      process.env.FAKE_DATA = 'true';
 
       await service.onModuleInit();
 
@@ -54,27 +59,52 @@ describe('BootstrapService', () => {
       expect(fakeUsersSeeder.seed).toHaveBeenCalledTimes(1);
     });
 
-    it('should run seeds when RUN_SEEDS is true in production', async () => {
+    it('should run both seeders in non-production environment', async () => {
+      process.env.IS_PRODUCTION = 'false';
+      process.env.NODE_ENV = 'development';
+      process.env.FAKE_DATA = 'true';
+
+      await service.onModuleInit();
+
+      expect(userSeeder.seed).toHaveBeenCalledTimes(1);
+      expect(fakeUsersSeeder.seed).toHaveBeenCalledTimes(1);
+    });
+
+    it('should run userSeeder and fakeUsersSeeder when RUN_SEEDS is true in production', async () => {
       process.env.IS_PRODUCTION = 'true';
       process.env.RUN_SEEDS = 'true';
+      process.env.FAKE_DATA = 'true';
+
+      await service.onModuleInit();
+
+      expect(userSeeder.seed).toHaveBeenCalledTimes(1);
+      expect(fakeUsersSeeder.seed).toHaveBeenCalledTimes(1);
+    });
+
+    it('should run userSeeder in production when RUN_SEEDS is true', async () => {
+      process.env.IS_PRODUCTION = 'true';
+      process.env.RUN_SEEDS = 'true';
+      delete process.env.FAKE_DATA;
 
       await service.onModuleInit();
 
       expect(userSeeder.seed).toHaveBeenCalledTimes(1);
     });
 
-    it('should NOT run seeds in production when RUN_SEEDS is not set', async () => {
+    it('should NOT run userSeeder in production e2e when RUN_SEEDS is false', async () => {
       process.env.IS_PRODUCTION = 'true';
-      delete process.env.RUN_SEEDS;
+      process.env.RUN_SEEDS = 'false';
+      process.env.NODE_ENV = 'e2e';
 
       await service.onModuleInit();
 
       expect(userSeeder.seed).not.toHaveBeenCalled();
     });
 
-    it('should NOT run seeds in production when RUN_SEEDS is false', async () => {
+    it('should NOT run userSeeder in production e2e when RUN_SEEDS is undefined', async () => {
       process.env.IS_PRODUCTION = 'true';
-      process.env.RUN_SEEDS = 'false';
+      delete process.env.RUN_SEEDS;
+      process.env.NODE_ENV = 'e2e';
 
       await service.onModuleInit();
 
@@ -84,28 +114,61 @@ describe('BootstrapService', () => {
     it('should run fakeUsersSeeder when FAKE_DATA is true in production', async () => {
       process.env.IS_PRODUCTION = 'true';
       process.env.FAKE_DATA = 'true';
+      process.env.NODE_ENV = 'production';
 
       await service.onModuleInit();
 
       expect(fakeUsersSeeder.seed).toHaveBeenCalledTimes(1);
     });
 
-    it('should NOT run fakeUsersSeeder in production when FAKE_DATA is not set', async () => {
+    it('should NOT run fakeUsersSeeder in production when FAKE_DATA is false', async () => {
       process.env.IS_PRODUCTION = 'true';
-      delete process.env.FAKE_DATA;
+      process.env.FAKE_DATA = 'false';
+      process.env.NODE_ENV = 'production';
 
       await service.onModuleInit();
 
       expect(fakeUsersSeeder.seed).not.toHaveBeenCalled();
     });
 
-    it('should NOT run fakeUsersSeeder in production when FAKE_DATA is false', async () => {
+    it('should NOT run fakeUsersSeeder in production when FAKE_DATA is undefined', async () => {
       process.env.IS_PRODUCTION = 'true';
-      process.env.FAKE_DATA = 'false';
+      delete process.env.FAKE_DATA;
+      process.env.NODE_ENV = 'production';
 
       await service.onModuleInit();
 
       expect(fakeUsersSeeder.seed).not.toHaveBeenCalled();
+    });
+
+    it('should run seeds in e2e environment even without production', async () => {
+      process.env.NODE_ENV = 'e2e';
+      delete process.env.IS_PRODUCTION;
+
+      await service.onModuleInit();
+
+      expect(userSeeder.seed).toHaveBeenCalledTimes(1);
+      expect(fakeUsersSeeder.seed).toHaveBeenCalledTimes(1);
+    });
+
+    it('should skip userSeeder in production for e2e when RUN_SEEDS not set', async () => {
+      process.env.NODE_ENV = 'e2e';
+      process.env.IS_PRODUCTION = 'true';
+      delete process.env.RUN_SEEDS;
+
+      await service.onModuleInit();
+
+      expect(userSeeder.seed).not.toHaveBeenCalled();
+    });
+
+    it('should call seeders in sequence', async () => {
+      userSeeder.seed.mockResolvedValue(undefined);
+      fakeUsersSeeder.seed.mockResolvedValue(undefined);
+
+      await service.onModuleInit();
+
+      expect(userSeeder.seed).toHaveBeenCalled();
+      expect(fakeUsersSeeder.seed).toHaveBeenCalled();
     });
   });
 });
