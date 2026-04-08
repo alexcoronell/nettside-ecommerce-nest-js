@@ -29,11 +29,6 @@ export class BrandService
     private readonly repo: Repository<Brand>,
   ) {}
 
-  async countAll() {
-    const total = await this.repo.count();
-    return { statusCode: HttpStatus.OK, total };
-  }
-
   async count() {
     const total = await this.repo.count({
       where: {
@@ -94,24 +89,6 @@ export class BrandService
     return PaginationHelper.createPaginatedResult(data, total, page, limit);
   }
 
-  async findAllWithRelations() {
-    const [brands, total] = await this.repo.findAndCount({
-      relations: ['createdBy', 'updatedBy'],
-      where: {
-        isDeleted: false,
-      },
-      order: {
-        name: 'ASC',
-      },
-    });
-
-    return {
-      statusCode: HttpStatus.OK,
-      data: brands,
-      total,
-    };
-  }
-
   async findOne(id: Brand['id']): Promise<Result<Brand>> {
     const brand = await this.repo.findOne({
       relations: ['createdBy', 'updatedBy'],
@@ -119,34 +96,6 @@ export class BrandService
     });
     if (!brand) {
       throw new NotFoundException(`The Brand with ID: ${id} not found`);
-    }
-    return {
-      statusCode: HttpStatus.OK,
-      data: brand,
-    };
-  }
-
-  async findOneByName(name: string): Promise<Result<Brand>> {
-    const brand = await this.repo.findOne({
-      relations: ['createdBy', 'updatedBy'],
-      where: { name, isDeleted: false },
-    });
-    if (!brand) {
-      throw new NotFoundException(`The Brand with NAME: ${name} not found`);
-    }
-    return {
-      statusCode: HttpStatus.OK,
-      data: brand,
-    };
-  }
-
-  async findOneBySlug(slug: string): Promise<Result<Brand>> {
-    const brand = await this.repo.findOne({
-      relations: ['createdBy', 'updatedBy'],
-      where: { slug, isDeleted: false },
-    });
-    if (!brand) {
-      throw new NotFoundException(`The Brand with SLUG: ${slug} not found`);
     }
     return {
       statusCode: HttpStatus.OK,

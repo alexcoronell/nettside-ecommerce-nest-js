@@ -61,11 +61,6 @@ describe('BrandController', () => {
   });
 
   describe('Count brand controllers', () => {
-    it('should call countAll brand service', async () => {
-      expect(await controller.countAll()).toBe(mockBrands.length);
-      expect(service.countAll).toHaveBeenCalledTimes(1);
-    });
-
     it('should call count brand service', async () => {
       expect(await controller.count()).toBe(mockBrands.length);
       expect(service.count).toHaveBeenCalledTimes(1);
@@ -78,24 +73,9 @@ describe('BrandController', () => {
       expect(service.findAll).toHaveBeenCalledTimes(1);
     });
 
-    it('should call findAllWithRelations brand service', async () => {
-      expect(await controller.findAllWithRelations()).toBe(mockBrands);
-      expect(service.findAllWithRelations).toHaveBeenCalledTimes(1);
-    });
-
     it('should call findOne brand service', async () => {
       expect(await controller.findOne(1)).toBe(mockBrand);
       expect(service.findOne).toHaveBeenCalledTimes(1);
-    });
-
-    it('should return an brand by name', async () => {
-      expect(await controller.findOneByname(mockBrand.name));
-      expect(service.findOneByName).toHaveBeenCalledTimes(1);
-    });
-
-    it('should return an brand by slug', async () => {
-      expect(await controller.findOneBySlug(mockBrand.slug));
-      expect(service.findOneBySlug).toHaveBeenCalledTimes(1);
     });
   });
 

@@ -57,9 +57,6 @@ export class BrandController
    */
   @UseGuards(JwtAuthGuard, IsNotCustomerGuard)
   @Get('count-all')
-  countAll() {
-    return this.brandService.countAll();
-  }
 
   /**
    * Gets the count of active brands.
@@ -89,15 +86,6 @@ export class BrandController
   }
 
   /**
-   * Retrieves the list of all brands.
-   * @returns Array of Brand objects.
-   */
-  @Get('relations')
-  findAllWithRelations() {
-    return this.brandService.findAllWithRelations();
-  }
-
-  /**
    * Finds a brand by its unique identifier.
    * @param id Numeric identifier of the brand.
    * @returns Brand object corresponding to the provided ID.
@@ -106,28 +94,6 @@ export class BrandController
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.brandService.findOne(+id);
-  }
-
-  /**
-   * Finds a brand by its name.
-   * @param name Name of the brand to search for.
-   * @returns Brand object corresponding to the provided name.
-   */
-  @UseGuards(JwtAuthGuard, IsNotCustomerGuard)
-  @Get('name/:name')
-  findOneByname(@Param('name') name: string) {
-    return this.brandService.findOneByName(name);
-  }
-
-  /**
-   * Finds a brand by its slug.
-   * @param slug Slug of the brand to search for.
-   * @returns Brand object corresponding to the provided slug.
-   */
-  @UseGuards(JwtAuthGuard, IsNotCustomerGuard)
-  @Get('slug/:slug')
-  findOneBySlug(@Param('slug') slug: string) {
-    return this.brandService.findOneBySlug(slug);
   }
 
   /**
