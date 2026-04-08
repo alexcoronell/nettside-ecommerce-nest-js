@@ -1,5 +1,5 @@
 import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateBrandDto {
   @IsString()
@@ -12,8 +12,7 @@ export class CreateBrandDto {
   @ApiProperty()
   readonly slug: string;
 
-  @IsString()
   @IsOptional()
-  @ApiProperty({ required: false })
-  readonly logo: string;
+  @ApiPropertyOptional({ required: false, nullable: true })
+  readonly logo: string | null;
 }

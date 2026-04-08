@@ -13,7 +13,7 @@ export class Brand extends BaseEntity {
   slug: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-  logo: string;
+  logo: string | null;
 
   /**************************** Relations ****************************/
   @ManyToOne(() => User, (user) => user.createdBrands)

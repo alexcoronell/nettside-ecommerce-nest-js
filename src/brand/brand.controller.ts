@@ -9,19 +9,23 @@ import {
   ParseIntPipe,
   UseGuards,
   Query,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-
-import { IBaseController } from '@commons/interfaces/i-base-controller';
+import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiConsumes,
+} from '@nestjs/swagger';
 
 /* Services */
 import { BrandService } from '@brand/brand.service';
+import { UploadService } from '@upload/upload.service';
 
 /* Decorators */
 import { UserId } from '@auth/decorators/user-id.decorator';
-
-/* Entities */
-import { Brand } from './entities/brand.entity';
 
 /* DTO's */
 import { CreateBrandDto } from '@brand/dto/create-brand.dto';
@@ -42,14 +46,11 @@ import { JwtAuthGuard } from '@auth/guards/jwt-auth/jwt-auth.guard';
  * as well as to search brands by ID or name.
  */
 @Controller('brand')
-export class BrandController
-  implements IBaseController<Brand, CreateBrandDto, UpdateBrandDto>
-{
-  /**
-   * Injects the brand service to handle business logic.
-   * @param brandService Service responsible for brand management.
-   */
-  constructor(private readonly brandService: BrandService) {}
+export class BrandController {
+  constructor(
+    private readonly brandService: BrandService,
+    private readonly uploadService: UploadService,
+  ) {}
 
   /**
    * Gets the total count of all brands, including logically deleted ones if applicable.
@@ -99,30 +100,60 @@ export class BrandController
   /**
    * Creates a new brand with the provided data.
    * @param payload Data required to create a new brand.
-   * @param req required to create a new brand
+   * @param file Optional logo file for the brand.
+   * @param userId ID of the user creating the brand.
    * @returns Created Brand object.
    */
   @UseGuards(JwtAuthGuard, AdminGuard)
   @Post()
-  create(@Body() payload: CreateBrandDto, @UserId() userId: number) {
-    return this.brandService.create(payload, userId);
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file'))
+  async create(
+    @Body() payload: CreateBrandDto,
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @UserId() userId: number,
+  ) {
+    let logoUrl: string | undefined;
+
+    if (file) {
+      const uploadResult = await this.uploadService.uploadLogo(file);
+      logoUrl = uploadResult.url;
+    }
+
+    const createPayload = logoUrl ? { ...payload, logo: logoUrl } : payload;
+
+    return this.brandService.create(createPayload, userId);
   }
 
   /**
    * Updates an existing brand with the provided data.
    * @param id Identifier of the brand to update.
-   * @param req to update the brand.
    * @param updateCategoryDto Data to update the brand.
+   * @param file Optional new logo file for the brand.
+   * @param userId ID of the user updating the brand.
    * @returns Updated Brand object.
    */
   @UseGuards(JwtAuthGuard, AdminGuard)
   @Patch(':id')
-  update(
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file'))
+  async update(
     @Param('id', ParseIntPipe) id: number,
-    @UserId() userId: number,
     @Body() updateCategoryDto: UpdateBrandDto,
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @UserId() userId: number,
   ) {
-    return this.brandService.update(+id, userId, updateCategoryDto);
+    let logoUrl: string | undefined;
+
+    if (file) {
+      const uploadResult = await this.uploadService.uploadLogo(file);
+      logoUrl = uploadResult.url;
+    }
+
+    return this.brandService.update(id, userId, {
+      ...updateCategoryDto,
+      ...(logoUrl !== undefined && { logo: logoUrl }),
+    });
   }
 
   /**
