@@ -105,4 +105,80 @@ describe('UploadService', () => {
       ).resolves.not.toThrow();
     });
   });
+
+  describe('validateMimeType', () => {
+    it('should reject file with invalid mime type', async () => {
+      const invalidFile = {
+        ...mockFile,
+        mimetype: 'application/pdf',
+      } as Express.Multer.File;
+
+      await expect(
+        service.uploadFile(invalidFile, BUCKETS.BRAND_LOGOS),
+      ).rejects.toThrow("File type 'application/pdf' not allowed");
+    });
+
+    it('should accept valid image mime types', async () => {
+      const validTypes = [
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+        'image/svg+xml',
+      ];
+
+      for (const mimetype of validTypes) {
+        const validFile = { ...mockFile, mimetype } as Express.Multer.File;
+        const result = await service.uploadFile(validFile, BUCKETS.BRAND_LOGOS);
+        expect(result).toHaveProperty('url');
+      }
+    });
+  });
+
+  describe('validateFileSize', () => {
+    it('should reject file that exceeds max size', async () => {
+      const largeFile = {
+        ...mockFile,
+        size: 6 * 1024 * 1024,
+      } as Express.Multer.File;
+
+      await expect(
+        service.uploadFile(largeFile, BUCKETS.BRAND_LOGOS),
+      ).rejects.toThrow('File size exceeds maximum allowed size');
+    });
+  });
+
+  describe('sanitizeFilename', () => {
+    it('should sanitize filename with special characters', async () => {
+      const fileWithSpecialChars = {
+        ...mockFile,
+        originalname: 'test@file#name$with%special^chars.png',
+      } as Express.Multer.File;
+
+      const result = await service.uploadFile(
+        fileWithSpecialChars,
+        BUCKETS.BRAND_LOGOS,
+      );
+
+      expect(result.key).not.toContain('@');
+      expect(result.key).not.toContain('#');
+      expect(result.key).not.toContain('$');
+      expect(result.key).toContain('test_file_name_with_special_chars.png');
+    });
+
+    it('should handle filename with path traversal attempt', async () => {
+      const maliciousFile = {
+        ...mockFile,
+        originalname: '../../../etc/passwd.png',
+      } as Express.Multer.File;
+
+      const result = await service.uploadFile(
+        maliciousFile,
+        BUCKETS.BRAND_LOGOS,
+      );
+
+      expect(result.key).not.toContain('../..');
+      expect(result.key).toContain('_etc_passwd.png');
+    });
+  });
 });
