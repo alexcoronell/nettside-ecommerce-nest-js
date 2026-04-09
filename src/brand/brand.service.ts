@@ -103,6 +103,20 @@ export class BrandService
     };
   }
 
+  async findOneBySlug(slug: Brand['slug']): Promise<Result<Brand>> {
+    const brand = await this.repo.findOne({
+      relations: ['createdBy', 'updatedBy'],
+      where: { slug, isDeleted: false },
+    });
+    if (!brand) {
+      throw new NotFoundException(`The Brand with SLUG: ${slug} not found`);
+    }
+    return {
+      statusCode: HttpStatus.OK,
+      data: brand,
+    };
+  }
+
   async create(dto: CreateBrandDto, userId: number) {
     const newBrand = this.repo.create({
       ...dto,

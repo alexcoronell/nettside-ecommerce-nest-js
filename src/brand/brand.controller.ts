@@ -91,6 +91,16 @@ export class BrandController {
   }
 
   /**
+   * Finds a brand by its unique identifier.
+   * @param id Numeric identifier of the brand.
+   * @returns Brand object corresponding to the provided ID.
+   */
+  @Get('slug/:id')
+  findOneBySlug(@Param('slug') slug: string) {
+    return this.brandService.findOneBySlug(slug);
+  }
+
+  /**
    * Creates a new brand with the provided data.
    * @param payload Data required to create a new brand.
    * @param file Optional logo file for the brand.
