@@ -1,9 +1,5 @@
 import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
-import {
-  S3Client,
-  HeadBucketCommand,
-  CreateBucketCommand,
-} from '@aws-sdk/client-s3';
+import { S3Client, CreateBucketCommand } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -41,25 +37,25 @@ export class UploadService {
 
   async ensureBucketExists(bucketName: string): Promise<void> {
     try {
-      await this.s3Client.send(new HeadBucketCommand({ Bucket: bucketName }));
-    } catch (error) {
-      this.logger.error(
-        `Failed to check bucket ${bucketName}, attempting to create`,
-        error instanceof Error ? error.stack : undefined,
-      );
-      try {
-        await this.s3Client.send(
-          new CreateBucketCommand({ Bucket: bucketName }),
-        );
-      } catch (createError) {
-        this.logger.error(
-          `Failed to create bucket ${bucketName}`,
-          createError instanceof Error ? createError.stack : undefined,
+      await this.s3Client.send(new CreateBucketCommand({ Bucket: bucketName }));
+      this.logger.log(`Bucket ${bucketName} created`);
+    } catch (error: unknown) {
+      const err = error as { name?: string; message?: string };
+      if (
+        err.name === 'BucketAlreadyExists' ||
+        err.name === 'BucketAlreadyOwnedByYou'
+      ) {
+        this.logger.log(`Bucket ${bucketName} already exists`);
+      } else if (err.name === 'NotFound') {
+        this.logger.warn(
+          `Bucket ${bucketName} not found, will attempt to create`,
         );
         throw new HttpException(
           `Failed to create bucket: ${bucketName}`,
           HttpStatus.INTERNAL_SERVER_ERROR,
         );
+      } else {
+        this.logger.warn(`Error ensuring bucket ${bucketName}: ${err.message}`);
       }
     }
   }

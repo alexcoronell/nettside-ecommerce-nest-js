@@ -20,6 +20,9 @@ import {
 /* Types */
 import { Result } from '@commons/types/result.type';
 
+/* Utils */
+import { createSlug } from '@commons/utils/create-slug.util';
+
 @Injectable()
 export class BrandService
   implements IBaseService<Brand, CreateBrandDto, UpdateBrandDto>
@@ -120,6 +123,7 @@ export class BrandService
   async create(dto: CreateBrandDto, userId: number) {
     const newBrand = this.repo.create({
       ...dto,
+      slug: dto.slug || createSlug(dto.name),
       createdBy: { id: userId },
       updatedBy: { id: userId },
     });

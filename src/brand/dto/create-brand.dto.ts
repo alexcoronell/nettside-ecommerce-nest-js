@@ -8,7 +8,7 @@ export class CreateBrandDto {
   readonly name: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @ApiProperty()
   readonly slug: string;
 
