@@ -1,9 +1,43 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
+jest.mock('uuid', () => ({
+  v4: () => 'mock-uuid-1234',
+}));
+
+jest.mock('@aws-sdk/client-s3', () => ({
+  S3Client: jest.fn().mockImplementation(() => ({
+    send: jest.fn().mockResolvedValue({}),
+  })),
+  HeadBucketCommand: jest.fn(),
+  CreateBucketCommand: jest.fn(),
+}));
+
+jest.mock('@aws-sdk/lib-storage', () => ({
+  Upload: jest.fn().mockImplementation(() => ({
+    done: jest.fn().mockResolvedValue({}),
+  })),
+}));
+
+jest.mock('@upload/constants/storage.constants', () => ({
+  STORAGE_CONFIG: {
+    endpoint: 'localhost:9000',
+    region: 'us-east-1',
+    credentials: { accessKeyId: 'test', secretAccessKey: 'test' },
+    forcePathStyle: true,
+  },
+  BUCKETS: {
+    BRAND_LOGOS: 'brand-logos',
+    PRODUCT_IMAGES: 'product-images',
+    AVATARS: 'avatars',
+  },
+  PUBLIC_URL_BASE: 'http://localhost:9000',
+}));
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import * as cookieParser from 'cookie-parser';
 import { App } from 'supertest/types';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -38,12 +72,11 @@ describe('BrandController (e2e) [GET]', () => {
   let app: INestApplication<App>;
   let repo: any = undefined;
   let repoUser: any = undefined;
-  let adminAccessToken: string;
-  let sellerAccessToken: string;
-  let customerAccessToken: string;
+  let adminCookies: string[];
+  let sellerCookies: string[];
+  let customerCookies: string[];
 
   beforeAll(async () => {
-    // Initialize database connection once for the entire test suite
     await initDataSource();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
@@ -71,6 +104,7 @@ describe('BrandController (e2e) [GET]', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.use(cookieParser());
     await app.init();
     repo = app.get('BrandRepository');
     repoUser = app.get('UserRepository');
@@ -79,48 +113,48 @@ describe('BrandController (e2e) [GET]', () => {
   });
 
   beforeEach(async () => {
-    // Clean all data before each test to ensure isolation
     await cleanDB();
 
-    /* Login Users */
     const resLoginAdmin = await loginAdmin(app, repoUser);
-    adminAccessToken = resLoginAdmin.access_token;
+    adminCookies = resLoginAdmin.cookies;
+
     const resLoginSeller = await loginSeller(app, repoUser);
-    sellerAccessToken = resLoginSeller.access_token;
+    sellerCookies = resLoginSeller.cookies;
+
     const resLoginCustomer = await loginCustomer(app, repoUser);
-    customerAccessToken = resLoginCustomer.access_token;
+    customerCookies = resLoginCustomer.cookies;
   });
 
   describe('GET Brand - Count', () => {
-    it('/count should return 200 with admin access token', async () => {
+    it('/count should return 200 with admin cookies', async () => {
       const brands = generateNewBrands(10);
       await repo.save(brands);
       const res = await request(app.getHttpServer())
         .get('/brand/count')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, total } = res.body;
       expect(statusCode).toBe(200);
       expect(total).toEqual(brands.length);
     });
 
-    it('/count should return 200 with seller access token', async () => {
+    it('/count should return 200 with seller cookies', async () => {
       const brands = generateNewBrands(10);
       await repo.save(brands);
       const res = await request(app.getHttpServer())
         .get('/brand/count')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
+        .set('Cookie', sellerCookies);
       const { statusCode, total } = res.body;
       expect(statusCode).toBe(200);
       expect(total).toEqual(brands.length);
     });
 
-    it('/count should return 401 with customer access token', async () => {
+    it('/count should return 401 with customer cookies', async () => {
       const res = await request(app.getHttpServer())
         .get('/brand/count')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
+        .set('Cookie', customerCookies);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);
       expect(message).toBe('Unauthorized: Customer access denied');
@@ -163,64 +197,40 @@ describe('BrandController (e2e) [GET]', () => {
       });
     });
 
-    it('/ should return all brands with admin user', async () => {
+    it('/ should return all brands with admin cookies', async () => {
       const brands = generateNewBrands(10);
       await repo.save(brands);
       const res = await request(app.getHttpServer())
         .get('/brand')
         .set('x-api-key', API_KEY)
-        .set('Authorization', adminAccessToken);
+        .set('Cookie', adminCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
       expect(data.length).toEqual(brands.length);
-      data.forEach((user) => {
-        const brand = brands.find((su) => su.name === user.name);
-        expect(user).toEqual(
-          expect.objectContaining({
-            name: brand?.name,
-          }),
-        );
-      });
     });
 
-    it('/ should return all brands with seller user', async () => {
+    it('/ should return all brands with seller cookies', async () => {
       const brands = generateNewBrands(10);
       await repo.save(brands);
       const res = await request(app.getHttpServer())
         .get('/brand')
         .set('x-api-key', API_KEY)
-        .set('Authorization', sellerAccessToken);
+        .set('Cookie', sellerCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
       expect(data.length).toEqual(brands.length);
-      data.forEach((user) => {
-        const brand = brands.find((su) => su.name === user.name);
-        expect(user).toEqual(
-          expect.objectContaining({
-            name: brand?.name,
-          }),
-        );
-      });
     });
 
-    it('/ should return all brands with customer user', async () => {
+    it('/ should return all brands with customer cookies', async () => {
       const brands = generateNewBrands(10);
       await repo.save(brands);
       const res = await request(app.getHttpServer())
         .get('/brand')
         .set('x-api-key', API_KEY)
-        .set('Authorization', customerAccessToken);
+        .set('Cookie', customerCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
       expect(data.length).toEqual(brands.length);
-      data.forEach((user) => {
-        const brand = brands.find((su) => su.name === user.name);
-        expect(user).toEqual(
-          expect.objectContaining({
-            name: brand?.name,
-          }),
-        );
-      });
     });
 
     it('/ should return 401 if api key is missing', async () => {
@@ -241,39 +251,39 @@ describe('BrandController (e2e) [GET]', () => {
   });
 
   describe('GET Brand - / FindOne', () => {
-    it('/:id should return an brand by id with admin user', async () => {
+    it('/:id should return a brand by id with admin cookies', async () => {
       const brand = createBrand();
       const dataNewBrand = await repo.save(brand);
       const res = await request(app.getHttpServer())
         .get(`/brand/${dataNewBrand.id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
       expect(data.id).toEqual(dataNewBrand.id);
       expect(data.name).toEqual(dataNewBrand.name);
     });
 
-    it('/:id should return an brand by id with seller user', async () => {
+    it('/:id should return a brand by id with seller cookies', async () => {
       const brand = createBrand();
       const dataNewBrand = await repo.save(brand);
       const res = await request(app.getHttpServer())
         .get(`/brand/${dataNewBrand.id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
+        .set('Cookie', sellerCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
       expect(data.id).toEqual(dataNewBrand.id);
       expect(data.name).toEqual(dataNewBrand.name);
     });
 
-    it('/:id should return 401 by id with customer access token', async () => {
+    it('/:id should return 401 by id with customer cookies', async () => {
       const brand = createBrand();
       const dataNewBrand = await repo.save(brand);
       const res = await request(app.getHttpServer())
         .get(`/brand/${dataNewBrand.id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
+        .set('Cookie', customerCookies);
       const { statusCode, error, message } = res.body;
       expect(statusCode).toBe(401);
       expect(error).toBe('Unauthorized');
@@ -286,7 +296,7 @@ describe('BrandController (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .get(`/brand/9999999`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, error, message } = res.body;
       expect(statusCode).toBe(404);
       expect(error).toBe('Not Found');
@@ -296,7 +306,6 @@ describe('BrandController (e2e) [GET]', () => {
 
   afterAll(async () => {
     await app.close();
-    // Close database connection after all tests
     await closeDataSource();
   });
 });

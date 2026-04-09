@@ -1,9 +1,43 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
+jest.mock('uuid', () => ({
+  v4: () => 'mock-uuid-1234',
+}));
+
+jest.mock('@aws-sdk/client-s3', () => ({
+  S3Client: jest.fn().mockImplementation(() => ({
+    send: jest.fn().mockResolvedValue({}),
+  })),
+  HeadBucketCommand: jest.fn(),
+  CreateBucketCommand: jest.fn(),
+}));
+
+jest.mock('@aws-sdk/lib-storage', () => ({
+  Upload: jest.fn().mockImplementation(() => ({
+    done: jest.fn().mockResolvedValue({}),
+  })),
+}));
+
+jest.mock('@upload/constants/storage.constants', () => ({
+  STORAGE_CONFIG: {
+    endpoint: 'localhost:9000',
+    region: 'us-east-1',
+    credentials: { accessKeyId: 'test', secretAccessKey: 'test' },
+    forcePathStyle: true,
+  },
+  BUCKETS: {
+    BRAND_LOGOS: 'brand-logos',
+    PRODUCT_IMAGES: 'product-images',
+    AVATARS: 'avatars',
+  },
+  PUBLIC_URL_BASE: 'http://localhost:9000',
+}));
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import * as cookieParser from 'cookie-parser';
 import { App } from 'supertest/types';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -38,12 +72,11 @@ describe('BrandController (e2e) [DELETE]', () => {
   let app: INestApplication<App>;
   let repo: any = undefined;
   let repoUser: any = undefined;
-  let adminAccessToken: string;
-  let sellerAccessToken: string;
-  let customerAccessToken: string;
+  let adminCookies: string[];
+  let sellerCookies: string[];
+  let customerCookies: string[];
 
   beforeAll(async () => {
-    // Initialize database connection once for the entire test suite
     await initDataSource();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
@@ -71,6 +104,7 @@ describe('BrandController (e2e) [DELETE]', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.use(cookieParser());
     await app.init();
     repo = app.get('BrandRepository');
     repoUser = app.get('UserRepository');
@@ -79,16 +113,16 @@ describe('BrandController (e2e) [DELETE]', () => {
   });
 
   beforeEach(async () => {
-    // Clean all data before each test to ensure isolation
     await cleanDB();
 
-    /* Login Users */
     const resLoginAdmin = await loginAdmin(app, repoUser);
-    adminAccessToken = resLoginAdmin.access_token;
+    adminCookies = resLoginAdmin.cookies;
+
     const resLoginSeller = await loginSeller(app, repoUser);
-    sellerAccessToken = resLoginSeller.access_token;
+    sellerCookies = resLoginSeller.cookies;
+
     const resLoginCustomer = await loginCustomer(app, repoUser);
-    customerAccessToken = resLoginCustomer.access_token;
+    customerCookies = resLoginCustomer.cookies;
   });
 
   describe('DELETE Brand', () => {
@@ -99,7 +133,7 @@ describe('BrandController (e2e) [DELETE]', () => {
       const res = await request(app.getHttpServer())
         .delete(`/brand/${id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode } = res.body;
       const deletedInDB = await repo.findOne({
         where: { id, isDeleted: false },
@@ -115,7 +149,7 @@ describe('BrandController (e2e) [DELETE]', () => {
       const res = await request(app.getHttpServer())
         .delete(`/brand/${id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
+        .set('Cookie', sellerCookies);
       const { statusCode, error } = res.body;
       expect(statusCode).toBe(401);
       expect(error).toBe('Unauthorized');
@@ -128,7 +162,7 @@ describe('BrandController (e2e) [DELETE]', () => {
       const res = await request(app.getHttpServer())
         .delete(`/brand/${id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
+        .set('Cookie', customerCookies);
       const { statusCode, error } = res.body;
       expect(statusCode).toBe(401);
       expect(error).toBe('Unauthorized');
@@ -140,7 +174,7 @@ describe('BrandController (e2e) [DELETE]', () => {
       const id = dataNewBrands[0].id;
       const res = await request(app.getHttpServer())
         .delete(`/brand/${id}`)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);
       expect(message).toBe('Invalid API key');
@@ -153,7 +187,7 @@ describe('BrandController (e2e) [DELETE]', () => {
       const res = await request(app.getHttpServer())
         .delete(`/brand/${id}`)
         .set('x-api-key', 'invalid-api-key')
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);
       expect(message).toBe('Invalid API key');
@@ -164,7 +198,7 @@ describe('BrandController (e2e) [DELETE]', () => {
       const res = await request(app.getHttpServer())
         .delete(`/brand/${id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(404);
       expect(message).toBe(`The Brand with ID: ${id} not found`);
@@ -173,7 +207,6 @@ describe('BrandController (e2e) [DELETE]', () => {
 
   afterAll(async () => {
     await app.close();
-    // Close database connection after all tests
     await closeDataSource();
   });
 });

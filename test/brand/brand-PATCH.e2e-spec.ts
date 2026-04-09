@@ -1,9 +1,43 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
+jest.mock('uuid', () => ({
+  v4: () => 'mock-uuid-1234',
+}));
+
+jest.mock('@aws-sdk/client-s3', () => ({
+  S3Client: jest.fn().mockImplementation(() => ({
+    send: jest.fn().mockResolvedValue({}),
+  })),
+  HeadBucketCommand: jest.fn(),
+  CreateBucketCommand: jest.fn(),
+}));
+
+jest.mock('@aws-sdk/lib-storage', () => ({
+  Upload: jest.fn().mockImplementation(() => ({
+    done: jest.fn().mockResolvedValue({}),
+  })),
+}));
+
+jest.mock('@upload/constants/storage.constants', () => ({
+  STORAGE_CONFIG: {
+    endpoint: 'localhost:9000',
+    region: 'us-east-1',
+    credentials: { accessKeyId: 'test', secretAccessKey: 'test' },
+    forcePathStyle: true,
+  },
+  BUCKETS: {
+    BRAND_LOGOS: 'brand-logos',
+    PRODUCT_IMAGES: 'product-images',
+    AVATARS: 'avatars',
+  },
+  PUBLIC_URL_BASE: 'http://localhost:9000',
+}));
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import * as cookieParser from 'cookie-parser';
 import { App } from 'supertest/types';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -13,6 +47,7 @@ import { Reflector, APP_INTERCEPTOR } from '@nestjs/core';
 import { AppModule } from '../../src/app.module';
 import { BrandModule } from '@brand/brand.module';
 import { UserModule } from '@user/user.module';
+import { UploadModule } from '@upload/upload.module';
 
 /* Interceptors */
 import { AuditInterceptor } from '@commons/interceptors/audit.interceptor';
@@ -41,12 +76,11 @@ describe('BrandController (e2e) [PATCH]', () => {
   let app: INestApplication<App>;
   let repo: any = undefined;
   let repoUser: any = undefined;
-  let adminAccessToken: string;
-  let sellerAccessToken: string;
-  let customerAccessToken: string;
+  let adminCookies: string[];
+  let sellerCookies: string[];
+  let customerCookies: string[];
 
   beforeAll(async () => {
-    // Initialize database connection once for the entire test suite
     await initDataSource();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
@@ -63,6 +97,7 @@ describe('BrandController (e2e) [PATCH]', () => {
         AppModule,
         BrandModule,
         UserModule,
+        UploadModule,
       ],
       providers: [
         {
@@ -74,6 +109,7 @@ describe('BrandController (e2e) [PATCH]', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.use(cookieParser());
     await app.init();
     repo = app.get('BrandRepository');
     repoUser = app.get('UserRepository');
@@ -82,20 +118,20 @@ describe('BrandController (e2e) [PATCH]', () => {
   });
 
   beforeEach(async () => {
-    // Clean all data before each test to ensure isolation
     await cleanDB();
 
-    /* Login Users */
     const resLoginAdmin = await loginAdmin(app, repoUser);
-    adminAccessToken = resLoginAdmin.access_token;
+    adminCookies = resLoginAdmin.cookies;
+
     const resLoginSeller = await loginSeller(app, repoUser);
-    sellerAccessToken = resLoginSeller.access_token;
+    sellerCookies = resLoginSeller.cookies;
+
     const resLoginCustomer = await loginCustomer(app, repoUser);
-    customerAccessToken = resLoginCustomer.access_token;
+    customerCookies = resLoginCustomer.cookies;
   });
 
   describe('PATCH Brand', () => {
-    it('/:id should update a brand with admin user', async () => {
+    it('/:id should update a brand with multipart form data', async () => {
       const newBrands = generateNewBrands(10);
       const dataNewBrands = await repo.save(newBrands);
       const id = dataNewBrands[0].id;
@@ -106,11 +142,40 @@ describe('BrandController (e2e) [PATCH]', () => {
       const res = await request(app.getHttpServer())
         .patch(`/brand/${id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`)
-        .send(updatedData);
+        .set('Cookie', adminCookies)
+        .field('name', updatedData.name!)
+        .field('slug', updatedData.slug!);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
       expect(data.name).toBe(updatedData.name);
+    });
+
+    it('/:id should update brand logo with new file', async () => {
+      const newBrands = generateNewBrands(10);
+      const dataNewBrands = await repo.save(newBrands);
+      const id = dataNewBrands[0].id;
+      const res = await request(app.getHttpServer())
+        .patch(`/brand/${id}`)
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies)
+        .attach('file', Buffer.from('fake-image-content'), 'new-logo.png');
+      const { statusCode, data } = res.body;
+      expect(statusCode).toBe(200);
+      expect(data.logo).toContain('brand-logos/');
+    });
+
+    it('/:id should update brand without changing logo', async () => {
+      const newBrands = generateNewBrands(10);
+      const dataNewBrands = await repo.save(newBrands);
+      const id = dataNewBrands[0].id;
+      const res = await request(app.getHttpServer())
+        .patch(`/brand/${id}`)
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies)
+        .field('name', 'New Name Only');
+      const { statusCode, data } = res.body;
+      expect(statusCode).toBe(200);
+      expect(data.name).toBe('New Name Only');
     });
 
     it('/:id should return 401 if the user is seller', async () => {
@@ -123,8 +188,8 @@ describe('BrandController (e2e) [PATCH]', () => {
       const res = await request(app.getHttpServer())
         .patch(`/brand/${id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`)
-        .send(updatedData);
+        .set('Cookie', sellerCookies)
+        .field('name', updatedData.name!);
       const { statusCode, error } = res.body;
       expect(statusCode).toBe(401);
       expect(error).toBe('Unauthorized');
@@ -140,8 +205,8 @@ describe('BrandController (e2e) [PATCH]', () => {
       const res = await request(app.getHttpServer())
         .patch(`/brand/${id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`)
-        .send(updatedData);
+        .set('Cookie', customerCookies)
+        .field('name', updatedData.name!);
       const { statusCode, error } = res.body;
       expect(statusCode).toBe(401);
       expect(error).toBe('Unauthorized');
@@ -154,12 +219,14 @@ describe('BrandController (e2e) [PATCH]', () => {
       const id = newBrands[1].id;
 
       const updatedData: UpdateBrandDto = {
-        name: brand.name,
+        name: brand.name!,
       };
       try {
         await request(app.getHttpServer())
-          .post(`/brand/${id}`)
-          .send(updatedData);
+          .patch(`/brand/${id}`)
+          .set('x-api-key', API_KEY)
+          .set('Cookie', adminCookies)
+          .field('name', updatedData.name!);
       } catch (error) {
         expect(error).toBeInstanceOf(ConflictException);
         expect(error.message).toBe(
@@ -176,8 +243,8 @@ describe('BrandController (e2e) [PATCH]', () => {
       const res = await request(app.getHttpServer())
         .patch(`/brand/${id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`)
-        .send(updatedData);
+        .set('Cookie', adminCookies)
+        .field('name', updatedData.name!);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(404);
       expect(message).toBe(`The Brand with ID: ${id} not found`);
@@ -192,8 +259,8 @@ describe('BrandController (e2e) [PATCH]', () => {
       };
       const res = await request(app.getHttpServer())
         .patch(`/brand/${id}`)
-        .set('Authorization', `Bearer ${adminAccessToken}`)
-        .send(updatedData);
+        .set('Cookie', adminCookies)
+        .field('name', updatedData.name!);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);
       expect(message).toBe('Invalid API key');
@@ -209,8 +276,8 @@ describe('BrandController (e2e) [PATCH]', () => {
       const res = await request(app.getHttpServer())
         .patch(`/brand/${id}`)
         .set('x-api-key', 'invalid-api-key')
-        .set('Authorization', `Bearer ${adminAccessToken}`)
-        .send(updatedData);
+        .set('Cookie', adminCookies)
+        .field('name', updatedData.name!);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);
       expect(message).toBe('Invalid API key');
@@ -219,7 +286,6 @@ describe('BrandController (e2e) [PATCH]', () => {
 
   afterAll(async () => {
     await app.close();
-    // Close database connection after all tests
     await closeDataSource();
   });
 });

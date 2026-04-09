@@ -45,19 +45,13 @@ import { JwtAuthGuard } from '@auth/guards/jwt-auth/jwt-auth.guard';
  * This controller exposes endpoints to count, list, create, update, and delete brands,
  * as well as to search brands by ID or name.
  */
+@ApiTags('Brands')
 @Controller('brand')
 export class BrandController {
   constructor(
     private readonly brandService: BrandService,
     private readonly uploadService: UploadService,
   ) {}
-
-  /**
-   * Gets the total count of all brands, including logically deleted ones if applicable.
-   * @returns Total number of brands.
-   */
-  @UseGuards(JwtAuthGuard, IsNotCustomerGuard)
-  @Get('count-all')
 
   /**
    * Gets the count of active brands.
@@ -75,7 +69,6 @@ export class BrandController {
    * @param paginationDto - Optional pagination and search parameters.
    * @returns Array of Brand objects or paginated result.
    */
-  @ApiTags('Brands')
   @ApiOperation({ summary: 'Get all brands with pagination' })
   @ApiResponse({
     status: 200,
@@ -94,7 +87,7 @@ export class BrandController {
   @UseGuards(JwtAuthGuard, IsNotCustomerGuard)
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.brandService.findOne(+id);
+    return this.brandService.findOne(id);
   }
 
   /**

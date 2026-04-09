@@ -31,6 +31,7 @@
     "^@subcategory/(.*)$": "<rootDir>/src/subcategory/$1",
     "^@supplier/(.*)$": "<rootDir>/src/supplier/$1",
     "^@tag/(.*)$": "<rootDir>/src/tag/$1",
+    "^@upload/(.*)$": "<rootDir>/src/upload/$1",
     "^@user/(.*)$": "<rootDir>/src/user/$1",
     "^@wishlist/(.*)$": "<rootDir>/src/wishlist/$1"
   }

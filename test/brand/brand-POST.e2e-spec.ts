@@ -1,9 +1,43 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
+jest.mock('uuid', () => ({
+  v4: () => 'mock-uuid-1234',
+}));
+
+jest.mock('@aws-sdk/client-s3', () => ({
+  S3Client: jest.fn().mockImplementation(() => ({
+    send: jest.fn().mockResolvedValue({}),
+  })),
+  HeadBucketCommand: jest.fn(),
+  CreateBucketCommand: jest.fn(),
+}));
+
+jest.mock('@aws-sdk/lib-storage', () => ({
+  Upload: jest.fn().mockImplementation(() => ({
+    done: jest.fn().mockResolvedValue({}),
+  })),
+}));
+
+jest.mock('@upload/constants/storage.constants', () => ({
+  STORAGE_CONFIG: {
+    endpoint: 'localhost:9000',
+    region: 'us-east-1',
+    credentials: { accessKeyId: 'test', secretAccessKey: 'test' },
+    forcePathStyle: true,
+  },
+  BUCKETS: {
+    BRAND_LOGOS: 'brand-logos',
+    PRODUCT_IMAGES: 'product-images',
+    AVATARS: 'avatars',
+  },
+  PUBLIC_URL_BASE: 'http://localhost:9000',
+}));
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import * as cookieParser from 'cookie-parser';
 import { App } from 'supertest/types';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -13,6 +47,7 @@ import { Reflector, APP_INTERCEPTOR } from '@nestjs/core';
 import { AppModule } from '../../src/app.module';
 import { BrandModule } from '@brand/brand.module';
 import { UserModule } from '@user/user.module';
+import { UploadModule } from '@upload/upload.module';
 
 /* Interceptors */
 import { AuditInterceptor } from '@commons/interceptors/audit.interceptor';
@@ -38,12 +73,11 @@ describe('BrandController (e2e) [POST]', () => {
   let app: INestApplication<App>;
   let repo: any = undefined;
   let repoUser: any = undefined;
-  let adminAccessToken: string;
-  let sellerAccessToken: string;
-  let customerAccessToken: string;
+  let adminCookies: string[];
+  let sellerCookies: string[];
+  let customerCookies: string[];
 
   beforeAll(async () => {
-    // Initialize database connection once for the entire test suite
     await initDataSource();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
@@ -60,6 +94,7 @@ describe('BrandController (e2e) [POST]', () => {
         AppModule,
         BrandModule,
         UserModule,
+        UploadModule,
       ],
       providers: [
         {
@@ -71,6 +106,7 @@ describe('BrandController (e2e) [POST]', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.use(cookieParser());
     await app.init();
     repo = app.get('BrandRepository');
     repoUser = app.get('UserRepository');
@@ -79,56 +115,86 @@ describe('BrandController (e2e) [POST]', () => {
   });
 
   beforeEach(async () => {
-    // Clean all data before each test to ensure isolation
     await cleanDB();
 
-    /* Login Users */
     const resLoginAdmin = await loginAdmin(app, repoUser);
-    adminAccessToken = resLoginAdmin.access_token;
+    adminCookies = resLoginAdmin.cookies;
+
     const resLoginSeller = await loginSeller(app, repoUser);
-    sellerAccessToken = resLoginSeller.access_token;
+    sellerCookies = resLoginSeller.cookies;
+
     const resLoginCustomer = await loginCustomer(app, repoUser);
-    customerAccessToken = resLoginCustomer.access_token;
+    customerCookies = resLoginCustomer.cookies;
   });
 
   describe('POST Brand', () => {
-    it('/ should create a brand, return 201 and the brand with admin user', async () => {
+    it('/ should create a brand with multipart form data, return 201', async () => {
       const newBrand = createBrand();
       const res = await request(app.getHttpServer())
         .post('/brand')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`)
-        .send(newBrand);
+        .set('Cookie', adminCookies)
+        .field('name', String(newBrand.name))
+        .field('slug', String(newBrand.slug));
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(201);
       expect(data.name).toEqual(newBrand.name);
     });
 
-    it('/ should create a brand, return 401 if user is seller', async () => {
+    it('/ should create a brand without logo, return 201', async () => {
       const newBrand = createBrand();
       const res = await request(app.getHttpServer())
         .post('/brand')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`)
-        .send(newBrand);
+        .set('Cookie', adminCookies)
+        .field('name', newBrand.name)
+        .field('slug', newBrand.slug);
+      const { statusCode, data } = res.body;
+      expect(statusCode).toBe(201);
+      expect(data.logo).toBeNull();
+    });
+
+    it('/ should create a brand with logo file, return 201', async () => {
+      const newBrand = createBrand();
+      const res = await request(app.getHttpServer())
+        .post('/brand')
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies)
+        .field('name', newBrand.name)
+        .field('slug', newBrand.slug)
+        .attach('file', Buffer.from('fake-image-content'), 'logo.png');
+      const { statusCode, data } = res.body;
+      expect(statusCode).toBe(201);
+      expect(data.logo).toContain('brand-logos/');
+    });
+
+    it('/ should return 401 if user is seller', async () => {
+      const newBrand = createBrand();
+      const res = await request(app.getHttpServer())
+        .post('/brand')
+        .set('x-api-key', API_KEY)
+        .set('Cookie', sellerCookies)
+        .field('name', newBrand.name)
+        .field('slug', newBrand.slug);
       const { statusCode, error } = res.body;
       expect(statusCode).toBe(401);
       expect(error).toBe('Unauthorized');
     });
 
-    it('/ should create a brand, return 401 if user is custonmer', async () => {
+    it('/ should return 401 if user is customer', async () => {
       const newBrand = createBrand();
       const res = await request(app.getHttpServer())
         .post('/brand')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`)
-        .send(newBrand);
+        .set('Cookie', customerCookies)
+        .field('name', newBrand.name)
+        .field('slug', newBrand.slug);
       const { statusCode, error } = res.body;
       expect(statusCode).toBe(401);
       expect(error).toBe('Unauthorized');
     });
 
-    it('/ should return a  conflict exception with existing brand name', async () => {
+    it('/ should return a conflict exception with existing brand name', async () => {
       const newBrand = createBrand();
       await repo.save(newBrand);
       const repeatedBrand = {
@@ -136,7 +202,12 @@ describe('BrandController (e2e) [POST]', () => {
         name: newBrand.name,
       };
       try {
-        await request(app.getHttpServer()).post('/brand').send(repeatedBrand);
+        await request(app.getHttpServer())
+          .post('/brand')
+          .set('x-api-key', API_KEY)
+          .set('Cookie', adminCookies)
+          .field('name', repeatedBrand.name)
+          .field('slug', repeatedBrand.slug);
       } catch (error) {
         expect(error).toBeInstanceOf(ConflictException);
         expect(error.message).toBe(
@@ -145,12 +216,13 @@ describe('BrandController (e2e) [POST]', () => {
       }
     });
 
-    it('/ should create a brand, return 401 if api key is missing', async () => {
+    it('/ should return 401 if api key is missing', async () => {
       const newBrand = createBrand();
       const res = await request(app.getHttpServer())
         .post('/brand')
-        .set('Authorization', `Bearer ${adminAccessToken}`)
-        .send(newBrand);
+        .set('Cookie', adminCookies)
+        .field('name', newBrand.name)
+        .field('slug', newBrand.slug);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);
       expect(message).toBe('Invalid API key');
@@ -159,7 +231,6 @@ describe('BrandController (e2e) [POST]', () => {
 
   afterAll(async () => {
     await app.close();
-    // Close database connection after all tests
     await closeDataSource();
   });
 });
