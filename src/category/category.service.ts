@@ -37,15 +37,6 @@ export class CategoryService
   ) {}
 
   /**
-   * Counts all categories, including deleted ones.
-   * @returns An object containing the total count of categories and an HTTP status code.
-   */
-  async countAll() {
-    const total = await this.repo.count();
-    return { statusCode: HttpStatus.OK, total };
-  }
-
-  /**
    * Counts all categories that are not marked as deleted.
    * @returns An object containing the total count of non-deleted categories and an HTTP status code.
    */
@@ -110,28 +101,6 @@ export class CategoryService
   }
 
   /**
-   * Retrieves all categories that are not marked as deleted.
-   * @returns An object containing the list of categories with relations, total count, and an HTTP status code.
-   */
-  async findAllWithRelations() {
-    const [categories, total] = await this.repo.findAndCount({
-      relations: ['createdBy, updatedBy'],
-      where: {
-        isDeleted: false,
-      },
-      order: {
-        name: 'ASC',
-      },
-    });
-
-    return {
-      statusCode: HttpStatus.OK,
-      data: categories,
-      total,
-    };
-  }
-
-  /**
    * Finds a single category by its ID.
    * @param id - The ID of the category to retrieve.
    * @returns A Result object containing the category data and an HTTP status code.
@@ -144,26 +113,6 @@ export class CategoryService
     });
     if (!category) {
       throw new NotFoundException(`The Category with ID: ${id} not found`);
-    }
-    return {
-      statusCode: HttpStatus.OK,
-      data: category,
-    };
-  }
-
-  /**
-   * Finds a single category by its name.
-   * @param name - The name of the category to retrieve.
-   * @returns A Result object containing the category data and an HTTP status code.
-   * @throws NotFoundException if the category is not found.
-   */
-  async findOneByName(name: string): Promise<Result<Category>> {
-    const category = await this.repo.findOne({
-      relations: ['createdBy', 'updatedBy'],
-      where: { name, isDeleted: false },
-    });
-    if (!category) {
-      throw new NotFoundException(`The Category with NAME: ${name} not found`);
     }
     return {
       statusCode: HttpStatus.OK,

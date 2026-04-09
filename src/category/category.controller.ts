@@ -48,17 +48,6 @@ export class CategoryController
   constructor(private readonly categoryService: CategoryService) {}
 
   /**
-   * Retrieves the total count of all categories.
-   *
-   * @returns The total number of categories in the system.
-   */
-  @UseGuards(JwtAuthGuard, IsNotCustomerGuard)
-  @Get('count-all')
-  countAll() {
-    return this.categoryService.countAll();
-  }
-
-  /**
    * Retrieves the total count of categories.
    * Delegates the counting logic to the CategoryService.
    *
@@ -86,15 +75,6 @@ export class CategoryController
   findAll(@Query() paginationDto?: PaginationDto) {
     return this.categoryService.findAll(paginationDto);
   }
-  /**
-   * Retrieves a list of all categories.
-   *
-   * @returns An array of all categories with relations.
-   */
-  @Get('relations')
-  findAllWithRelations() {
-    return this.categoryService.findAllWithRelations();
-  }
 
   /**
    * Retrieves a single category by its ID.
@@ -106,18 +86,6 @@ export class CategoryController
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.categoryService.findOne(+id);
-  }
-
-  /**
-   * Retrieves a single category by its name.
-   *
-   * @param name - The name of the category to retrieve.
-   * @returns The category with the specified name.
-   */
-  @UseGuards(JwtAuthGuard, IsNotCustomerGuard)
-  @Get('name/:name')
-  findOneByName(@Param('name') name: string) {
-    return this.categoryService.findOneByName(name);
   }
 
   /**
