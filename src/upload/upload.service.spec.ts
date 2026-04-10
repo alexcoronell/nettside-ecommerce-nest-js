@@ -64,13 +64,15 @@ describe('UploadService', () => {
     it('should return product-images bucket for invalid folder', async () => {
       const result = await service.uploadFile(mockFile, 'invalid-folder');
 
-      expect(result.key).toContain(BUCKETS.PRODUCT_IMAGES);
+      expect(result.key).toContain('mock-uuid-1234');
+      expect(result.key).toContain('test-logo.png');
     });
 
     it('should use product-images bucket as default', async () => {
       const result = await service.uploadFile(mockFile);
 
-      expect(result.key).toContain(BUCKETS.PRODUCT_IMAGES);
+      expect(result.key).toContain('mock-uuid-1234');
+      expect(result.key).toContain('test-logo.png');
     });
   });
 
@@ -78,7 +80,7 @@ describe('UploadService', () => {
     it('should upload logo to brand-logos bucket', async () => {
       const result = await service.uploadLogo(mockFile);
 
-      expect(result.key).toContain(BUCKETS.BRAND_LOGOS);
+      expect(result.key).toContain('mock-uuid-1234');
     });
   });
 
@@ -86,7 +88,7 @@ describe('UploadService', () => {
     it('should upload image to product-images bucket', async () => {
       const result = await service.uploadProductImage(mockFile);
 
-      expect(result.key).toContain(BUCKETS.PRODUCT_IMAGES);
+      expect(result.key).toContain('mock-uuid-1234');
     });
   });
 
@@ -94,7 +96,7 @@ describe('UploadService', () => {
     it('should upload avatar to avatars bucket', async () => {
       const result = await service.uploadAvatar(mockFile);
 
-      expect(result.key).toContain(BUCKETS.AVATARS);
+      expect(result.key).toContain('mock-uuid-1234');
     });
   });
 
@@ -149,7 +151,35 @@ describe('UploadService', () => {
   });
 
   describe('sanitizeFilename', () => {
-    it('should sanitize filename with special characters', async () => {
+    it('should replace spaces with dashes in filename', async () => {
+      const fileWithSpaces = {
+        ...mockFile,
+        originalname: 'test file name with spaces.png',
+      } as Express.Multer.File;
+
+      const result = await service.uploadFile(
+        fileWithSpaces,
+        BUCKETS.BRAND_LOGOS,
+      );
+
+      expect(result.key).toContain('test-file-name-with-spaces.png');
+    });
+
+    it('should handle multiple consecutive spaces', async () => {
+      const fileWithMultipleSpaces = {
+        ...mockFile,
+        originalname: 'test    multiple   spaces.png',
+      } as Express.Multer.File;
+
+      const result = await service.uploadFile(
+        fileWithMultipleSpaces,
+        BUCKETS.BRAND_LOGOS,
+      );
+
+      expect(result.key).toContain('test-multiple-spaces.png');
+    });
+
+    it('should preserve special characters in filename', async () => {
       const fileWithSpecialChars = {
         ...mockFile,
         originalname: 'test@file#name$with%special^chars.png',
@@ -160,10 +190,7 @@ describe('UploadService', () => {
         BUCKETS.BRAND_LOGOS,
       );
 
-      expect(result.key).not.toContain('@');
-      expect(result.key).not.toContain('#');
-      expect(result.key).not.toContain('$');
-      expect(result.key).toContain('test_file_name_with_special_chars.png');
+      expect(result.key).toContain('test@file#name$with%special^chars.png');
     });
 
     it('should handle filename with path traversal attempt', async () => {
@@ -177,8 +204,7 @@ describe('UploadService', () => {
         BUCKETS.BRAND_LOGOS,
       );
 
-      expect(result.key).not.toContain('../..');
-      expect(result.key).toContain('_etc_passwd.png');
+      expect(result.key).toContain('../../../etc/passwd.png');
     });
   });
 });

@@ -119,10 +119,7 @@ export class UploadService {
   }
 
   private sanitizeFilename(originalname: string): string {
-    return originalname
-      .replace(/[^a-zA-Z0-9._-]/g, '_')
-      .replace(/_+/g, '_')
-      .substring(0, 200);
+    return originalname.replace(/\s+/g, '-').substring(0, 200);
   }
 
   async uploadFile(
@@ -137,7 +134,7 @@ export class UploadService {
     await this.ensureBucketExists(bucket);
 
     const sanitizedFilename = this.sanitizeFilename(file.originalname);
-    const uniqueFilename = `${uuidv4()}-${sanitizedFilename}`;
+    const uniqueFilename = `${uuidv4()}---${sanitizedFilename}`;
     const key = uniqueFilename;
 
     const upload = new Upload({
