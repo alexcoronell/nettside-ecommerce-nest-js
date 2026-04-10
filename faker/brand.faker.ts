@@ -40,6 +40,14 @@ export const generateBrand = (id: number = 1): Brand => ({
   deletedBy: null,
 });
 
+export const generateManyNewBrands = (size: number): CreateBrandDto[] => {
+  const brands: CreateBrandDto[] = [];
+  for (let i = 0; i < size; i++) {
+    brands.push(createBrand());
+  }
+  return brands;
+};
+
 export const generateManyBrands = (size: number): Brand[] => {
   const brands: Brand[] = [];
   for (let i = 0; i < size; i++) {
