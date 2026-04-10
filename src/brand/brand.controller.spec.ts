@@ -160,7 +160,12 @@ describe('BrandController', () => {
       const changes = { name: 'newName' };
       await controller.update(1, changes, undefined, userId);
       expect(service.update).toHaveBeenCalledTimes(1);
-      expect(service.update).toHaveBeenCalledWith(1, userId, changes);
+      expect(service.update).toHaveBeenCalledWith(
+        1,
+        userId,
+        changes,
+        undefined,
+      );
     });
 
     it('should call update brand service with file', async () => {
@@ -175,8 +180,8 @@ describe('BrandController', () => {
 
       await controller.update(1, changes, file, userId);
 
-      expect(uploadService.uploadLogo).toHaveBeenCalledWith(file);
       expect(service.update).toHaveBeenCalledTimes(1);
+      expect(service.update).toHaveBeenCalledWith(1, userId, changes, file);
     });
   });
 

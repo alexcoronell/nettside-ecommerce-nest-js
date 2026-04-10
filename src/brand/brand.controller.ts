@@ -146,17 +146,7 @@ export class BrandController {
     @UploadedFile() file: Express.Multer.File | undefined,
     @UserId() userId: number,
   ) {
-    let logoUrl: string | undefined;
-
-    if (file) {
-      const uploadResult = await this.uploadService.uploadLogo(file);
-      logoUrl = uploadResult.url;
-    }
-
-    return this.brandService.update(id, userId, {
-      ...updateCategoryDto,
-      ...(logoUrl !== undefined && { logo: logoUrl }),
-    });
+    return this.brandService.update(id, userId, updateCategoryDto, file);
   }
 
   /**

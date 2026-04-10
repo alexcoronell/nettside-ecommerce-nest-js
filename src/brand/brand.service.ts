@@ -23,6 +23,9 @@ import { Result } from '@commons/types/result.type';
 /* Utils */
 import { createSlug } from '@commons/utils/create-slug.util';
 
+/* Services */
+import { UploadService } from '@upload/upload.service';
+
 @Injectable()
 export class BrandService
   implements IBaseService<Brand, CreateBrandDto, UpdateBrandDto>
@@ -30,6 +33,7 @@ export class BrandService
   constructor(
     @InjectRepository(Brand)
     private readonly repo: Repository<Brand>,
+    private readonly uploadService: UploadService,
   ) {}
 
   async count() {
@@ -135,10 +139,42 @@ export class BrandService
     };
   }
 
-  async update(id: number, userId: number, changes: UpdateBrandDto) {
-    const { data } = await this.findOne(id);
-    this.repo.merge(data as Brand, { ...changes, updatedBy: { id: userId } });
-    const rta = await this.repo.save(data as Brand);
+  async update(
+    id: number,
+    userId: number,
+    changes: UpdateBrandDto,
+    file?: Express.Multer.File,
+  ) {
+    const { data: existingBrand } = await this.findOne(id);
+    const brand = existingBrand as Brand;
+
+    let logoValue: string | null | undefined = changes.logo;
+
+    if (!file && brand.logo) {
+      const extracted = this.uploadService.extractKeyFromUrl(brand.logo);
+      if (extracted) {
+        await this.uploadService.deleteFile(extracted.key, extracted.bucket);
+      }
+      logoValue = null;
+    } else if (file) {
+      if (brand.logo) {
+        const extracted = this.uploadService.extractKeyFromUrl(brand.logo);
+        if (extracted) {
+          await this.uploadService.deleteFile(extracted.key, extracted.bucket);
+        }
+      }
+      const uploadResult = await this.uploadService.uploadLogo(file);
+      logoValue = uploadResult.url;
+    }
+
+    const updateData = {
+      ...changes,
+      ...(logoValue !== undefined && { logo: logoValue }),
+      updatedBy: { id: userId },
+    };
+
+    this.repo.merge(brand, updateData);
+    const rta = await this.repo.save(brand);
     return {
       statusCode: HttpStatus.OK,
       data: rta,

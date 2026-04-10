@@ -3,6 +3,7 @@ import {
   S3Client,
   CreateBucketCommand,
   PutBucketPolicyCommand,
+  DeleteObjectCommand,
 } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { v4 as uuidv4 } from 'uuid';
@@ -182,5 +183,31 @@ export class UploadService {
 
   async uploadAvatar(file: Express.Multer.File): Promise<UploadResult> {
     return this.uploadFile(file, BUCKETS.AVATARS);
+  }
+
+  async deleteFile(key: string, bucket: string): Promise<void> {
+    try {
+      await this.s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: bucket,
+          Key: key,
+        }),
+      );
+      this.logger.log(`File ${key} deleted from bucket ${bucket}`);
+    } catch (error) {
+      const err = error as { name?: string; message?: string };
+      this.logger.warn(`Failed to delete file ${key}: ${err.message}`);
+    }
+  }
+
+  extractKeyFromUrl(url: string): { key: string; bucket: string } | null {
+    const urlObj = new URL(url);
+    const pathParts = urlObj.pathname.split('/').filter(Boolean);
+    if (pathParts.length < 2) {
+      return null;
+    }
+    const bucket = pathParts[0];
+    const key = pathParts.slice(1).join('/');
+    return { key, bucket };
   }
 }
