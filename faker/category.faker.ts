@@ -15,7 +15,7 @@ import { createSlug } from '../src/commons/utils/create-slug.util';
 
 export const createCategory = (): CreateCategoryDto => {
   const name =
-    faker.commerce.productName() + faker.number.int({ min: 100, max: 200 });
+    faker.commerce.productName() + faker.number.int({ min: 1000, max: 2000 });
   return {
     name,
     slug: createSlug(name),
@@ -36,6 +36,7 @@ export const generateCategory = (id: number = 1): Category => ({
   ...generateBaseEntity(id),
   ...createCategory(),
   id,
+  name: `${generateCategory().name}-${id}`,
   createdBy: generateUser(),
   updatedBy: generateUser(),
   deletedBy: null,
