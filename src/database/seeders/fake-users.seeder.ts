@@ -8,7 +8,8 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from '@user/entities/user.entity';
 
-import { generateManyUsers } from '@faker/user.faker';
+import { generateManyNewUsers } from '@faker/user.faker';
+import { CreateUserDto } from '@user/dto/create-user.dto';
 
 @Injectable()
 export class FakeUsersSeeder {
@@ -21,7 +22,7 @@ export class FakeUsersSeeder {
     const userCount = await this.userRepository.count();
     const adminUser = await this.userRepository.findOneBy({ id: 1 });
 
-    if (userCount > 100) {
+    if (userCount >= 100) {
       console.log('⚠️  Fake Users already exist. Skipping seed.');
       return false;
     }
@@ -30,13 +31,14 @@ export class FakeUsersSeeder {
     const password = '12345678';
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const users = generateManyUsers(numberUsers);
+    const users: CreateUserDto[] = generateManyNewUsers(numberUsers);
 
     for (const userData of users) {
       const user = this.userRepository.create({
         ...userData,
         password: hashedPassword,
         createdBy: adminUser,
+        updatedBy: adminUser,
       });
 
       const savedUser = await this.userRepository.save(user);

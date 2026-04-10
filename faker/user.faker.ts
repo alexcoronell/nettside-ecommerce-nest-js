@@ -50,6 +50,14 @@ export const generateCustomer = (
   deletedBy: null,
 });
 
+export const generateManyNewUsers = (size = 1): CreateUserDto[] => {
+  const users: CreateUserDto[] = [];
+  for (let i = 0; i < size; i++) {
+    users.push(createUser());
+  }
+  return users;
+};
+
 export const generateManyUsers = (size: number): User[] => {
   const limit = size ?? 10;
   const users: User[] = [];
