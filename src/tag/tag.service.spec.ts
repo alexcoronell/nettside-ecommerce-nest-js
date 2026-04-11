@@ -1,9 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 
 /* Services */
 import { TagService } from './tag.service';
@@ -12,7 +9,9 @@ import { TagService } from './tag.service';
 import { Tag } from './entities/tag.entity';
 
 /* DTO's */
+import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
+import { PaginationDto } from '@commons/dtos/Pagination.dto';
 
 /* Faker */
 import { generateTag, generateManyTags } from '@faker/tag.faker';
@@ -20,216 +19,244 @@ import { User } from '@user/entities/user.entity';
 
 describe('TagService', () => {
   let service: TagService;
-  let repository: Repository<Tag>;
+
+  const mockTag: Tag = generateTag();
+  const mockTags: Tag[] = generateManyTags(10);
+
+  const createMockRepo = () => ({
+    count: jest.fn(),
+    findAndCount: jest.fn(),
+    findOne: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+    merge: jest.fn(),
+  });
+
+  let mockRepository: ReturnType<typeof createMockRepo>;
 
   beforeEach(async () => {
+    mockRepository = createMockRepo();
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TagService,
         {
           provide: getRepositoryToken(Tag),
-          useClass: Repository,
+          useValue: mockRepository,
         },
       ],
     }).compile();
     service = module.get<TagService>(TagService);
-    repository = module.get<Repository<Tag>>(getRepositoryToken(Tag));
+    jest.clearAllMocks();
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
 
-  describe('count tags services', () => {
-    it('should return total all tags', async () => {
-      jest.spyOn(repository, 'count').mockResolvedValue(100);
-
-      const { statusCode, total } = await service.countAll();
-      expect(repository.count).toHaveBeenCalledTimes(1);
-      expect(statusCode).toBe(200);
-      expect(total).toEqual(100);
-    });
-
-    it('should return total tags not removed', async () => {
-      jest.spyOn(repository, 'count').mockResolvedValue(100);
-      const { statusCode, total } = await service.count();
-      expect(repository.count).toHaveBeenCalledTimes(1);
-      expect(repository.count).toHaveBeenCalledWith({
+  describe('count', () => {
+    it('should return total non-deleted tags', async () => {
+      mockRepository.count.mockResolvedValue(100);
+      const result = await service.count();
+      expect(mockRepository.count).toHaveBeenCalledWith({
         where: { isDeleted: false },
       });
-      expect(statusCode).toBe(200);
-      expect(total).toEqual(100);
+      expect(result.statusCode).toBe(200);
+      expect(result.total).toBe(100);
+    });
+
+    it('should handle count errors', async () => {
+      mockRepository.count.mockRejectedValue(new Error('DB error'));
+      await expect(service.count()).rejects.toThrow('DB error');
     });
   });
 
-  describe('find tags services', () => {
-    it('findAll should return all tags with pagination', async () => {
-      const mocks = generateManyTags(1);
-
-      jest
-        .spyOn(repository, 'findAndCount')
-        .mockResolvedValue([mocks.slice(0, 10), mocks.length]);
-
-      const { statusCode, data, meta } = await service.findAll();
-      expect(repository.findAndCount).toHaveBeenCalledTimes(1);
-      expect(repository.findAndCount).toHaveBeenCalledWith({
+  describe('findAll', () => {
+    it('should return all non-deleted tags with default pagination', async () => {
+      mockRepository.findAndCount.mockResolvedValue([
+        mockTags,
+        mockTags.length,
+      ]);
+      const result = await service.findAll();
+      expect(mockRepository.findAndCount).toHaveBeenCalledWith({
         where: { isDeleted: false },
-        order: { name: 'ASC' },
         relations: ['createdBy', 'updatedBy'],
+        order: { name: 'ASC' },
         skip: 0,
         take: 10,
       });
-      expect(statusCode).toBe(200);
-      expect(meta.total).toEqual(mocks.length);
-      expect(data).toEqual(mocks.slice(0, 10));
+      expect(result.statusCode).toBe(200);
+      expect(result.data).toEqual(mockTags);
     });
 
-    it('findOne should return a tags', async () => {
-      const mock = generateTag();
-      const id = mock.id;
+    it('should apply custom pagination', async () => {
+      const paginationDto: PaginationDto = { page: 2, limit: 5 };
+      mockRepository.findAndCount.mockResolvedValue([mockTags.slice(0, 5), 5]);
+      await service.findAll(paginationDto);
+      expect(mockRepository.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          skip: 5,
+          take: 5,
+        }),
+      );
+    });
 
-      jest.spyOn(repository, 'findOne').mockResolvedValue(mock);
+    it('should apply search with ILike', async () => {
+      const paginationDto: PaginationDto = { search: 'test' };
+      mockRepository.findAndCount.mockResolvedValue([
+        mockTags,
+        mockTags.length,
+      ]);
+      await service.findAll(paginationDto);
+      expect(mockRepository.findAndCount).toHaveBeenCalled();
+    });
 
-      const { statusCode, data } = await service.findOne(id);
-      expect(repository.findOne).toHaveBeenCalledTimes(1);
-      expect(repository.findOne).toHaveBeenCalledWith({
+    it('should apply custom sorting', async () => {
+      const paginationDto: PaginationDto = { sortBy: 'id', sortOrder: 'DESC' };
+      mockRepository.findAndCount.mockResolvedValue([
+        mockTags,
+        mockTags.length,
+      ]);
+      await service.findAll(paginationDto);
+      expect(mockRepository.findAndCount).toHaveBeenCalled();
+    });
+
+    it('should handle findAndCount errors', async () => {
+      mockRepository.findAndCount.mockRejectedValue(new Error('DB error'));
+      await expect(service.findAll()).rejects.toThrow('DB error');
+    });
+  });
+
+  describe('findOne', () => {
+    it('should return tag by id', async () => {
+      mockRepository.findOne.mockResolvedValue(mockTag);
+      const result = await service.findOne(1);
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
         relations: ['createdBy', 'updatedBy'],
-        where: { id, isDeleted: false },
+        where: { id: 1, isDeleted: false },
       });
-      expect(statusCode).toBe(200);
-      expect(data).toEqual(mock);
+      expect(result.statusCode).toBe(200);
+      expect(result.data).toEqual(mockTag);
     });
 
-    it('findOne should throw NotFoundException if tag does not exist', async () => {
-      const id = 1;
-      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
-
-      try {
-        await service.findOne(id);
-      } catch (error) {
-        expect(error).toBeInstanceOf(NotFoundException);
-        expect(error.message).toBe(`The Tag with ID: ${id} not found`);
-      }
+    it('should throw NotFoundException if tag not found', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+      await expect(service.findOne(999)).rejects.toThrow(NotFoundException);
     });
 
-    it('findOne should throw NotFoundException if tags does not exist with Rejects', async () => {
-      const id = 1;
-      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
-
-      await expect(service.findOne(id)).rejects.toThrowError(
-        new NotFoundException(`The Tag with ID: ${id} not found`),
+    it('should throw NotFoundException with correct message', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+      await expect(service.findOne(42)).rejects.toThrow(
+        'The Tag with ID: 42 not found',
       );
     });
 
-    it('findOneByName should return a tag', async () => {
-      const tag = generateTag();
-
-      jest.spyOn(repository, 'findOne').mockResolvedValue(tag);
-
-      const { statusCode, data } = await service.findOneByName(tag.name);
-      expect(repository.findOne).toHaveBeenCalledTimes(1);
-      expect(statusCode).toBe(200);
-      expect(data).toEqual(tag);
-    });
-
-    it('findOneByName should throw NotFoundException if Tag does not exist', async () => {
-      const name = 'nameTest';
-      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
-
-      try {
-        await service.findOneByName(name);
-      } catch (error) {
-        expect(error).toBeInstanceOf(NotFoundException);
-        expect(error.message).toBe(`The Tag with NAME: ${name} not found`);
-      }
+    it('should handle findOne errors', async () => {
+      mockRepository.findOne.mockRejectedValue(new Error('DB error'));
+      await expect(service.findOne(1)).rejects.toThrow('DB error');
     });
   });
 
-  describe('create tags services', () => {
-    it('create should return a Tag', async () => {
-      const mock = generateTag();
+  describe('create', () => {
+    it('should create a new tag with user relations', async () => {
+      const dto: CreateTagDto = { name: 'New Tag' };
       const userId: User['id'] = 1;
-
-      jest.spyOn(repository, 'create').mockReturnValue(mock);
-      jest.spyOn(repository, 'save').mockResolvedValue(mock);
-
-      const { statusCode, data } = await service.create(mock, userId);
-      expect(statusCode).toBe(201);
-      expect(data).toEqual(mock);
+      mockRepository.create.mockReturnValue({ ...dto });
+      mockRepository.save.mockResolvedValue({ id: 1, ...dto });
+      const result = await service.create(dto, userId);
+      expect(mockRepository.create).toHaveBeenCalledWith({
+        ...dto,
+        createdBy: { id: userId },
+        updatedBy: { id: userId },
+      });
+      expect(mockRepository.save).toHaveBeenCalled();
+      expect(result.statusCode).toBe(201);
     });
 
-    it('create should return Conflict Exception when name Tag exists', async () => {
-      const mock = generateTag();
-      const userId: User['id'] = 1;
-      jest.spyOn(repository, 'create').mockReturnValue(mock);
-      jest.spyOn(repository, 'save').mockResolvedValue(mock);
-
-      try {
-        await service.create(mock, userId);
-      } catch (error) {
-        expect(error).toBeInstanceOf(ConflictException);
-        expect(error.message).toBe(`Tag ${mock.name} already exists`);
-      }
-    });
-  });
-
-  describe('update tags services', () => {
-    it('update should return message: have been modified', async () => {
-      const mock = generateTag();
-      const id = mock.id;
-      const changes: UpdateTagDto = { name: 'newName' };
-      const userId: User['id'] = 1;
-      jest.spyOn(repository, 'findOne').mockResolvedValue(mock);
-      jest.spyOn(repository, 'merge').mockReturnValue({ ...mock, ...changes });
-      jest.spyOn(repository, 'save').mockResolvedValue(mock);
-
-      const { statusCode, message } = await service.update(id, userId, changes);
-      expect(repository.findOne).toHaveBeenCalledTimes(1);
-      expect(repository.merge).toHaveBeenCalledTimes(1);
-      expect(repository.save).toHaveBeenCalledTimes(1);
-      expect(statusCode).toBe(200);
-      expect(message).toEqual(`The Tag with ID: ${id} has been modified`);
+    it('should return created tag with message', async () => {
+      mockRepository.create.mockReturnValue(mockTag);
+      mockRepository.save.mockResolvedValue(mockTag);
+      const result = await service.create(mockTag, 1);
+      expect(result.message).toBe('The Tag was created');
     });
 
-    it('update should throw NotFoundException if Tag does not exist', async () => {
-      const id = 1;
-      const userId: User['id'] = 1;
-      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
-
-      try {
-        await service.update(id, userId, { name: 'newName' });
-      } catch (error) {
-        expect(error).toBeInstanceOf(NotFoundException);
-        expect(error.message).toBe(`The Tag with ID: ${id} not found`);
-      }
+    it('should handle create errors', async () => {
+      mockRepository.create.mockReturnValue(mockTag);
+      mockRepository.save.mockRejectedValue(new Error('DB error'));
+      await expect(service.create(mockTag, 1)).rejects.toThrow('DB error');
     });
   });
 
-  describe('remove tags services', () => {
-    it('remove should return status and message', async () => {
-      const mock = generateTag();
-      const id = mock.id;
+  describe('update', () => {
+    it('should update tag and set updatedBy relation', async () => {
+      const changes: UpdateTagDto = { name: 'Updated Name' };
       const userId: User['id'] = 1;
-      jest.spyOn(repository, 'findOne').mockResolvedValue(mock);
-      jest.spyOn(repository, 'merge').mockReturnValue({
-        ...mock,
+      mockRepository.findOne.mockResolvedValue(mockTag);
+      mockRepository.merge.mockReturnValue({ ...mockTag, ...changes });
+      mockRepository.save.mockResolvedValue({ ...mockTag, ...changes });
+      const result = await service.update(1, userId, changes);
+      expect(mockRepository.merge).toHaveBeenCalledWith(mockTag, {
+        ...changes,
+        updatedBy: { id: userId },
+      });
+      expect(mockRepository.save).toHaveBeenCalled();
+      expect(result.statusCode).toBe(200);
+    });
+
+    it('should throw NotFoundException if tag does not exist', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+      await expect(service.update(999, 1, { name: 'test' })).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should return message with tag id', async () => {
+      mockRepository.findOne.mockResolvedValue(mockTag);
+      mockRepository.merge.mockReturnValue(mockTag);
+      mockRepository.save.mockResolvedValue(mockTag);
+      const result = await service.update(42, 1, { name: 'test' });
+      expect(result.message).toBe('The Tag with ID: 42 has been modified');
+    });
+
+    it('should handle update errors', async () => {
+      mockRepository.findOne.mockRejectedValue(new Error('DB error'));
+      await expect(service.update(1, 1, { name: 'test' })).rejects.toThrow(
+        'DB error',
+      );
+    });
+  });
+
+  describe('remove', () => {
+    it('should soft delete tag by setting isDeleted to true', async () => {
+      const userId: User['id'] = 1;
+      mockRepository.findOne.mockResolvedValue(mockTag);
+      mockRepository.merge.mockReturnValue({ ...mockTag, isDeleted: true });
+      mockRepository.save.mockResolvedValue({ ...mockTag, isDeleted: true });
+      const result = await service.remove(1, userId);
+      expect(mockRepository.merge).toHaveBeenCalledWith(mockTag, {
         isDeleted: true,
+        deletedBy: { id: userId },
       });
-      jest.spyOn(repository, 'save').mockResolvedValue(mock);
-
-      const { statusCode, message } = await service.remove(id, userId);
-      expect(statusCode).toBe(200);
-      expect(message).toEqual(`The Tag with ID: ${id} has been deleted`);
+      expect(mockRepository.save).toHaveBeenCalled();
+      expect(result.statusCode).toBe(200);
     });
 
-    it('remove should throw NotFoundException if Tag does not exist with Rejects', async () => {
-      const id = 1;
-      const userId: User['id'] = 1;
-      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
+    it('should throw NotFoundException if tag does not exist', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+      await expect(service.remove(999, 1)).rejects.toThrow(NotFoundException);
+    });
 
-      await expect(service.remove(id, userId)).rejects.toThrowError(
-        new NotFoundException(`The Tag with ID: ${id} not found`),
-      );
+    it('should return message with tag id', async () => {
+      mockRepository.findOne.mockResolvedValue(mockTag);
+      mockRepository.merge.mockReturnValue({ ...mockTag, isDeleted: true });
+      mockRepository.save.mockResolvedValue({ ...mockTag, isDeleted: true });
+      const result = await service.remove(42, 1);
+      expect(result.message).toBe('The Tag with ID: 42 has been deleted');
+    });
+
+    it('should handle remove errors', async () => {
+      mockRepository.findOne.mockRejectedValue(new Error('DB error'));
+      await expect(service.remove(1, 1)).rejects.toThrow('DB error');
     });
   });
 });

@@ -29,11 +29,6 @@ export class TagService
     private readonly repo: Repository<Tag>,
   ) {}
 
-  async countAll() {
-    const total = await this.repo.count();
-    return { statusCode: HttpStatus.OK, total };
-  }
-
   async count() {
     const total = await this.repo.count({
       where: {
@@ -100,20 +95,6 @@ export class TagService
     return {
       statusCode: HttpStatus.OK,
       data,
-    };
-  }
-
-  async findOneByName(name: string): Promise<Result<Tag>> {
-    const data = await this.repo.findOne({
-      relations: ['createdBy', 'updatedBy'],
-      where: { name, isDeleted: false },
-    });
-    if (!data) {
-      throw new NotFoundException(`The Tag with NAME: ${name} not found`);
-    }
-    return {
-      statusCode: HttpStatus.OK,
-      data: data,
     };
   }
 

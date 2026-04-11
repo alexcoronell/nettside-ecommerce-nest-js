@@ -41,12 +41,6 @@ export class TagController
   constructor(private readonly tagService: TagService) {}
 
   @UseGuards(JwtAuthGuard, IsNotCustomerGuard)
-  @Get('count-all')
-  countAll() {
-    return this.tagService.countAll();
-  }
-
-  @UseGuards(JwtAuthGuard, IsNotCustomerGuard)
   @Get('count')
   count() {
     return this.tagService.count();
@@ -73,12 +67,6 @@ export class TagController
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.tagService.findOne(+id);
-  }
-
-  @UseGuards(JwtAuthGuard, IsNotCustomerGuard)
-  @Get('name/:name')
-  findOneByname(@Param('name') name: string) {
-    return this.tagService.findOneByName(name);
   }
 
   @UseGuards(JwtAuthGuard, AdminGuard)
