@@ -41,7 +41,7 @@ export class FakeCategoriesSeeder {
       });
 
       const savedCategory = await this.categoryRepository.save(category);
-      console.log(`✅ category created: ${savedCategory.name}`);
+      console.log(`✅ Category created: ${savedCategory.name}`);
     }
 
     return true;

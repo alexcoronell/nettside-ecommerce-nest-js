@@ -1,10 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BootstrapService } from './bootstrap.service';
 import { UserSeeder } from '../database/seeders/user.seeder';
-import { FakeUsersSeeder } from '../database/seeders/fake-users.seeder';
-import { FakeBrandsSeeder } from '../database/seeders/fake-brands.seeder';
-import { FakeCategoriesSeeder } from '../database/seeders/fake-categories.seeder';
-import { FakeSubcategoriesSeeder } from '../database/seeders/fake-subcategories.seeder';
+import {
+  FakeBrandsSeeder,
+  FakeCategoriesSeeder,
+  FakeDiscountsSeeder,
+  FakeSubcategoriesSeeder,
+  FakeUsersSeeder,
+} from '@database/seeders';
 
 describe('BootstrapService', () => {
   let service: BootstrapService;
@@ -12,6 +15,7 @@ describe('BootstrapService', () => {
   let fakeUsersSeeder: { seed: jest.Mock };
   let fakeBrandsSeeder: { seed: jest.Mock };
   let fakeCategoriesSeeder: { seed: jest.Mock };
+  let fakeDiscountsSeeder: { seed: jest.Mock };
   let fakeSubcategoriesSeeder: { seed: jest.Mock };
 
   const originalEnv = { ...process.env };
@@ -33,6 +37,10 @@ describe('BootstrapService', () => {
     };
 
     fakeCategoriesSeeder = {
+      seed: jest.fn().mockResolvedValue(undefined),
+    };
+
+    fakeDiscountsSeeder = {
       seed: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -58,6 +66,10 @@ describe('BootstrapService', () => {
         {
           provide: FakeCategoriesSeeder,
           useValue: fakeCategoriesSeeder,
+        },
+        {
+          provide: FakeDiscountsSeeder,
+          useValue: fakeDiscountsSeeder,
         },
         {
           provide: FakeSubcategoriesSeeder,
@@ -89,6 +101,7 @@ describe('BootstrapService', () => {
       expect(fakeUsersSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeBrandsSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeCategoriesSeeder.seed).toHaveBeenCalledTimes(1);
+      expect(fakeDiscountsSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeSubcategoriesSeeder.seed).toHaveBeenCalledTimes(1);
     });
 
@@ -103,6 +116,7 @@ describe('BootstrapService', () => {
       expect(fakeUsersSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeBrandsSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeCategoriesSeeder.seed).toHaveBeenCalledTimes(1);
+      expect(fakeDiscountsSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeSubcategoriesSeeder.seed).toHaveBeenCalledTimes(1);
     });
 
@@ -117,6 +131,7 @@ describe('BootstrapService', () => {
       expect(fakeUsersSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeBrandsSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeCategoriesSeeder.seed).toHaveBeenCalledTimes(1);
+      expect(fakeDiscountsSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeSubcategoriesSeeder.seed).toHaveBeenCalledTimes(1);
     });
 
@@ -160,6 +175,7 @@ describe('BootstrapService', () => {
       expect(fakeUsersSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeBrandsSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeCategoriesSeeder.seed).toHaveBeenCalledTimes(1);
+      expect(fakeDiscountsSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeSubcategoriesSeeder.seed).toHaveBeenCalledTimes(1);
     });
 
@@ -173,6 +189,7 @@ describe('BootstrapService', () => {
       expect(fakeUsersSeeder.seed).not.toHaveBeenCalled();
       expect(fakeBrandsSeeder.seed).not.toHaveBeenCalled();
       expect(fakeCategoriesSeeder.seed).not.toHaveBeenCalled();
+      expect(fakeDiscountsSeeder.seed).not.toHaveBeenCalled();
       expect(fakeSubcategoriesSeeder.seed).not.toHaveBeenCalled();
     });
 
@@ -186,6 +203,7 @@ describe('BootstrapService', () => {
       expect(fakeUsersSeeder.seed).not.toHaveBeenCalled();
       expect(fakeBrandsSeeder.seed).not.toHaveBeenCalled();
       expect(fakeCategoriesSeeder.seed).not.toHaveBeenCalled();
+      expect(fakeDiscountsSeeder.seed).not.toHaveBeenCalled();
       expect(fakeSubcategoriesSeeder.seed).not.toHaveBeenCalled();
     });
 
@@ -199,6 +217,7 @@ describe('BootstrapService', () => {
       expect(fakeUsersSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeBrandsSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeCategoriesSeeder.seed).toHaveBeenCalledTimes(1);
+      expect(fakeDiscountsSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeSubcategoriesSeeder.seed).toHaveBeenCalledTimes(1);
     });
 

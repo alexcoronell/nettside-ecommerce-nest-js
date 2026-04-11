@@ -3,27 +3,34 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { BootstrapService } from './bootstrap.service';
 
 /* Models */
-import { User } from '@user/entities/user.entity';
 import { Brand } from '@brand/entities/brand.entity';
 import { Category } from '@category/entities/category.entity';
+import { Discount } from '@discount/entities/discount.entity';
 import { Subcategory } from '@subcategory/entities/subcategory.entity';
+import { User } from '@user/entities/user.entity';
 
 /* Seeders */
 import { UserSeeder } from '../database/seeders/user.seeder';
-import { FakeUsersSeeder } from '../database/seeders/fake-users.seeder';
-import { FakeBrandsSeeder } from '../database/seeders/fake-brands.seeder';
-import { FakeCategoriesSeeder } from '../database/seeders/fake-categories.seeder';
-import { FakeSubcategoriesSeeder } from '../database/seeders/fake-subcategories.seeder';
+import {
+  FakeBrandsSeeder,
+  FakeCategoriesSeeder,
+  FakeDiscountsSeeder,
+  FakeSubcategoriesSeeder,
+  FakeUsersSeeder,
+} from '@database/seeders';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Brand, Category, Subcategory])],
+  imports: [
+    TypeOrmModule.forFeature([Brand, Category, Discount, Subcategory, User]),
+  ],
   providers: [
     BootstrapService,
     UserSeeder,
-    FakeUsersSeeder,
     FakeBrandsSeeder,
     FakeCategoriesSeeder,
+    FakeDiscountsSeeder,
     FakeSubcategoriesSeeder,
+    FakeUsersSeeder,
   ],
 })
 export class BootstrapModule {}

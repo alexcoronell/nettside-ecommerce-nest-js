@@ -47,7 +47,7 @@ export class FakeSubcategoriesSeeder {
 
       const savedSubcategory =
         await this.subcategoryRepository.save(subcategory);
-      console.log(`✅ subcategory created: ${savedSubcategory.name}`);
+      console.log(`✅ Subcategory created: ${savedSubcategory.name}`);
     }
 
     return true;
