@@ -3,12 +3,16 @@ import { BootstrapService } from './bootstrap.service';
 import { UserSeeder } from '../database/seeders/user.seeder';
 import { FakeUsersSeeder } from '../database/seeders/fake-users.seeder';
 import { FakeBrandsSeeder } from '../database/seeders/fake-brands.seeder';
+import { FakeCategoriesSeeder } from '../database/seeders/fake-categories.seeder';
+import { FakeSubcategoriesSeeder } from '../database/seeders/fake-subcategories.seeder';
 
 describe('BootstrapService', () => {
   let service: BootstrapService;
   let userSeeder: { seed: jest.Mock };
   let fakeUsersSeeder: { seed: jest.Mock };
   let fakeBrandsSeeder: { seed: jest.Mock };
+  let fakeCategoriesSeeder: { seed: jest.Mock };
+  let fakeSubcategoriesSeeder: { seed: jest.Mock };
 
   const originalEnv = { ...process.env };
   const originalNodeEnv = process.env.NODE_ENV;
@@ -28,6 +32,14 @@ describe('BootstrapService', () => {
       seed: jest.fn().mockResolvedValue(undefined),
     };
 
+    fakeCategoriesSeeder = {
+      seed: jest.fn().mockResolvedValue(undefined),
+    };
+
+    fakeSubcategoriesSeeder = {
+      seed: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BootstrapService,
@@ -42,6 +54,14 @@ describe('BootstrapService', () => {
         {
           provide: FakeBrandsSeeder,
           useValue: fakeBrandsSeeder,
+        },
+        {
+          provide: FakeCategoriesSeeder,
+          useValue: fakeCategoriesSeeder,
+        },
+        {
+          provide: FakeSubcategoriesSeeder,
+          useValue: fakeSubcategoriesSeeder,
         },
       ],
     }).compile();
@@ -68,6 +88,8 @@ describe('BootstrapService', () => {
       expect(userSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeUsersSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeBrandsSeeder.seed).toHaveBeenCalledTimes(1);
+      expect(fakeCategoriesSeeder.seed).toHaveBeenCalledTimes(1);
+      expect(fakeSubcategoriesSeeder.seed).toHaveBeenCalledTimes(1);
     });
 
     it('should run both seeders in non-production environment', async () => {
@@ -80,6 +102,8 @@ describe('BootstrapService', () => {
       expect(userSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeUsersSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeBrandsSeeder.seed).toHaveBeenCalledTimes(1);
+      expect(fakeCategoriesSeeder.seed).toHaveBeenCalledTimes(1);
+      expect(fakeSubcategoriesSeeder.seed).toHaveBeenCalledTimes(1);
     });
 
     it('should run userSeeder and fakeUsersSeeder when RUN_SEEDS is true in production', async () => {
@@ -92,6 +116,8 @@ describe('BootstrapService', () => {
       expect(userSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeUsersSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeBrandsSeeder.seed).toHaveBeenCalledTimes(1);
+      expect(fakeCategoriesSeeder.seed).toHaveBeenCalledTimes(1);
+      expect(fakeSubcategoriesSeeder.seed).toHaveBeenCalledTimes(1);
     });
 
     it('should run userSeeder in production when RUN_SEEDS is true', async () => {
@@ -133,6 +159,8 @@ describe('BootstrapService', () => {
 
       expect(fakeUsersSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeBrandsSeeder.seed).toHaveBeenCalledTimes(1);
+      expect(fakeCategoriesSeeder.seed).toHaveBeenCalledTimes(1);
+      expect(fakeSubcategoriesSeeder.seed).toHaveBeenCalledTimes(1);
     });
 
     it('should NOT run fakeUsersSeeder in production when FAKE_DATA is false', async () => {
@@ -144,6 +172,8 @@ describe('BootstrapService', () => {
 
       expect(fakeUsersSeeder.seed).not.toHaveBeenCalled();
       expect(fakeBrandsSeeder.seed).not.toHaveBeenCalled();
+      expect(fakeCategoriesSeeder.seed).not.toHaveBeenCalled();
+      expect(fakeSubcategoriesSeeder.seed).not.toHaveBeenCalled();
     });
 
     it('should NOT run fakeUsersSeeder in production when FAKE_DATA is undefined', async () => {
@@ -155,17 +185,21 @@ describe('BootstrapService', () => {
 
       expect(fakeUsersSeeder.seed).not.toHaveBeenCalled();
       expect(fakeBrandsSeeder.seed).not.toHaveBeenCalled();
+      expect(fakeCategoriesSeeder.seed).not.toHaveBeenCalled();
+      expect(fakeSubcategoriesSeeder.seed).not.toHaveBeenCalled();
     });
 
     it('should run seeds in e2e environment even without production', async () => {
       process.env.NODE_ENV = 'e2e';
-      delete process.env.IS_PRODUCTION;
+      process.env.FAKE_DATA = 'true';
 
       await service.onModuleInit();
 
       expect(userSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeUsersSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeBrandsSeeder.seed).toHaveBeenCalledTimes(1);
+      expect(fakeCategoriesSeeder.seed).toHaveBeenCalledTimes(1);
+      expect(fakeSubcategoriesSeeder.seed).toHaveBeenCalledTimes(1);
     });
 
     it('should skip userSeeder in production for e2e when RUN_SEEDS not set', async () => {

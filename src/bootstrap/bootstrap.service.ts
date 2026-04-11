@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { UserSeeder } from '../database/seeders/user.seeder';
 import { FakeUsersSeeder } from '../database/seeders/fake-users.seeder';
 import { FakeBrandsSeeder } from '../database/seeders/fake-brands.seeder';
-import { FakeCategoriesSeeder } from 'src/database/seeders/fake-categories.seeder';
+import { FakeCategoriesSeeder } from '../database/seeders/fake-categories.seeder';
 import { FakeSubcategoriesSeeder } from '../database/seeders/fake-subcategories.seeder';
 
 @Injectable()
