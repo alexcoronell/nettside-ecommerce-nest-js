@@ -17,6 +17,7 @@ export const createUser = (): CreateUserDto => ({
   email: faker.internet.email().toLowerCase(),
   password: faker.internet.password(),
   phoneNumber: faker.phone.number({ style: 'international' }),
+  role: faker.helpers.arrayElement(Object.values(UserRoleEnum)),
   department: faker.location.state(),
   city: faker.location.city(),
   address: faker.location.streetAddress(),
