@@ -47,15 +47,6 @@ describe('SubcategoryService', () => {
   });
 
   describe('count subcategories services', () => {
-    it('should return total all subcategories', async () => {
-      jest.spyOn(repository, 'count').mockResolvedValue(100);
-
-      const { statusCode, total } = await service.countAll();
-      expect(repository.count).toHaveBeenCalledTimes(1);
-      expect(statusCode).toBe(200);
-      expect(total).toEqual(100);
-    });
-
     it('should return total subcategories not removed', async () => {
       jest.spyOn(repository, 'count').mockResolvedValue(100);
       const { statusCode, total } = await service.count();
@@ -107,25 +98,6 @@ describe('SubcategoryService', () => {
       expect(data).toEqual(mock);
     });
 
-    it('findAllByCategoryAndName should returns all subcategories by category and name', async () => {
-      const categoryId = 3;
-      const tagNameTest = 'tagNameTest';
-      const mock = generateManySubcategories(1, categoryId, tagNameTest);
-      jest
-        .spyOn(repository, 'findAndCount')
-        .mockResolvedValue([mock, mock.length]);
-      const { statusCode, data, total } =
-        await service.findAllByCategoryAndName(categoryId, tagNameTest);
-
-      expect(repository.findAndCount).toHaveBeenCalledTimes(1);
-      expect(repository.findAndCount).toHaveBeenCalledWith({
-        where: { category: { id: categoryId }, name: tagNameTest },
-      });
-      expect(statusCode).toBe(200);
-      expect(total).toEqual(mock.length);
-      expect(data).toEqual(mock);
-    });
-
     it('findOne should return a subcategory', async () => {
       const mock = generateSubcategory();
       const id = mock.id;
@@ -161,32 +133,6 @@ describe('SubcategoryService', () => {
       await expect(service.findOne(id)).rejects.toThrowError(
         new NotFoundException(`The Subcategory with ID: ${id} not found`),
       );
-    });
-
-    it('findOneByName should return a subcategory', async () => {
-      const mock = generateSubcategory();
-      const name = mock.name;
-
-      jest.spyOn(repository, 'findOne').mockResolvedValue(mock);
-
-      const { statusCode, data } = await service.findOneByName(name);
-      expect(repository.findOne).toHaveBeenCalledTimes(1);
-      expect(statusCode).toBe(200);
-      expect(data).toEqual(mock);
-    });
-
-    it('findOneByName should throw NotFoundException if subcategory does not exist', async () => {
-      const name = 'nameTest';
-      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
-
-      try {
-        await service.findOneByName(name);
-      } catch (error) {
-        expect(error).toBeInstanceOf(NotFoundException);
-        expect(error.message).toBe(
-          `The Subcategory with NAME: ${name} not found`,
-        );
-      }
     });
 
     it('findOneBySlug should return a subcategory', async () => {

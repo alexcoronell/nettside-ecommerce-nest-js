@@ -42,12 +42,6 @@ export class SubcategoryController
   constructor(private readonly subcategoryService: SubcategoryService) {}
 
   @UseGuards(JwtAuthGuard, IsNotCustomerGuard)
-  @Get('count-all')
-  countAll() {
-    return this.subcategoryService.countAll();
-  }
-
-  @UseGuards(JwtAuthGuard, IsNotCustomerGuard)
   @Get('count')
   count() {
     return this.subcategoryService.count();
@@ -80,12 +74,6 @@ export class SubcategoryController
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.subcategoryService.findOne(+id);
-  }
-
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  @Get('name/:name')
-  findOneByName(@Param('name') name: string) {
-    return this.subcategoryService.findOneByName(name);
   }
 
   @UseGuards(JwtAuthGuard, AdminGuard)

@@ -29,11 +29,6 @@ export class SubcategoryService
     private readonly repo: Repository<Subcategory>,
   ) {}
 
-  async countAll() {
-    const total = await this.repo.count();
-    return { statusCode: HttpStatus.OK, total };
-  }
-
   async count() {
     const total = await this.repo.count({
       where: {
@@ -106,20 +101,6 @@ export class SubcategoryService
     };
   }
 
-  async findAllByCategoryAndName(
-    categoryId: number,
-    name: string,
-  ): Promise<Result<Subcategory[]>> {
-    const [data, total] = await this.repo.findAndCount({
-      where: { category: { id: categoryId }, name },
-    });
-    return {
-      statusCode: HttpStatus.OK,
-      data,
-      total,
-    };
-  }
-
   async findOne(id: Subcategory['id']) {
     const data = await this.repo.findOne({
       relations: ['createdBy', 'updatedBy'],
@@ -127,22 +108,6 @@ export class SubcategoryService
     });
     if (!data) {
       throw new NotFoundException(`The Subcategory with ID: ${id} not found`);
-    }
-    return {
-      statusCode: HttpStatus.OK,
-      data,
-    };
-  }
-
-  async findOneByName(name: string): Promise<Result<Subcategory>> {
-    const data = await this.repo.findOne({
-      relations: ['createdBy', 'updatedBy'],
-      where: { name, isDeleted: false },
-    });
-    if (!data) {
-      throw new NotFoundException(
-        `The Subcategory with NAME: ${name} not found`,
-      );
     }
     return {
       statusCode: HttpStatus.OK,

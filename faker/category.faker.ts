@@ -34,9 +34,9 @@ export const generateNewCategories = (
 
 export const generateCategory = (id: number = 1): Category => ({
   ...generateBaseEntity(id),
-  ...createCategory(),
   id,
-  name: `${generateCategory().name}-${id}`,
+  name: `Category ${id}`,
+  slug: `category-${id}`,
   createdBy: generateUser(),
   updatedBy: generateUser(),
   deletedBy: null,
