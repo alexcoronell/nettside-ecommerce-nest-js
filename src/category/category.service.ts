@@ -19,6 +19,10 @@ import {
 
 /* Types */
 import { Result } from '@commons/types/result.type';
+
+/* Utils */
+import { createSlug } from '@commons/utils/create-slug.util';
+
 /**
  * Service for managing categories in the application.
  * Implements the IBaseService interface for CRUD operations.
@@ -148,6 +152,7 @@ export class CategoryService
   async create(dto: CreateCategoryDto, userId: number) {
     const newCategory = this.repo.create({
       ...dto,
+      slug: dto.slug || createSlug(dto.name),
       createdBy: { id: userId },
       updatedBy: { id: userId },
     });
