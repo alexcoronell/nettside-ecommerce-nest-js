@@ -1,8 +1,39 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
+jest.mock('uuid', () => ({
+  v4: () => 'mock-uuid-1234',
+}));
+
+jest.mock('@aws-sdk/client-s3', () => ({
+  S3Client: jest.fn().mockImplementation(() => ({
+    send: jest.fn().mockResolvedValue({}),
+  })),
+  HeadBucketCommand: jest.fn(),
+  CreateBucketCommand: jest.fn(),
+}));
+
+jest.mock('@aws-sdk/lib-storage', () => ({
+  Upload: jest.fn().mockImplementation(() => ({
+    done: jest.fn().mockResolvedValue({}),
+  })),
+}));
+
+jest.mock('@upload/constants/storage.constants', () => ({
+  STORAGE_CONFIG: {
+    endpoint: 'localhost:9000',
+    region: 'us-east-1',
+    credentials: { accessKeyId: 'test', secretAccessKey: 'test' },
+    forcePathStyle: true,
+  },
+  BUCKETS: {
+    BRAND_LOGOS: 'brand-logos',
+  },
+}));
+
+import * as cookieParser from 'cookie-parser';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException, INestApplication } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { App } from 'supertest/types';
 import { ConfigModule } from '@nestjs/config';
@@ -41,9 +72,9 @@ describe('DiscountController (e2e) [PATCH]', () => {
   let app: INestApplication<App>;
   let repo: any = undefined;
   let repoUser: any = undefined;
-  let adminAccessToken: string;
-  let sellerAccessToken: string;
-  let customerAccessToken: string;
+  let adminCookies: string[];
+  let sellerCookies: string[];
+  let customerCookies: string[];
 
   beforeAll(async () => {
     // Initialize database connection once for the entire test suite
@@ -74,6 +105,7 @@ describe('DiscountController (e2e) [PATCH]', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.use(cookieParser());
     await app.init();
     repo = app.get('DiscountRepository');
     repoUser = app.get('UserRepository');
@@ -87,15 +119,15 @@ describe('DiscountController (e2e) [PATCH]', () => {
 
     /* Login Users */
     const resLoginAdmin = await loginAdmin(app, repoUser);
-    adminAccessToken = resLoginAdmin.access_token;
+    adminCookies = resLoginAdmin.cookies;
     const resLoginSeller = await loginSeller(app, repoUser);
-    sellerAccessToken = resLoginSeller.access_token;
+    sellerCookies = resLoginSeller.cookies;
     const resLoginCustomer = await loginCustomer(app, repoUser);
-    customerAccessToken = resLoginCustomer.access_token;
+    customerCookies = resLoginCustomer.cookies;
   });
 
   describe('PATCH Discount', () => {
-    it('/:id should update a discount with admin user', async () => {
+    it('/:id should update a discount with admin cookies', async () => {
       const newDiscounts = generateNewDiscounts(10);
       const dataNewDiscounts = await repo.save(newDiscounts);
       const id = dataNewDiscounts[0].id;
@@ -106,7 +138,7 @@ describe('DiscountController (e2e) [PATCH]', () => {
       const res = await request(app.getHttpServer())
         .patch(`/discount/${id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .set('Cookie', adminCookies)
         .send(updatedData);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
@@ -123,7 +155,7 @@ describe('DiscountController (e2e) [PATCH]', () => {
       const res = await request(app.getHttpServer())
         .patch(`/discount/${id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`)
+        .set('Cookie', sellerCookies)
         .send(updatedData);
       const { statusCode, error } = res.body;
       expect(statusCode).toBe(401);
@@ -140,32 +172,11 @@ describe('DiscountController (e2e) [PATCH]', () => {
       const res = await request(app.getHttpServer())
         .patch(`/discount/${id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`)
+        .set('Cookie', customerCookies)
         .send(updatedData);
       const { statusCode, error } = res.body;
       expect(statusCode).toBe(401);
       expect(error).toBe('Unauthorized');
-    });
-
-    it('/:id should return Conflict if discount code is already taken', async () => {
-      const newDiscounts = await repo.save(generateNewDiscounts(10));
-
-      const discount = newDiscounts[0];
-      const id = newDiscounts[1].id;
-
-      const updatedData: UpdateDiscountDto = {
-        code: discount.code,
-      };
-      try {
-        await request(app.getHttpServer())
-          .post(`/discount/${id}`)
-          .send(updatedData);
-      } catch (error) {
-        expect(error).toBeInstanceOf(ConflictException);
-        expect(error.message).toBe(
-          `The Discount CODE: ${updatedData.code} is already in use`,
-        );
-      }
     });
 
     it('should return 404 if discount does not exist', async () => {
@@ -176,7 +187,7 @@ describe('DiscountController (e2e) [PATCH]', () => {
       const res = await request(app.getHttpServer())
         .patch(`/discount/${id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .set('Cookie', adminCookies)
         .send(updatedData);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(404);
@@ -192,7 +203,7 @@ describe('DiscountController (e2e) [PATCH]', () => {
       };
       const res = await request(app.getHttpServer())
         .patch(`/discount/${id}`)
-        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .set('Cookie', adminCookies)
         .send(updatedData);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);
@@ -209,7 +220,7 @@ describe('DiscountController (e2e) [PATCH]', () => {
       const res = await request(app.getHttpServer())
         .patch(`/discount/${id}`)
         .set('x-api-key', 'invalid-api-key')
-        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .set('Cookie', adminCookies)
         .send(updatedData);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);

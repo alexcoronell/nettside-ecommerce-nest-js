@@ -41,11 +41,6 @@ export class DiscountController
 {
   constructor(private readonly discountService: DiscountService) {}
 
-  @Get('count-all')
-  countAll() {
-    return this.discountService.countAll();
-  }
-
   @Get('count')
   count() {
     return this.discountService.count();
@@ -71,11 +66,6 @@ export class DiscountController
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.discountService.findOne(+id);
-  }
-
-  @Get('code/:code')
-  findOneByCode(@Param('code') code: string) {
-    return this.discountService.findOneByCode(code);
   }
 
   @UseGuards(AdminGuard)

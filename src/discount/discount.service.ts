@@ -29,11 +29,6 @@ export class DiscountService
     private readonly repo: Repository<Discount>,
   ) {}
 
-  async countAll() {
-    const total = await this.repo.count();
-    return { statusCode: HttpStatus.OK, total };
-  }
-
   async count() {
     const total = await this.repo.count({
       where: {
@@ -94,24 +89,6 @@ export class DiscountService
     return PaginationHelper.createPaginatedResult(data, total, page, limit);
   }
 
-  async findAllWithRelations() {
-    const [discount, total] = await this.repo.findAndCount({
-      relations: ['createdBy', 'updatedBy'],
-      where: {
-        isDeleted: false,
-      },
-      order: {
-        code: 'ASC',
-      },
-    });
-
-    return {
-      statusCode: HttpStatus.OK,
-      data: discount,
-      total,
-    };
-  }
-
   async findOne(id: Discount['id']): Promise<Result<Discount>> {
     const discount = await this.repo.findOne({
       relations: ['createdBy', 'updatedBy'],
@@ -119,20 +96,6 @@ export class DiscountService
     });
     if (!discount) {
       throw new NotFoundException(`The Discount with ID: ${id} not found`);
-    }
-    return {
-      statusCode: HttpStatus.OK,
-      data: discount,
-    };
-  }
-
-  async findOneByCode(code: string): Promise<Result<Discount>> {
-    const discount = await this.repo.findOne({
-      relations: ['createdBy', 'updatedBy'],
-      where: { code, isDeleted: false },
-    });
-    if (!discount) {
-      throw new NotFoundException(`The Discount with CODE: ${code} not found`);
     }
     return {
       statusCode: HttpStatus.OK,
