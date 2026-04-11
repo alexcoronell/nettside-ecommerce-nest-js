@@ -43,6 +43,16 @@ export const generateCategory = (id: number = 1): Category => ({
   ...generateRelations(),
 });
 
+export const generateManyNewCategories = (
+  size: number,
+): CreateCategoryDto[] => {
+  const categories: CreateCategoryDto[] = [];
+  for (let i = 0; i < size; i++) {
+    categories.push(createCategory());
+  }
+  return categories;
+};
+
 export const generateManyCategories = (size: number): Category[] => {
   const categories: Category[] = [];
   for (let i = 0; i < size; i++) {
