@@ -3,6 +3,7 @@ import { UserSeeder } from '../database/seeders/user.seeder';
 import { FakeUsersSeeder } from '../database/seeders/fake-users.seeder';
 import { FakeBrandsSeeder } from '../database/seeders/fake-brands.seeder';
 import { FakeCategoriesSeeder } from 'src/database/seeders/fake-categories.seeder';
+import { FakeSubcategoriesSeeder } from '../database/seeders/fake-subcategories.seeder';
 
 @Injectable()
 export class BootstrapService implements OnModuleInit {
@@ -13,6 +14,7 @@ export class BootstrapService implements OnModuleInit {
     private readonly fakeUsersSeeder: FakeUsersSeeder,
     private readonly fakeBrandsSeeder: FakeBrandsSeeder,
     private readonly fakeCategoriesSeeder: FakeCategoriesSeeder,
+    private readonly fakeSubcategoriesSeeder: FakeSubcategoriesSeeder,
   ) {}
 
   async onModuleInit() {
@@ -30,6 +32,7 @@ export class BootstrapService implements OnModuleInit {
       await this.fakeUsersSeeder.seed();
       await this.fakeBrandsSeeder.seed();
       await this.fakeCategoriesSeeder.seed();
+      await this.fakeSubcategoriesSeeder.seed();
       this.logger.log('✅ Seeds completed');
     }
   }

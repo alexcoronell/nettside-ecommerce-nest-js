@@ -21,9 +21,9 @@ export class FakeCategoriesSeeder {
       return false;
     }
 
-    const Categories: CreateCategoryDto[] = generateManyNewCategories(100);
+    const categories: CreateCategoryDto[] = generateManyNewCategories(100);
 
-    for (const categoryData of Categories) {
+    for (const categoryData of categories) {
       const category = this.categoryRepository.create(categoryData);
 
       const savedCategory = await this.categoryRepository.save(category);
