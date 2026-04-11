@@ -10,13 +10,13 @@ import { Subcategory } from '@subcategory/entities/subcategory.entity';
 import { User } from '@user/entities/user.entity';
 
 /* Seeders */
-import { UserSeeder } from '../database/seeders/user.seeder';
 import {
   FakeBrandsSeeder,
   FakeCategoriesSeeder,
   FakeDiscountsSeeder,
   FakeSubcategoriesSeeder,
   FakeUsersSeeder,
+  UserSeeder,
 } from '@database/seeders';
 
 @Module({

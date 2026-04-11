@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BootstrapService } from './bootstrap.service';
-import { UserSeeder } from '../database/seeders/user.seeder';
+import { UserSeeder } from '@database/seeders/user.seeder';
 import {
   FakeBrandsSeeder,
   FakeCategoriesSeeder,

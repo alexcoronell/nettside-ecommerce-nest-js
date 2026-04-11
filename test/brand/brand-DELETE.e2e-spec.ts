@@ -1,39 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-jest.mock('uuid', () => ({
-  v4: () => 'mock-uuid-1234',
-}));
-
-jest.mock('@aws-sdk/client-s3', () => ({
-  S3Client: jest.fn().mockImplementation(() => ({
-    send: jest.fn().mockResolvedValue({}),
-  })),
-  HeadBucketCommand: jest.fn(),
-  CreateBucketCommand: jest.fn(),
-}));
-
-jest.mock('@aws-sdk/lib-storage', () => ({
-  Upload: jest.fn().mockImplementation(() => ({
-    done: jest.fn().mockResolvedValue({}),
-  })),
-}));
-
-jest.mock('@upload/constants/storage.constants', () => ({
-  STORAGE_CONFIG: {
-    endpoint: 'localhost:9000',
-    region: 'us-east-1',
-    credentials: { accessKeyId: 'test', secretAccessKey: 'test' },
-    forcePathStyle: true,
-  },
-  BUCKETS: {
-    BRAND_LOGOS: 'brand-logos',
-    PRODUCT_IMAGES: 'product-images',
-    AVATARS: 'avatars',
-  },
-  PUBLIC_URL_BASE: 'http://localhost:9000',
-}));
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
@@ -67,6 +34,39 @@ import { loginCustomer } from '../utils/login-customer';
 
 /* ApiKey */
 const API_KEY = process.env.API_KEY || 'api-e2e-key';
+
+jest.mock('uuid', () => ({
+  v4: () => 'mock-uuid-1234',
+}));
+
+jest.mock('@aws-sdk/client-s3', () => ({
+  S3Client: jest.fn().mockImplementation(() => ({
+    send: jest.fn().mockResolvedValue({}),
+  })),
+  HeadBucketCommand: jest.fn(),
+  CreateBucketCommand: jest.fn(),
+}));
+
+jest.mock('@aws-sdk/lib-storage', () => ({
+  Upload: jest.fn().mockImplementation(() => ({
+    done: jest.fn().mockResolvedValue({}),
+  })),
+}));
+
+jest.mock('@upload/constants/storage.constants', () => ({
+  STORAGE_CONFIG: {
+    endpoint: 'localhost:9000',
+    region: 'us-east-1',
+    credentials: { accessKeyId: 'test', secretAccessKey: 'test' },
+    forcePathStyle: true,
+  },
+  BUCKETS: {
+    BRAND_LOGOS: 'brand-logos',
+    PRODUCT_IMAGES: 'product-images',
+    AVATARS: 'avatars',
+  },
+  PUBLIC_URL_BASE: 'http://localhost:9000',
+}));
 
 describe('BrandController (e2e) [DELETE]', () => {
   let app: INestApplication<App>;

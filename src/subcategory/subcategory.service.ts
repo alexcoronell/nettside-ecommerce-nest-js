@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, HttpStatus } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  HttpStatus,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 
@@ -134,6 +139,15 @@ export class SubcategoryService
   async create(dto: CreateSubcategoryDto, userId: number) {
     const categoryId = dto.category;
 
+    const existingSubcategory = await this.repo.findOne({
+      where: { name: dto.name, category: { id: categoryId }, isDeleted: false },
+    });
+    if (existingSubcategory) {
+      throw new ConflictException(
+        `The Subcategory NAME ${dto.name} is already in use with the same Category`,
+      );
+    }
+
     const newSubcategory = this.repo.create({
       ...dto,
       category: { id: categoryId },
@@ -149,14 +163,30 @@ export class SubcategoryService
   }
 
   async update(id: number, userId: number, changes: UpdateSubcategoryDto) {
-    const { data } = await this.findOne(id);
+    const { data: existingSubcategory } = await this.findOne(id);
     const categoryId = changes.category;
-    this.repo.merge(data, {
+
+    if (changes.name) {
+      const conflict = await this.repo.findOne({
+        where: {
+          name: changes.name,
+          category: { id: categoryId },
+          isDeleted: false,
+        },
+      });
+      if (conflict && conflict.id !== id) {
+        throw new ConflictException(
+          `The Subcategory NAME ${changes.name} is already in use with the same Category`,
+        );
+      }
+    }
+
+    this.repo.merge(existingSubcategory, {
       ...changes,
       category: { id: categoryId },
       updatedBy: { id: userId },
     });
-    const rta = await this.repo.save(data);
+    const rta = await this.repo.save(existingSubcategory);
     return {
       statusCode: HttpStatus.OK,
       data: rta,

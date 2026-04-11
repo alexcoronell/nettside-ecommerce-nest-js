@@ -53,7 +53,6 @@ export class SubcategoryController
    * @param paginationDto - Optional pagination and search parameters.
    * @returns Array of Subcategory objects or paginated result.
    */
-  @UseGuards(JwtAuthGuard, AdminGuard)
   @ApiTags('Subcategories')
   @ApiOperation({ summary: 'Get all subcategories with pagination' })
   @ApiResponse({

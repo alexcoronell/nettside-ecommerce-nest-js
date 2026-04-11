@@ -167,6 +167,7 @@ describe('SubcategoryService', () => {
       const mock = generateSubcategory();
       const userId: User['id'] = 1;
 
+      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
       jest.spyOn(repository, 'create').mockReturnValue(mock);
       jest.spyOn(repository, 'save').mockResolvedValue(mock);
 
@@ -187,8 +188,7 @@ describe('SubcategoryService', () => {
       const mock = generateSubcategory();
       const userId: User['id'] = 1;
 
-      jest.spyOn(repository, 'create').mockReturnValue(mock);
-      jest.spyOn(repository, 'save').mockResolvedValue(mock);
+      jest.spyOn(repository, 'findOne').mockResolvedValue(mock);
 
       const mockNewSubcategory: CreateSubcategoryDto = {
         ...mock,
@@ -200,7 +200,7 @@ describe('SubcategoryService', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(ConflictException);
         expect(error.message).toBe(
-          `The Subcategory already exists in this category`,
+          `The Subcategory NAME ${mock.name} is already in use with the same Category`,
         );
       }
     });
@@ -222,7 +222,7 @@ describe('SubcategoryService', () => {
       jest.spyOn(repository, 'save').mockResolvedValue(mock);
 
       const { statusCode, message } = await service.update(id, userId, changes);
-      expect(repository.findOne).toHaveBeenCalledTimes(1);
+      expect(repository.findOne).toHaveBeenCalledTimes(2);
       expect(repository.merge).toHaveBeenCalledTimes(1);
       expect(repository.save).toHaveBeenCalledTimes(1);
       expect(statusCode).toBe(200);
@@ -236,18 +236,23 @@ describe('SubcategoryService', () => {
       const id = mock.id;
       const userId: User['id'] = 1;
 
-      const changes: UpdateSubcategoryDto = { name: 'newName' };
+      const differentId = mock.id + 1;
+      const changes: UpdateSubcategoryDto = {
+        name: 'newName',
+        category: mock.category.id,
+      };
 
-      jest.spyOn(repository, 'findOne').mockResolvedValue(mock);
-      jest.spyOn(repository, 'merge').mockReturnValue(mock);
-      jest.spyOn(repository, 'save').mockResolvedValue(mock);
+      jest
+        .spyOn(repository, 'findOne')
+        .mockResolvedValueOnce(mock)
+        .mockResolvedValueOnce({ ...mock, id: differentId });
 
       try {
         await service.update(id, userId, changes);
       } catch (error) {
         expect(error).toBeInstanceOf(ConflictException);
         expect(error.message).toBe(
-          `The Subcategory already exists in other category`,
+          `The Subcategory NAME ${changes.name} is already in use with the same Category`,
         );
       }
     });

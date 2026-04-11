@@ -6,7 +6,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
 /* Modules */
-import { DatabaseModule } from './database/database.module';
+import { DatabaseModule } from '@database/database.module';
 import { AuthModule } from '@auth/auth.module';
 import { BrandModule } from '@brand/brand.module';
 import { CategoryModule } from '@category/category.module';
