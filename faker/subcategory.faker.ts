@@ -1,5 +1,7 @@
 import { faker } from '@faker-js/faker';
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 /* Entity */
 import { Subcategory } from '@subcategory/entities/subcategory.entity';
 
@@ -41,18 +43,24 @@ export const generateNewSubcategories = (
 
 export const generateSubcategory = (
   id: number = 1,
-  categoryId: number = 1,
+  _categoryId: number = 1,
   name: string | null = null,
-): Subcategory => ({
-  ...generateBaseEntity(id),
-  ...createSubcategory(categoryId, name || faker.lorem.word()),
-  id,
-  category: generateCategory(),
-  createdBy: generateUser(),
-  updatedBy: generateUser(),
-  deletedBy: null,
-  ...generateRelations(),
-});
+): Subcategory => {
+  const fakeNumber = faker.number.int({ min: 1, max: 100 });
+  const tempName = name || `${faker.lorem.words(3)}-${fakeNumber}`;
+  const slug = createSlug(tempName);
+  return {
+    ...generateBaseEntity(id),
+    name: tempName,
+    slug,
+    id,
+    category: generateCategory(),
+    createdBy: generateUser(),
+    updatedBy: generateUser(),
+    deletedBy: null,
+    ...generateRelations(),
+  };
+};
 
 export const generateManyNewSubcategories = (
   size: number,
