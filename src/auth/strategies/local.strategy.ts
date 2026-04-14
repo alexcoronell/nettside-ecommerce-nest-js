@@ -2,7 +2,7 @@
  * @fileoverview LocalStrategy - Passport Local Authentication Strategy
  *
  * Validates user credentials using email and password.
- * Uses bcrypt for password comparison.
+ * Uses LocalAuthStrategy for authentication (Strategy Pattern - OCP).
  *
  * @module LocalStrategy
  * @version 1.0.0
@@ -15,13 +15,14 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-local';
 
-import { AuthService } from '@auth/auth.service';
+import { LocalAuthStrategy } from '@auth/strategies/implementations/local-auth.strategy';
+import { CredentialsInput } from '@auth/strategies/contracts/auth-strategy.interface';
 
 /**
  * Passport strategy for local credential authentication
  *
- * Validates email/password against database.
- * Uses email as username field.
+ * Uses LocalAuthStrategy for validation (Strategy Pattern).
+ * Delegates credential validation to the strategy implementation.
  *
  * @class LocalStrategy
  * @extends PassportStrategy
@@ -38,24 +39,27 @@ export class LocalStrategy extends PassportStrategy(Strategy, 'local') {
    * Constructor
    *
    * @constructor
-   * @param {AuthService} authService - Auth service for validation
+   * @param {LocalAuthStrategy} localAuthStrategy - Local auth strategy implementation
    */
-  constructor(private authService: AuthService) {
+  constructor(private readonly localAuthStrategy: LocalAuthStrategy) {
     super({ usernameField: 'email' });
   }
 
   /**
    * Validates user credentials
    *
+   * Delegates to LocalAuthStrategy.validate() - Strategy Pattern.
+   *
    * @async
    * @method validate
    * @param {string} email - User email
    * @param {string} password - User password
-   * @returns {Promise<User|null>} Validated user or throws
+   * @returns {Promise<User>} Validated user or throws
    * @throws {UnauthorizedException} If credentials invalid
    */
   async validate(email: string, password: string) {
-    const user = await this.authService.validateUser(email, password);
+    const credentials: CredentialsInput = { email, password };
+    const user = await this.localAuthStrategy.validate(credentials);
     if (!user) {
       throw new UnauthorizedException('Not Allow');
     }

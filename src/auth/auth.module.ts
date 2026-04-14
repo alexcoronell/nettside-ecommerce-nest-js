@@ -22,6 +22,10 @@ import { LocalStrategy } from '@auth/strategies/local.strategy';
 import { JwtStrategy } from '@auth/strategies/jwt.strategy';
 import { JwtRefreshTokenStrategy } from '@auth/strategies/jwt-refresh-token.strategy';
 
+/* Strategy Implementations (OCP - Strategy Pattern) */
+import { LocalAuthStrategy } from '@auth/strategies/implementations/local-auth.strategy';
+import { JwtAuthStrategy } from '@auth/strategies/implementations/jwt-auth.strategy';
+
 /* Service */
 import { AuthService } from '@auth/auth.service';
 
@@ -60,7 +64,15 @@ import config from '@config/index';
     }),
     UserModule,
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy, JwtRefreshTokenStrategy],
+  providers: [
+    AuthService,
+    LocalStrategy,
+    JwtStrategy,
+    JwtRefreshTokenStrategy,
+    // Strategy Pattern implementations (OCP)
+    LocalAuthStrategy,
+    JwtAuthStrategy,
+  ],
   controllers: [AuthController],
 })
 export class AuthModule {}
