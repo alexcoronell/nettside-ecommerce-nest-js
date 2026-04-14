@@ -1,4 +1,36 @@
-import { PartialType } from '@nestjs/swagger';
-import { CreateSupplierDto } from './create-supplier.dto';
+/**
+ * @fileoverview UpdateSupplierDto - Supplier update DTO
+ *
+ * DTO for partial updates - only fields that CAN be updated.
+ * Does NOT extend CreateSupplierDto to avoid inheriting unwanted fields.
+ * Follows Interface Segregation Principle.
+ *
+ * @module UpdateSupplierDto
+ * @version 1.0.0
+ * @author Nettside E-commerce Team
+ */
 
-export class UpdateSupplierDto extends PartialType(CreateSupplierDto) {}
+import { IsString, IsEmail, IsPhoneNumber, IsOptional } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+
+export class UpdateSupplierDto {
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional()
+  readonly name?: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiPropertyOptional()
+  readonly contactName?: string;
+
+  @IsPhoneNumber()
+  @IsOptional()
+  @ApiPropertyOptional()
+  readonly phoneNumber?: string;
+
+  @IsEmail()
+  @IsOptional()
+  @ApiPropertyOptional()
+  readonly email?: string;
+}

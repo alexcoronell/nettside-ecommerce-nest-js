@@ -1,3 +1,14 @@
+/**
+ * @fileoverview CreateProductDto - Product creation DTO
+ *
+ * DTO for creating new products - only fields needed for creation.
+ * Follows Interface Segregation Principle.
+ *
+ * @module CreateProductDto
+ * @version 1.0.0
+ * @author Nettside E-commerce Team
+ */
+
 import {
   IsString,
   IsNotEmpty,
@@ -5,7 +16,7 @@ import {
   IsOptional,
   Min,
 } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Trim } from '@commons/decorators/trim.decorator';
 
 export class CreateProductDto {
@@ -18,35 +29,35 @@ export class CreateProductDto {
   @Trim()
   @IsString()
   @IsOptional()
-  @ApiProperty()
-  readonly description: string;
+  @ApiPropertyOptional()
+  readonly description?: string;
 
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   @IsOptional()
-  @ApiProperty()
-  readonly price: number;
+  @ApiPropertyOptional()
+  readonly price?: number;
 
   @IsNumber({ maxDecimalPlaces: 0 })
   @IsOptional()
-  @ApiProperty()
-  readonly stock: number;
+  @ApiPropertyOptional()
+  readonly stock?: number;
 
   @IsNumber()
   @Min(1)
   @IsNotEmpty()
   @ApiProperty()
-  category: number;
+  readonly category: number;
 
   @IsNumber()
   @Min(1)
   @IsNotEmpty()
   @ApiProperty()
-  subcategory: number;
+  readonly subcategory: number;
 
   @IsNumber()
   @Min(1)
   @IsNotEmpty()
   @ApiProperty()
-  brand: number;
+  readonly brand: number;
 }

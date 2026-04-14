@@ -1,50 +1,49 @@
 /**
- * @fileoverview ResponseUserDto - User response DTO
+ * @fileoverview ResponseDiscountDto - Discount response DTO
  *
- * DTO for API responses - excludes password and sensitive fields.
+ * DTO for API responses - excludes internal and sensitive fields.
  * Follows Interface Segregation Principle - separate from create/update.
  *
- * @module ResponseUserDto
+ * @module ResponseDiscountDto
  * @version 1.0.0
  * @author Nettside E-commerce Team
  */
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { UserRoleEnum } from '@commons/enums/user-role.enum';
 
-export class ResponseUserDto {
+export class ResponseDiscountDto {
   @ApiProperty()
   readonly id: number;
 
   @ApiProperty()
-  readonly firstname: string;
+  readonly code: string;
+
+  @ApiPropertyOptional()
+  readonly description: string | null;
+
+  @ApiPropertyOptional()
+  readonly type: string | null;
 
   @ApiProperty()
-  readonly lastname: string;
+  readonly value: number;
 
   @ApiProperty()
-  readonly email: string;
+  readonly startDate: Date;
+
+  @ApiPropertyOptional()
+  readonly endDate: Date | null;
 
   @ApiProperty()
-  readonly phoneNumber: string;
+  readonly minimumOrderAmount: number;
+
+  @ApiPropertyOptional()
+  readonly usageLimit: number | null;
+
+  @ApiPropertyOptional()
+  readonly usageLimitPerUser: number | null;
 
   @ApiProperty()
-  readonly isActive: boolean;
-
-  @ApiProperty({ enum: UserRoleEnum })
-  readonly role: UserRoleEnum;
-
-  @ApiProperty()
-  readonly department: string;
-
-  @ApiProperty()
-  readonly city: string;
-
-  @ApiProperty()
-  readonly address: string;
-
-  @ApiProperty()
-  readonly neighborhood: string;
+  readonly active: boolean;
 
   @ApiProperty()
   readonly isDeleted: boolean;
