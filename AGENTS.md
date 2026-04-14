@@ -151,3 +151,4 @@ npm run lint               # Lint code
 - [x] tag - completed in current branch
 - [x] user - completed in current branch
 - [x] product - completed in current branch
+- [x] wishlist - completed in current branch
