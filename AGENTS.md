@@ -84,23 +84,13 @@ npm run lint               # Lint code
 | --------------------------- | ------------------------------------------------------------- | --------------- |
 | **S** Single Responsibility | Services well-separated by module                             | ✅ Done         |
 | **O** Open/Closed           | IAuthStrategy interface + LocalAuthStrategy + JwtAuthStrategy | ✅ Done (PR #2) |
-
-### 🔄 In Progress
-
-| Principle                   | Implementation                                          | Status    |
-| --------------------------- | ------------------------------------------------------- | --------- |
-| **I** Interface Segregation | DTOs: split create/read/update into separate interfaces | 🔄 Active |
-
-### 📋 Pending
-
-| Principle                  | Implementation                    | Status |
-| -------------------------- | --------------------------------- | ------ |
-| **L** Liskov Substitution  | TypeORM entities well-structured  | ✅ OK  |
-| **D** Dependency Inversion | Correct use of DI in constructors | ✅ OK  |
+| **I** Interface Segregation | DTOs: split create/read/update into separate interfaces       | ✅ Done (PR #4) |
+| **L** Liskov Substitution   | TypeORM entities well-structured                              | ✅ OK           |
+| **D** Dependency Inversion  | Correct use of DI in constructors                             | ✅ OK           |
 
 ---
 
-## Current Task: DTO Interface Segregation
+All SOLID principles are now implemented!
 
 **Problem**: DTOs mix create/read/update responsibilities. Example:
 
