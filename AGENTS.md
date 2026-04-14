@@ -143,6 +143,7 @@ npm run lint               # Lint code
 - [x] category - completed in current branch
 - [x] discount - completed in current branch
 - [x] subcategory - completed in current branch
+- [x] supplier - completed in current branch
 - [x] tag - completed in current branch
 - [x] user - completed in current branch
 - [x] product - completed in current branch
