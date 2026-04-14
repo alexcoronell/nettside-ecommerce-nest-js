@@ -36,7 +36,13 @@ export class ApiKeyGuard implements CanActivate {
     const path = request.path;
 
     // Allow Swagger/OpenAPI endpoints without API key
-    const swaggerPaths = ['/api', '/api-docs', '/api-json', '/swagger'];
+    const swaggerPaths = [
+      '/docs',
+      '/docs-json',
+      '/swagger',
+      '/swagger-ui',
+      '/swagger-ui.html',
+    ];
     const isSwaggerPath = swaggerPaths.some((p) => path.startsWith(p));
     if (isSwaggerPath) {
       return true;

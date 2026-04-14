@@ -72,7 +72,7 @@ describe('ApiKeyGuard', () => {
       jest.spyOn(reflector, 'get').mockReturnValue(false);
       const mockRequest = mockExecutionContext.switchToHttp().getRequest();
       mockRequest.header.mockReturnValue(undefined);
-      mockRequest.path = '/api';
+      mockRequest.path = '/docs';
 
       const result = guard.canActivate(mockExecutionContext);
 
