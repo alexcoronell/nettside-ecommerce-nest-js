@@ -31,11 +31,13 @@ src/
 └── [25+ modules]
 ```
 
-## Auth Architecture (Current - Violates OCP)
+## Auth Architecture (Current - OCP Applied)
 
 - `AuthService` - Contains ALL authentication logic (validate, JWT, refresh, cookies)
-- `LocalStrategy` - Hardcoded to use AuthService.validateUser
-- `JwtStrategy` - Hardcoded token extraction
+- `LocalStrategy` - Uses LocalAuthStrategy via DI (Strategy Pattern)
+- `JwtStrategy` - Uses cookieExtractor for token extraction
+
+**DONE**: OCP refactored - PR #2 merged
 
 ## Open/Closed Principle Goal
 
@@ -45,6 +47,8 @@ Refactor Auth to use Strategy Pattern:
 - `LocalAuthStrategy`, `JwtAuthStrategy`, `OAuthStrategy` (future)
 - `AuthService` depends on abstraction, not concretions
 - New auth methods added WITHOUT modifying existing code
+
+**STATUS**: ✅ Completed - PR #2 merged
 
 ## Key Files
 
@@ -69,3 +73,70 @@ npm run lint               # Lint code
 - JSDoc comments on all public methods
 - Feature modules with separate .module.ts
 - Entity naming: singular (User, Product)
+
+---
+
+## SOLID Principles Status
+
+### ✅ Completed
+
+| Principle                   | Implementation                                                | Status          |
+| --------------------------- | ------------------------------------------------------------- | --------------- |
+| **S** Single Responsibility | Services well-separated by module                             | ✅ Done         |
+| **O** Open/Closed           | IAuthStrategy interface + LocalAuthStrategy + JwtAuthStrategy | ✅ Done (PR #2) |
+
+### 🔄 In Progress
+
+| Principle                   | Implementation                                          | Status    |
+| --------------------------- | ------------------------------------------------------- | --------- |
+| **I** Interface Segregation | DTOs: split create/read/update into separate interfaces | 🔄 Active |
+
+### 📋 Pending
+
+| Principle                  | Implementation                    | Status |
+| -------------------------- | --------------------------------- | ------ |
+| **L** Liskov Substitution  | TypeORM entities well-structured  | ✅ OK  |
+| **D** Dependency Inversion | Correct use of DI in constructors | ✅ OK  |
+
+---
+
+## Current Task: DTO Interface Segregation
+
+**Problem**: DTOs mix create/read/update responsibilities. Example:
+
+- `CreateBrandDto` has `id?` (shouldn't exist)
+- `UpdateBrandDto` extends `CreateBrandDto` - inherits fields that shouldn't be updatable
+
+**Solution**: Split each module's DTOs:
+
+- `CreateXxxDto` - only fields needed for creation
+- `UpdateXxxDto` - only fields that CAN be updated
+- `ResponseXxxDto` - only fields returned in API responses
+
+**Modules to refactor** (alphabetical):
+
+- [ ] brand
+- [ ] category
+- [ ] discount
+- [ ] payment-method
+- [ ] product
+- [ ] product-discount
+- [ ] product-images
+- [ ] product-supplier
+- [ ] product-tag
+- [ ] purchase
+- [ ] sale
+- [ ] shipment
+- [ ] shipping-company
+- [ ] store-detail
+- [ ] subcategory
+- [ ] supplier
+- [ ] tag
+- [ ] user
+- [ ] wishlist
+
+**Priority**: Start with modules that have most complex DTOs (user, product, brand)
+
+## Implemented Modules (DTO Interface Segregation)
+
+- [x] brand - completed in current branch

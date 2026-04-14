@@ -16,9 +16,10 @@ import { createSlug } from '@commons/utils/create-slug.util';
 export const createBrand = (): CreateBrandDto => {
   const name =
     faker.commerce.productName() + faker.number.int({ min: 100, max: 200 });
+  const slug = createSlug(name);
   return {
     name,
-    slug: createSlug(name),
+    slug,
     logo: faker.image.url(),
   };
 };
@@ -31,14 +32,21 @@ export const generateNewBrands = (size: number = 1): CreateBrandDto[] => {
   return newBrands;
 };
 
-export const generateBrand = (id: number = 1): Brand => ({
-  ...generateBaseEntity(id),
-  ...createBrand(),
-  id,
-  createdBy: generateUser(),
-  updatedBy: generateUser(),
-  deletedBy: null,
-});
+export const generateBrand = (id: number = 1): Brand => {
+  const name =
+    faker.commerce.productName() + faker.number.int({ min: 100, max: 200 });
+  const slug = createSlug(name);
+  return {
+    ...generateBaseEntity(id),
+    name,
+    slug,
+    logo: faker.image.url(),
+    id,
+    createdBy: generateUser(),
+    updatedBy: generateUser(),
+    deletedBy: null,
+  };
+};
 
 export const generateManyNewBrands = (size: number): CreateBrandDto[] => {
   const brands: CreateBrandDto[] = [];
