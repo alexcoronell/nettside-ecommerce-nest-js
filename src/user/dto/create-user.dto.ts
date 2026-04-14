@@ -1,3 +1,15 @@
+/**
+ * @fileoverview CreateUserDto - User creation DTO
+ *
+ * DTO for creating new users - only fields needed for creation.
+ * Does NOT include isActive, isDeleted, role is optional (defaults to CUSTOMER).
+ * Follows Interface Segregation Principle.
+ *
+ * @module CreateUserDto
+ * @version 1.0.0
+ * @author Nettside E-commerce Team
+ */
+
 import {
   IsNotEmpty,
   IsString,
@@ -6,7 +18,7 @@ import {
   IsOptional,
   IsEnum,
 } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { UserRoleEnum } from '@commons/enums/user-role.enum';
 
@@ -32,6 +44,7 @@ export class CreateUserDto {
   readonly password: string;
 
   @IsPhoneNumber()
+  @IsNotEmpty()
   @ApiProperty()
   readonly phoneNumber: string;
 
@@ -39,7 +52,7 @@ export class CreateUserDto {
     message: `Role must be a valid enum value: ${Object.values(UserRoleEnum).join(', ')}`,
   })
   @IsOptional()
-  @ApiProperty()
+  @ApiPropertyOptional({ enum: UserRoleEnum, default: UserRoleEnum.CUSTOMER })
   readonly role?: UserRoleEnum;
 
   @IsString()

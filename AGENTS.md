@@ -140,3 +140,4 @@ npm run lint               # Lint code
 ## Implemented Modules (DTO Interface Segregation)
 
 - [x] brand - completed in current branch
+- [x] user - completed in current branch
