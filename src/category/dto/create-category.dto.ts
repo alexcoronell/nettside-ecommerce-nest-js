@@ -1,5 +1,16 @@
-import { IsString, IsNotEmpty } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+/**
+ * @fileoverview CreateCategoryDto - Category creation DTO
+ *
+ * DTO for creating new categories - only fields needed for creation.
+ * Follows Interface Segregation Principle.
+ *
+ * @module CreateCategoryDto
+ * @version 1.0.0
+ * @author Nettside E-commerce Team
+ */
+
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateCategoryDto {
   @IsString()
@@ -8,7 +19,7 @@ export class CreateCategoryDto {
   readonly name: string;
 
   @IsString()
-  @IsNotEmpty()
-  @ApiProperty()
-  readonly slug: string;
+  @IsOptional()
+  @ApiPropertyOptional()
+  readonly slug?: string;
 }

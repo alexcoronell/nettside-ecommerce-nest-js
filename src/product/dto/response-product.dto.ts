@@ -1,50 +1,40 @@
 /**
- * @fileoverview ResponseUserDto - User response DTO
+ * @fileoverview ResponseProductDto - Product response DTO
  *
- * DTO for API responses - excludes password and sensitive fields.
+ * DTO for API responses - excludes internal and sensitive fields.
  * Follows Interface Segregation Principle - separate from create/update.
  *
- * @module ResponseUserDto
+ * @module ResponseProductDto
  * @version 1.0.0
  * @author Nettside E-commerce Team
  */
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { UserRoleEnum } from '@commons/enums/user-role.enum';
 
-export class ResponseUserDto {
+export class ResponseProductDto {
   @ApiProperty()
   readonly id: number;
 
   @ApiProperty()
-  readonly firstname: string;
+  readonly name: string;
+
+  @ApiPropertyOptional()
+  readonly description: string | null;
 
   @ApiProperty()
-  readonly lastname: string;
+  readonly price: number;
 
   @ApiProperty()
-  readonly email: string;
+  readonly stock: number;
 
   @ApiProperty()
-  readonly phoneNumber: string;
+  readonly category: number;
 
   @ApiProperty()
-  readonly isActive: boolean;
-
-  @ApiProperty({ enum: UserRoleEnum })
-  readonly role: UserRoleEnum;
+  readonly subcategory: number;
 
   @ApiProperty()
-  readonly department: string;
-
-  @ApiProperty()
-  readonly city: string;
-
-  @ApiProperty()
-  readonly address: string;
-
-  @ApiProperty()
-  readonly neighborhood: string;
+  readonly brand: number;
 
   @ApiProperty()
   readonly isDeleted: boolean;

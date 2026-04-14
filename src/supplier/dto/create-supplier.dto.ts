@@ -1,3 +1,14 @@
+/**
+ * @fileoverview CreateSupplierDto - Supplier creation DTO
+ *
+ * DTO for creating new suppliers - only fields needed for creation.
+ * Follows Interface Segregation Principle.
+ *
+ * @module CreateSupplierDto
+ * @version 1.0.0
+ * @author Nettside E-commerce Team
+ */
+
 import { IsString, IsNotEmpty, IsEmail, IsPhoneNumber } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -10,15 +21,15 @@ export class CreateSupplierDto {
   @IsString()
   @IsNotEmpty()
   @ApiProperty()
-  contactName: string;
+  readonly contactName: string;
 
   @IsPhoneNumber()
   @IsNotEmpty()
   @ApiProperty()
-  phoneNumber: string;
+  readonly phoneNumber: string;
 
   @IsEmail()
   @IsNotEmpty()
   @ApiProperty()
-  email: string;
+  readonly email: string;
 }

@@ -1,13 +1,24 @@
+/**
+ * @fileoverview CreateDiscountDto - Discount creation DTO
+ *
+ * DTO for creating new discounts - only fields needed for creation.
+ * Follows Interface Segregation Principle.
+ *
+ * @module CreateDiscountDto
+ * @version 1.0.0
+ * @author Nettside E-commerce Team
+ */
+
 import {
   IsString,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsDate,
-  Min,
   IsBoolean,
+  Min,
 } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Trim } from '@commons/decorators/trim.decorator';
 
 export class CreateDiscountDto {
@@ -20,50 +31,51 @@ export class CreateDiscountDto {
   @Trim()
   @IsString()
   @IsOptional()
-  @ApiProperty()
-  readonly description: string;
+  @ApiPropertyOptional()
+  readonly description?: string;
 
   @Trim()
   @IsString()
   @IsOptional()
-  @ApiProperty()
-  readonly type: string;
+  @ApiPropertyOptional()
+  readonly type?: string;
 
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   @IsOptional()
-  @ApiProperty()
-  readonly value: number;
+  @ApiPropertyOptional()
+  readonly value?: number;
 
   @IsDate()
+  @IsNotEmpty()
   @ApiProperty()
   readonly startDate: Date;
 
   @IsDate()
   @IsOptional()
-  @ApiProperty()
-  readonly endDate: Date;
+  @ApiPropertyOptional()
+  readonly endDate?: Date;
 
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   @IsOptional()
-  @ApiProperty()
-  readonly minimumOrderAmount: number;
+  @ApiPropertyOptional()
+  readonly minimumOrderAmount?: number;
 
   @IsNumber()
   @Min(0)
   @IsOptional()
-  @ApiProperty()
-  readonly usageLimit: number;
+  @ApiPropertyOptional()
+  readonly usageLimit?: number;
 
   @IsNumber()
   @Min(0)
   @IsOptional()
-  @ApiProperty()
-  usageLimitPerUser: number;
+  @ApiPropertyOptional()
+  readonly usageLimitPerUser?: number;
 
   @IsBoolean()
   @IsOptional()
-  @ApiProperty()
-  active: boolean;
+  @ApiPropertyOptional({ default: true })
+  readonly active?: boolean;
 }
