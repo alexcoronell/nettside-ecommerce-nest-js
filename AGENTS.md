@@ -115,25 +115,25 @@ npm run lint               # Lint code
 
 **Modules to refactor** (alphabetical):
 
-- [ ] brand
-- [ ] category
-- [ ] discount
-- [ ] payment-method
-- [ ] product
-- [ ] product-discount
-- [ ] product-images
-- [ ] product-supplier
-- [ ] product-tag
+- [x] brand
+- [x] category
+- [x] discount
+- [x] payment-method
+- [x] product
+- [x] product-discount
+- [x] product-images
+- [x] product-supplier
+- [x] product-tag
 - [ ] purchase
 - [ ] sale
-- [ ] shipment
-- [ ] shipping-company
-- [ ] store-detail
-- [ ] subcategory
-- [ ] supplier
-- [ ] tag
-- [ ] user
-- [ ] wishlist
+- [x] shipment
+- [x] shipping-company
+- [x] store-detail
+- [x] subcategory
+- [x] supplier
+- [x] tag
+- [x] user
+- [x] wishlist
 
 **Priority**: Start with modules that have most complex DTOs (user, product, brand)
 
@@ -144,7 +144,10 @@ npm run lint               # Lint code
 - [x] discount - completed in current branch
 - [x] payment-method - completed in current branch
 - [x] product - completed in current branch
+- [x] product-discount - completed in current branch
 - [x] product-images - completed in current branch
+- [x] product-supplier - completed in current branch
+- [x] product-tag - completed in current branch
 - [x] shipping-company - completed in current branch
 - [x] shipment - completed in current branch
 - [x] store-detail - completed in current branch
