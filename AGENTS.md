@@ -143,6 +143,8 @@ npm run lint               # Lint code
 - [x] category - completed in current branch
 - [x] discount - completed in current branch
 - [x] payment-method - completed in current branch
+- [x] product - completed in current branch
+- [x] product-images - completed in current branch
 - [x] shipping-company - completed in current branch
 - [x] shipment - completed in current branch
 - [x] store-detail - completed in current branch
@@ -150,5 +152,4 @@ npm run lint               # Lint code
 - [x] supplier - completed in current branch
 - [x] tag - completed in current branch
 - [x] user - completed in current branch
-- [x] product - completed in current branch
 - [x] wishlist - completed in current branch
