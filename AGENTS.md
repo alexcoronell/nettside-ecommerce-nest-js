@@ -144,6 +144,7 @@ npm run lint               # Lint code
 - [x] discount - completed in current branch
 - [x] payment-method - completed in current branch
 - [x] shipping-company - completed in current branch
+- [x] store-detail - completed in current branch
 - [x] subcategory - completed in current branch
 - [x] supplier - completed in current branch
 - [x] tag - completed in current branch
