@@ -33,6 +33,21 @@ export class ApiKeyGuard implements CanActivate {
 
     // Retrieve the HTTP request object
     const request = context.switchToHttp().getRequest<Request>();
+    const path = request.path;
+
+    // Allow Swagger/OpenAPI endpoints without API key
+    const swaggerPaths = [
+      '/docs',
+      '/docs-json',
+      '/swagger',
+      '/swagger-ui',
+      '/swagger-ui.html',
+    ];
+    const isSwaggerPath = swaggerPaths.some((p) => path.startsWith(p));
+    if (isSwaggerPath) {
+      return true;
+    }
+
     const authHeader = request.header('x-api-key'); // Use the standard 'x-api-key' header
 
     // Validate the API key from the x-api-key header

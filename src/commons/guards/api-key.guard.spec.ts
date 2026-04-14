@@ -28,6 +28,7 @@ describe('ApiKeyGuard', () => {
       switchToHttp: jest.fn().mockReturnValue({
         getRequest: jest.fn().mockReturnValue({
           header: jest.fn(),
+          path: '/api/v1/test',
         }),
       }),
       getHandler: jest.fn(), // Add a mock for getHandler
@@ -46,7 +47,10 @@ describe('ApiKeyGuard', () => {
       // Mock the ExecutionContext to provide a valid handler
       mockExecutionContext = {
         switchToHttp: jest.fn().mockReturnValue({
-          getRequest: jest.fn(),
+          getRequest: jest.fn().mockReturnValue({
+            header: jest.fn(),
+            path: '/api/v1/test',
+          }),
         }),
         getHandler: jest.fn().mockReturnValue(() => {}),
       } as unknown as ExecutionContext;
@@ -64,10 +68,22 @@ describe('ApiKeyGuard', () => {
       );
     });
 
+    it('should allow access to Swagger/OpenAPI paths without API key', () => {
+      jest.spyOn(reflector, 'get').mockReturnValue(false);
+      const mockRequest = mockExecutionContext.switchToHttp().getRequest();
+      mockRequest.header.mockReturnValue(undefined);
+      mockRequest.path = '/docs';
+
+      const result = guard.canActivate(mockExecutionContext);
+
+      expect(result).toBe(true);
+    });
+
     it('should allow access if the API key is valid', () => {
       jest.spyOn(reflector, 'get').mockReturnValue(false);
       const mockRequest = mockExecutionContext.switchToHttp().getRequest();
       mockRequest.header.mockReturnValue('testApiKey');
+      mockRequest.path = '/not-public-endpoint';
 
       const result = guard.canActivate(mockExecutionContext);
 
@@ -79,6 +95,7 @@ describe('ApiKeyGuard', () => {
       jest.spyOn(reflector, 'get').mockReturnValue(false);
       const mockRequest = mockExecutionContext.switchToHttp().getRequest();
       mockRequest.header.mockReturnValue('invalidApiKey');
+      mockRequest.path = '/not-public-endpoint';
 
       expect(() => guard.canActivate(mockExecutionContext)).toThrow(
         new UnauthorizedException('Invalid API key'),
@@ -90,6 +107,7 @@ describe('ApiKeyGuard', () => {
       jest.spyOn(reflector, 'get').mockReturnValue(false);
       const mockRequest = mockExecutionContext.switchToHttp().getRequest();
       mockRequest.header.mockReturnValue(undefined);
+      mockRequest.path = '/not-public-endpoint';
 
       expect(() => guard.canActivate(mockExecutionContext)).toThrow(
         new UnauthorizedException('Invalid API key'),
