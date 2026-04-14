@@ -29,12 +29,10 @@ describe('SubcategoryController', () => {
   const mockNewSubcategory: CreateSubcategoryDto = createSubcategory();
 
   const mockService = {
-    countAll: jest.fn().mockResolvedValue(mockSubcategories.length),
     count: jest.fn().mockResolvedValue(mockSubcategories.length),
     findAll: jest.fn().mockResolvedValue(mockSubcategories),
     findAllByCategory: jest.fn().mockResolvedValue(mockSubcategories),
     findOne: jest.fn().mockResolvedValue(mockSubcategory),
-    findOneByName: jest.fn().mockResolvedValue(mockSubcategory),
     findOneBySlug: jest.fn().mockResolvedValue(mockSubcategory),
     create: jest.fn().mockResolvedValue(mockNewSubcategory),
     update: jest.fn().mockResolvedValue(1),
@@ -60,11 +58,6 @@ describe('SubcategoryController', () => {
   });
 
   describe('Count subcategory controllers', () => {
-    it('should call countAll subcategory service', async () => {
-      expect(await controller.countAll()).toBe(mockSubcategories.length);
-      expect(service.countAll).toHaveBeenCalledTimes(1);
-    });
-
     it('should call count subcategory service', async () => {
       expect(await controller.count()).toBe(mockSubcategories.length);
       expect(service.count).toHaveBeenCalledTimes(1);
@@ -87,11 +80,6 @@ describe('SubcategoryController', () => {
     it('should call findOne subcategory service', async () => {
       expect(await controller.findOne(1)).toBe(mockSubcategory);
       expect(service.findOne).toHaveBeenCalledTimes(1);
-    });
-
-    it('should return an subcategory by name', async () => {
-      expect(await controller.findOneByName(mockSubcategory.name));
-      expect(service.findOneByName).toHaveBeenCalledTimes(1);
     });
 
     it('should return an subcategory by slug', async () => {

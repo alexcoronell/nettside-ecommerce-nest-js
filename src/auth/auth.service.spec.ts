@@ -1,9 +1,12 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import { Test, TestingModule } from '@nestjs/testing';
+import { HttpStatus } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { Request, Response } from 'express';
 
 /* Services */
 import { AuthService } from './auth.service';
@@ -35,7 +38,12 @@ describe('AuthService', () => {
               sign: jest.fn().mockReturnValue('mockedJwtToken'),
               signAsync: jest.fn().mockResolvedValue('mockedRefreshToken'),
               verify: jest.fn().mockReturnValue({ userId: 1 }),
-              decode: jest.fn().mockReturnValue({ user: 1 }),
+              verifyAsync: jest
+                .fn()
+                .mockResolvedValue({ user: 1, role: UserRoleEnum.ADMIN }),
+              decode: jest
+                .fn()
+                .mockReturnValue({ user: 1, role: UserRoleEnum.ADMIN }),
             },
           },
           {
@@ -46,6 +54,14 @@ describe('AuthService', () => {
                   id: 1,
                   email: 'test@test.com',
                   password: 'hashedPassword',
+                },
+              }),
+              findOne: jest.fn().mockResolvedValue({
+                data: {
+                  id: 1,
+                  email: 'test@test.com',
+                  password: 'hashedPassword',
+                  isActive: true,
                 },
               }),
               findAndValidateEmail: jest.fn().mockResolvedValue({
@@ -110,12 +126,39 @@ describe('AuthService', () => {
     });
 
     describe('refreshToken', () => {
-      it('should generate a new access token', async () => {
-        const dto = { refresh: 'mockedRefreshToken' };
-        const result = await service.refreshToken(dto);
+      it('should generate a new access token and set cookie', async () => {
+        const mockRequest = {
+          cookies: {
+            refresh_token: 'someRefreshToken',
+          },
+        } as unknown as Request;
+        const mockResponse = {
+          cookie: jest.fn(),
+          clearCookie: jest.fn(),
+        } as unknown as Response;
+        const setAccessTokenCookieSpy = jest.spyOn(
+          service as any,
+          'setAccessTokenCookie',
+        );
+        const result = await service.refreshToken(mockRequest, mockResponse);
+        expect(setAccessTokenCookieSpy).toHaveBeenCalled();
         expect(result).toEqual({
-          access_token: 'mockedRefreshToken',
+          statusCode: HttpStatus.OK,
+          message: 'Token refreshed successfully',
         });
+      });
+
+      it('should throw UnauthorizedException if no refresh token cookie', async () => {
+        const mockRequest = {
+          cookies: {},
+        } as unknown as Request;
+        const mockResponse = {
+          cookie: jest.fn(),
+          clearCookie: jest.fn(),
+        } as unknown as Response;
+        await expect(
+          service.refreshToken(mockRequest, mockResponse),
+        ).rejects.toThrow('Refresh token not found');
       });
     });
 
@@ -132,6 +175,110 @@ describe('AuthService', () => {
         const payload: PayloadToken = { user: 1, role: UserRoleEnum.ADMIN };
         const result = await service['generateRefreshToken'](payload);
         expect(result).toBe('mockedRefreshToken');
+      });
+    });
+
+    describe('setAccessTokenCookie', () => {
+      it('should set access token cookie with correct options', () => {
+        const mockResponse = {
+          cookie: jest.fn(),
+        } as unknown as Response;
+        service['setAccessTokenCookie']('testAccessToken', mockResponse);
+        expect(mockResponse.cookie).toHaveBeenCalledWith(
+          'access_token',
+          'testAccessToken',
+          {
+            httpOnly: true,
+            secure: service.isProduction,
+            sameSite: service.isProduction ? 'none' : 'lax',
+            domain: service.cookieDomain,
+            path: '/',
+            maxAge: 15 * 60 * 1000,
+          },
+        );
+      });
+    });
+
+    describe('setRefreshTokenCookie', () => {
+      it('should set refresh token cookie with correct options', () => {
+        const mockResponse = {
+          cookie: jest.fn(),
+        } as unknown as Response;
+        service['setRefreshTokenCookie']('testRefreshToken', mockResponse);
+        expect(mockResponse.cookie).toHaveBeenCalledWith(
+          'refresh_token',
+          'testRefreshToken',
+          {
+            httpOnly: true,
+            secure: service.isProduction,
+            sameSite: service.isProduction ? 'none' : 'lax',
+            domain: service.cookieDomain,
+            path: '/',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+          },
+        );
+      });
+    });
+
+    describe('getRefreshTokenCookie', () => {
+      it('should return refresh token cookie value', () => {
+        const mockRequest = {
+          cookies: {
+            refresh_token: 'someToken',
+          },
+        } as unknown as Request;
+        const result = service['getRefreshTokenCookie'](mockRequest);
+        expect(result).toBe('someToken');
+      });
+
+      it('should return null if cookie does not exist', () => {
+        const mockRequest = {
+          cookies: {},
+        } as unknown as Request;
+        const result = service['getRefreshTokenCookie'](mockRequest);
+        expect(result).toBeNull();
+      });
+    });
+
+    describe('clearCookies', () => {
+      it('should clear both access_token and refresh_token cookies', () => {
+        const mockResponse = {
+          clearCookie: jest.fn(),
+          cookie: jest.fn(),
+        } as unknown as Response;
+        service.clearCookies(mockResponse);
+        expect(mockResponse.clearCookie).toHaveBeenCalledTimes(2);
+      });
+    });
+
+    describe('login', () => {
+      it('should set tokens and return success response', async () => {
+        const user = generateUser();
+        const mockResponse = {
+          cookie: jest.fn(),
+        } as unknown as Response;
+        const result = await service.login(user, mockResponse);
+        expect(result).toEqual({
+          statusCode: 200,
+          data: user,
+          message: 'Logged in successfully',
+        });
+        expect(mockResponse.cookie).toHaveBeenCalledTimes(2);
+      });
+    });
+
+    describe('logout', () => {
+      it('should clear cookies and return success response', () => {
+        const mockResponse = {
+          clearCookie: jest.fn(),
+          cookie: jest.fn(),
+        } as unknown as Response;
+        const result = service.logout(mockResponse);
+        expect(result).toEqual({
+          statusCode: 200,
+          message: 'Logged out successfully',
+        });
+        expect(mockResponse.clearCookie).toHaveBeenCalledTimes(2);
       });
     });
   });

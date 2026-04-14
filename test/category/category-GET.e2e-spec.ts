@@ -1,9 +1,43 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
+jest.mock('uuid', () => ({
+  v4: () => 'mock-uuid-1234',
+}));
+
+jest.mock('@aws-sdk/client-s3', () => ({
+  S3Client: jest.fn().mockImplementation(() => ({
+    send: jest.fn().mockResolvedValue({}),
+  })),
+  HeadBucketCommand: jest.fn(),
+  CreateBucketCommand: jest.fn(),
+}));
+
+jest.mock('@aws-sdk/lib-storage', () => ({
+  Upload: jest.fn().mockImplementation(() => ({
+    done: jest.fn().mockResolvedValue({}),
+  })),
+}));
+
+jest.mock('@upload/constants/storage.constants', () => ({
+  STORAGE_CONFIG: {
+    endpoint: 'localhost:9000',
+    region: 'us-east-1',
+    credentials: { accessKeyId: 'test', secretAccessKey: 'test' },
+    forcePathStyle: true,
+  },
+  BUCKETS: {
+    BRAND_LOGOS: 'brand-logos',
+    PRODUCT_IMAGES: 'product-images',
+    AVATARS: 'avatars',
+  },
+  PUBLIC_URL_BASE: 'http://localhost:9000',
+}));
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import * as cookieParser from 'cookie-parser';
 import { App } from 'supertest/types';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -38,12 +72,11 @@ describe('CategoryController (e2e) [GET]', () => {
   let app: INestApplication<App>;
   let repo: any = undefined;
   let repoUser: any = undefined;
-  let adminAccessToken: string;
-  let sellerAccessToken: string;
-  let customerAccessToken: string;
+  let adminCookies: string[];
+  let sellerCookies: string[];
+  let customerCookies: string[];
 
   beforeAll(async () => {
-    // Initialize database connection once for the entire test suite
     await initDataSource();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
@@ -71,6 +104,7 @@ describe('CategoryController (e2e) [GET]', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.use(cookieParser());
     await app.init();
     repo = app.get('CategoryRepository');
     repoUser = app.get('UserRepository');
@@ -79,102 +113,48 @@ describe('CategoryController (e2e) [GET]', () => {
   });
 
   beforeEach(async () => {
-    // Clean all data before each test to ensure isolation
     await cleanDB();
 
-    /* Login Users */
     const resLoginAdmin = await loginAdmin(app, repoUser);
-    adminAccessToken = resLoginAdmin.access_token;
+    adminCookies = resLoginAdmin.cookies;
+
     const resLoginSeller = await loginSeller(app, repoUser);
-    sellerAccessToken = resLoginSeller.access_token;
+    sellerCookies = resLoginSeller.cookies;
+
     const resLoginCustomer = await loginCustomer(app, repoUser);
-    customerAccessToken = resLoginCustomer.access_token;
-  });
-
-  describe('GET Category - Count-All', () => {
-    it('/count-all should return 200 with admin access token', async () => {
-      const categories = generateNewCategories(10);
-      await repo.save(categories);
-      const res = await request(app.getHttpServer())
-        .get('/category/count-all')
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
-      const { statusCode, total } = res.body;
-      expect(statusCode).toBe(200);
-      expect(total).toEqual(categories.length);
-    });
-
-    it('/count-all should return 200 with seller access token', async () => {
-      const categories = generateNewCategories(10);
-      await repo.save(categories);
-      const res = await request(app.getHttpServer())
-        .get('/category/count-all')
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
-      const { statusCode, total } = res.body;
-      expect(statusCode).toBe(200);
-      expect(total).toEqual(categories.length);
-    });
-
-    it('/count-all should return 401 with customer access token', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/category/count-all')
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
-      const { statusCode, message } = res.body;
-      expect(statusCode).toBe(401);
-      expect(message).toBe('Unauthorized: Customer access denied');
-    });
-
-    it('/count-all should return 401 if api key is missing', async () => {
-      const data: any = await request(app.getHttpServer()).get(
-        '/category/count-all',
-      );
-      const { body, statusCode } = data;
-      expect(statusCode).toBe(401);
-      expect(body).toHaveProperty('message', 'Invalid API key');
-    });
-
-    it('/count-all should return 401 if api key is invalid', async () => {
-      const data: any = await request(app.getHttpServer())
-        .get('/category/count-all')
-        .set('x-api-key', 'invalid-api-key');
-      const { body, statusCode } = data;
-      expect(statusCode).toBe(401);
-      expect(body).toHaveProperty('message', 'Invalid API key');
-    });
+    customerCookies = resLoginCustomer.cookies;
   });
 
   describe('GET Category - Count', () => {
-    it('/count should return 200 with admin access token', async () => {
+    it('/count should return 200 with admin cookies', async () => {
       const categories = generateNewCategories(10);
       await repo.save(categories);
       const res = await request(app.getHttpServer())
         .get('/category/count')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, total } = res.body;
       expect(statusCode).toBe(200);
       expect(total).toEqual(categories.length);
     });
 
-    it('/count should return 200 with seller access token', async () => {
+    it('/count should return 200 with seller cookies', async () => {
       const categories = generateNewCategories(10);
       await repo.save(categories);
       const res = await request(app.getHttpServer())
         .get('/category/count')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
+        .set('Cookie', sellerCookies);
       const { statusCode, total } = res.body;
       expect(statusCode).toBe(200);
       expect(total).toEqual(categories.length);
     });
 
-    it('/count should return 401 with customer access token', async () => {
+    it('/count should return 401 with customer cookies', async () => {
       const res = await request(app.getHttpServer())
         .get('/category/count')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
+        .set('Cookie', customerCookies);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);
       expect(message).toBe('Unauthorized: Customer access denied');
@@ -200,7 +180,7 @@ describe('CategoryController (e2e) [GET]', () => {
   });
 
   describe('GET Category - / Find', () => {
-    it('/ should return all categories without logged user', async () => {
+    it('/ should return all categories without logged user (public endpoint)', async () => {
       const categories = generateNewCategories(10);
       await repo.save(categories);
       const res = await request(app.getHttpServer())
@@ -225,7 +205,7 @@ describe('CategoryController (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .get('/category')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
       expect(data.length).toEqual(categories.length);
@@ -245,7 +225,7 @@ describe('CategoryController (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .get('/category')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
+        .set('Cookie', sellerCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
       expect(data.length).toEqual(categories.length);
@@ -265,26 +245,7 @@ describe('CategoryController (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .get('/category')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
-      const { statusCode, data } = res.body;
-      expect(statusCode).toBe(200);
-      expect(data.length).toEqual(categories.length);
-      data.forEach((user) => {
-        const category = categories.find((su) => su.name === user.name);
-        expect(user).toEqual(
-          expect.objectContaining({
-            name: category?.name,
-          }),
-        );
-      });
-    });
-
-    it('/ should return all categories without logged user', async () => {
-      const categories = generateNewCategories(10);
-      await repo.save(categories);
-      const res = await request(app.getHttpServer())
-        .get('/category')
-        .set('x-api-key', API_KEY);
+        .set('Cookie', customerCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
       expect(data.length).toEqual(categories.length);
@@ -322,7 +283,7 @@ describe('CategoryController (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .get(`/category/${dataNewCategory.id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
       expect(data.id).toEqual(dataNewCategory.id);
@@ -335,7 +296,7 @@ describe('CategoryController (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .get(`/category/${dataNewCategory.id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
+        .set('Cookie', sellerCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
       expect(data.id).toEqual(dataNewCategory.id);
@@ -348,78 +309,24 @@ describe('CategoryController (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .get(`/category/${dataNewCategory.id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
+        .set('Cookie', customerCookies);
       const { statusCode, error, message } = res.body;
       expect(statusCode).toBe(401);
       expect(error).toBe('Unauthorized');
       expect(message).toBe('Unauthorized: Customer access denied');
     });
 
-    it('/name/:name should return 404 by id if category does not exist', async () => {
+    it('/:id should return 404 by id if category does not exist', async () => {
       const category = createCategory();
       await repo.save(category);
       const res = await request(app.getHttpServer())
         .get(`/category/9999999`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, error, message } = res.body;
       expect(statusCode).toBe(404);
       expect(error).toBe('Not Found');
       expect(message).toBe('The Category with ID: 9999999 not found');
-    });
-
-    it('/name/:name should return an category by name with admin user', async () => {
-      const category = createCategory();
-      const dataNewCategory = await repo.save(category);
-      const res = await request(app.getHttpServer())
-        .get(`/category/name/${category.name}`)
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
-      const { statusCode, data } = res.body;
-      expect(statusCode).toBe(200);
-      expect(data.id).toEqual(dataNewCategory.id);
-      expect(data.name).toEqual(dataNewCategory.name);
-    });
-
-    it('/name/:name should return an category by name with seller user', async () => {
-      const category = createCategory();
-      const dataNewCategory = await repo.save(category);
-      const res = await request(app.getHttpServer())
-        .get(`/category/name/${category.name}`)
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
-      const { statusCode, data } = res.body;
-      expect(statusCode).toBe(200);
-      expect(data.id).toEqual(dataNewCategory.id);
-      expect(data.name).toEqual(dataNewCategory.name);
-    });
-
-    it('/name/:name should return 401 with customer user', async () => {
-      const category = createCategory();
-      await repo.save(category);
-      const res = await request(app.getHttpServer())
-        .get(`/category/name/${category.name}`)
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
-      const { statusCode, error, message } = res.body;
-      expect(statusCode).toBe(401);
-      expect(error).toBe('Unauthorized');
-      expect(message).toBe('Unauthorized: Customer access denied');
-    });
-
-    it('/name/:name should return 404 by name if category does not exist', async () => {
-      const category = createCategory();
-      await repo.save(category);
-      const res = await request(app.getHttpServer())
-        .get(`/category/name/not-existing-name`)
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
-      const { statusCode, error, message } = res.body;
-      expect(statusCode).toBe(404);
-      expect(error).toBe('Not Found');
-      expect(message).toBe(
-        'The Category with NAME: not-existing-name not found',
-      );
     });
 
     it('/slug/:slug should return an category by slug with admin user', async () => {
@@ -428,7 +335,7 @@ describe('CategoryController (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .get(`/category/slug/${category.slug}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
       expect(data.id).toEqual(dataNewCategory.id);
@@ -441,7 +348,7 @@ describe('CategoryController (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .get(`/category/slug/${category.slug}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
+        .set('Cookie', sellerCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
       expect(data.id).toEqual(dataNewCategory.id);
@@ -454,7 +361,7 @@ describe('CategoryController (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .get(`/category/slug/${category.slug}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
+        .set('Cookie', customerCookies);
       const { statusCode, error, message } = res.body;
       expect(statusCode).toBe(401);
       expect(error).toBe('Unauthorized');
@@ -467,7 +374,7 @@ describe('CategoryController (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .get(`/category/slug/not-existing-slug`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, error, message } = res.body;
       expect(statusCode).toBe(404);
       expect(error).toBe('Not Found');
@@ -479,7 +386,6 @@ describe('CategoryController (e2e) [GET]', () => {
 
   afterAll(async () => {
     await app.close();
-    // Close database connection after all tests
     await closeDataSource();
   });
 });

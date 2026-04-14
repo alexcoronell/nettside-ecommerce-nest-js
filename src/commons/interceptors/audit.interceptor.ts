@@ -29,7 +29,7 @@ export class AuditInterceptor implements NestInterceptor {
     const { method, body, user } = request;
     const authenticatedUser = user as PayloadToken;
 
-    if (authenticatedUser && authenticatedUser.user) {
+    if (authenticatedUser && authenticatedUser.user && body) {
       if (method === 'POST') {
         body.createdBy = authenticatedUser.user;
         body.updatedBy = authenticatedUser.user;

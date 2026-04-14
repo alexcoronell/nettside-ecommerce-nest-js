@@ -68,22 +68,28 @@ describe('PaymentMethodService', () => {
   });
 
   describe('find payment methods services', () => {
-    it('findAll should return all payment methods', async () => {
+    it('findAll should return all payment methods with pagination', async () => {
       const paymentMethods = generateManyPaymentMethods(50);
 
       jest
         .spyOn(repository, 'findAndCount')
-        .mockResolvedValue([paymentMethods, paymentMethods.length]);
+        .mockResolvedValue([
+          paymentMethods.slice(0, 10),
+          paymentMethods.length,
+        ]);
 
-      const { statusCode, data, total } = await service.findAll();
+      const { statusCode, data, meta } = await service.findAll();
       expect(repository.findAndCount).toHaveBeenCalledTimes(1);
       expect(repository.findAndCount).toHaveBeenCalledWith({
         where: { isDeleted: false },
         order: { name: 'ASC' },
+        relations: ['createdBy', 'updatedBy'],
+        skip: 0,
+        take: 10,
       });
       expect(statusCode).toBe(200);
-      expect(total).toEqual(paymentMethods.length);
-      expect(data).toEqual(paymentMethods);
+      expect(meta.total).toEqual(paymentMethods.length);
+      expect(data).toEqual(paymentMethods.slice(0, 10));
     });
 
     it('findOne should return a payment methods', async () => {

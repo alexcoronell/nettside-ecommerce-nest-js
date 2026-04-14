@@ -12,6 +12,9 @@ export class Brand extends BaseEntity {
   @Column({ type: 'varchar', length: 255, nullable: false, unique: true })
   slug: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  logo: string | null;
+
   /**************************** Relations ****************************/
   @ManyToOne(() => User, (user) => user.createdBrands)
   @JoinColumn({ name: 'created_by_user_id' })

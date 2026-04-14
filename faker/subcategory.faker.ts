@@ -1,4 +1,4 @@
-import { faker } from '@faker-js/faker/.';
+import { faker } from '@faker-js/faker';
 
 /* Entity */
 import { Subcategory } from '@subcategory/entities/subcategory.entity';
@@ -17,8 +17,9 @@ export const createSubcategory = (
   categoryId: number = 1,
   name: string | null = null,
 ): CreateSubcategoryDto => {
-  const category = categoryId || faker.number.int({ min: 1, max: 50 });
-  const tempName = faker.lorem.words(3);
+  const category = categoryId || faker.number.int({ min: 1, max: 100 });
+  const fakeNumber = faker.number.int({ min: 1, max: 100 });
+  const tempName = `${faker.lorem.words(3)}-${fakeNumber}`;
   const slug = createSlug(name || tempName);
   return {
     name: name || tempName,
@@ -52,6 +53,17 @@ export const generateSubcategory = (
   deletedBy: null,
   ...generateRelations(),
 });
+
+export const generateManyNewSubcategories = (
+  size: number,
+  categoryId: number = 1,
+): CreateSubcategoryDto[] => {
+  const subcategories: CreateSubcategoryDto[] = [];
+  for (let i = 0; i < size; i++) {
+    subcategories.push(createSubcategory(categoryId));
+  }
+  return subcategories;
+};
 
 export const generateManySubcategories = (
   size: number,

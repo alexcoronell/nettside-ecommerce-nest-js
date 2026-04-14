@@ -8,7 +8,9 @@ import {
   Delete,
   ParseIntPipe,
   UseGuards,
+  Query,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 /* Interface */
 import { IBaseController } from '@commons/interfaces/i-base-controller';
@@ -25,6 +27,7 @@ import { Tag } from './entities/tag.entity';
 /* DTO's */
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
+import { PaginationDto } from '@commons/dtos/Pagination.dto';
 
 /* Guards */
 import { AdminGuard } from '@auth/guards/admin-auth/admin-auth.guard';
@@ -38,32 +41,32 @@ export class TagController
   constructor(private readonly tagService: TagService) {}
 
   @UseGuards(JwtAuthGuard, IsNotCustomerGuard)
-  @Get('count-all')
-  countAll() {
-    return this.tagService.countAll();
-  }
-
-  @UseGuards(JwtAuthGuard, IsNotCustomerGuard)
   @Get('count')
   count() {
     return this.tagService.count();
   }
 
+  /**
+   * Retrieves a list of all tags with optional pagination and search.
+   *
+   * @param paginationDto - Optional pagination and search parameters.
+   * @returns Array of Tag objects or paginated result.
+   */
+  @ApiTags('Tags')
+  @ApiOperation({ summary: 'Get all tags with pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns paginated list of tags',
+  })
   @Get()
-  findAll() {
-    return this.tagService.findAll();
+  findAll(@Query() paginationDto?: PaginationDto) {
+    return this.tagService.findAll(paginationDto);
   }
 
   @UseGuards(JwtAuthGuard, IsNotCustomerGuard)
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.tagService.findOne(+id);
-  }
-
-  @UseGuards(JwtAuthGuard, IsNotCustomerGuard)
-  @Get('name/:name')
-  findOneByname(@Param('name') name: string) {
-    return this.tagService.findOneByName(name);
   }
 
   @UseGuards(JwtAuthGuard, AdminGuard)

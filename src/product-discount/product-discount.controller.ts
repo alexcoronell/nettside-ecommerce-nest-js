@@ -7,7 +7,9 @@ import {
   Delete,
   UseGuards,
   ParseIntPipe,
+  Query,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 /* Decorators */
 import { UserId } from '@auth/decorators/user-id.decorator';
@@ -17,6 +19,7 @@ import { ProductDiscountService } from './product-discount.service';
 
 /* DTO's */
 import { CreateProductDiscountDto } from './dto/create-product-discount.dto';
+import { PaginationDto } from '@commons/dtos/Pagination.dto';
 
 /* Guards */
 import { JwtAuthGuard } from '@auth/guards/jwt-auth/jwt-auth.guard';
@@ -35,10 +38,22 @@ export class ProductDiscountController {
     return this.productDiscountService.count();
   }
 
+  /**
+   * Retrieves a list of all product discounts with optional pagination.
+   *
+   * @param paginationDto - Optional pagination parameters.
+   * @returns Array of ProductDiscount objects or paginated result.
+   */
   @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiTags('Product Discounts')
+  @ApiOperation({ summary: 'Get all product discounts with pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns paginated list of product discounts',
+  })
   @Get()
-  findAll() {
-    return this.productDiscountService.findAll();
+  findAll(@Query() paginationDto?: PaginationDto) {
+    return this.productDiscountService.findAll(paginationDto);
   }
 
   @Get('product/:id')

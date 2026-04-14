@@ -24,6 +24,7 @@
       "@category/*": ["src/category/*"],
       "@commons/*": ["src/commons/*"],
       "@config/*": ["src/config/*"],
+      "@database/*": ["src/database/*"],
       "@discount/*": ["src/discount/*"],
       "@faker/*": ["faker/*"],
       "@payment_method/*": ["src/payment-method/*"],
@@ -43,6 +44,7 @@
       "@supplier/*": ["src/supplier/*"],
       "@tag/*": ["src/tag/*"],
       "@user/*": ["src/user/*"],
+      "@upload/*": ["src/upload/*"],
       "@wishlist/*": ["src/wishlist/*"]
     }
   }

@@ -63,19 +63,24 @@ describe('PurchaseService', () => {
   });
 
   describe('find purchases services', () => {
-    it('findAll should return all purchases not removed', async () => {
+    it('findAll should return all purchases not removed with pagination', async () => {
       const mocks = generateManyPurchases(10);
-      jest.spyOn(repository, 'findAndCount').mockResolvedValue([mocks, 10]);
+      jest
+        .spyOn(repository, 'findAndCount')
+        .mockResolvedValue([mocks.slice(0, 10), 10]);
 
-      const { statusCode, data, total } = await service.findAll();
+      const { statusCode, data, meta } = await service.findAll();
       expect(repository.findAndCount).toHaveBeenCalledTimes(1);
       expect(repository.findAndCount).toHaveBeenCalledWith({
         where: { isDeleted: false },
         order: { purchaseDate: 'DESC' },
+        relations: ['supplier', 'createdBy', 'updatedBy'],
+        skip: 0,
+        take: 10,
       });
       expect(statusCode).toBe(200);
-      expect(data).toEqual(mocks);
-      expect(total).toEqual(10);
+      expect(data).toEqual(mocks.slice(0, 10));
+      expect(meta.total).toEqual(10);
     });
 
     it('findOne should return a purchase by id', async () => {

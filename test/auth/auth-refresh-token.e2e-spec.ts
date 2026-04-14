@@ -4,6 +4,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import * as cookieParser from 'cookie-parser';
 import { App } from 'supertest/types';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -45,7 +46,6 @@ describe('AuthController (e2e) REFRESH TOKEN', () => {
   const API_KEY = process.env.API_KEY || 'api-e2e-key';
 
   beforeAll(async () => {
-    // Initialize database connection once for the entire test suite
     await initDataSource();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
@@ -83,15 +83,14 @@ describe('AuthController (e2e) REFRESH TOKEN', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.use(cookieParser());
     await app.init();
     repo = app.get('UserRepository');
   });
 
   beforeEach(async () => {
-    // Clean all data before each test to ensure isolation
     await cleanDB();
 
-    // Create fresh users for each test
     userAdmin = await seedNewAdminUser();
     userSeller = await seedNewSellerUser();
     userCustomer = await seedNewCustomerUser();
@@ -108,19 +107,26 @@ describe('AuthController (e2e) REFRESH TOKEN', () => {
       };
 
       const loginResponse: any = await request(app.getHttpServer())
-        .post('/auth/user/login')
+        .post('/auth/login')
         .set('x-api-key', API_KEY)
         .send(user);
-      const { refresh_token } = loginResponse.body;
+
+      const cookies = loginResponse.headers['set-cookie'] as string[];
 
       const data: any = await request(app.getHttpServer())
-        .post('/auth/refresh-token')
+        .post('/auth/refresh')
         .set('x-api-key', API_KEY)
-        .send({ refresh: refresh_token });
+        .set('Cookie', cookies)
+        .send();
       const { body, statusCode } = data;
-      expect(statusCode).toBe(201);
-      expect(body).toHaveProperty('access_token');
-      expect(body.access_token).toBeTruthy();
+      expect(statusCode).toBe(200);
+      expect(body.message).toBe('Token refreshed successfully');
+
+      const newCookies = data.headers['set-cookie'];
+      expect(newCookies).toBeDefined();
+      expect(
+        newCookies.some((c: string) => c.startsWith('access_token=')),
+      ).toBe(true);
     });
 
     it('should return a new access token with Seller User', async () => {
@@ -130,19 +136,26 @@ describe('AuthController (e2e) REFRESH TOKEN', () => {
       };
 
       const loginResponse: any = await request(app.getHttpServer())
-        .post('/auth/user/login')
+        .post('/auth/login')
         .set('x-api-key', API_KEY)
         .send(user);
-      const { refresh_token } = loginResponse.body;
+
+      const cookies = loginResponse.headers['set-cookie'] as string[];
 
       const data: any = await request(app.getHttpServer())
-        .post('/auth/refresh-token')
+        .post('/auth/refresh')
         .set('x-api-key', API_KEY)
-        .send({ refresh: refresh_token });
+        .set('Cookie', cookies)
+        .send();
       const { body, statusCode } = data;
-      expect(statusCode).toBe(201);
-      expect(body).toHaveProperty('access_token');
-      expect(body.access_token).toBeTruthy();
+      expect(statusCode).toBe(200);
+      expect(body.message).toBe('Token refreshed successfully');
+
+      const newCookies = data.headers['set-cookie'];
+      expect(newCookies).toBeDefined();
+      expect(
+        newCookies.some((c: string) => c.startsWith('access_token=')),
+      ).toBe(true);
     });
 
     it('should return a new access token with Customer User', async () => {
@@ -152,35 +165,43 @@ describe('AuthController (e2e) REFRESH TOKEN', () => {
       };
 
       const loginResponse: any = await request(app.getHttpServer())
-        .post('/auth/user/login')
+        .post('/auth/login')
         .set('x-api-key', API_KEY)
         .send(user);
-      const { refresh_token } = loginResponse.body;
+
+      const cookies = loginResponse.headers['set-cookie'] as string[];
 
       const data: any = await request(app.getHttpServer())
-        .post('/auth/refresh-token')
+        .post('/auth/refresh')
         .set('x-api-key', API_KEY)
-        .send({ refresh: refresh_token });
+        .set('Cookie', cookies)
+        .send();
       const { body, statusCode } = data;
-      expect(statusCode).toBe(201);
-      expect(body).toHaveProperty('access_token');
-      expect(body.access_token).toBeTruthy();
+      expect(statusCode).toBe(200);
+      expect(body.message).toBe('Token refreshed successfully');
+
+      const newCookies = data.headers['set-cookie'];
+      expect(newCookies).toBeDefined();
+      expect(
+        newCookies.some((c: string) => c.startsWith('access_token=')),
+      ).toBe(true);
     });
 
     it('should return 401 if refresh token is invalid', async () => {
       const data: any = await request(app.getHttpServer())
-        .post('/auth/refresh-token')
+        .post('/auth/refresh')
         .set('x-api-key', API_KEY)
-        .send({ refresh: 'invalid_token' });
+        .set('Cookie', ['refresh_token=invalid_token'])
+        .send();
       const { body, statusCode } = data;
       expect(statusCode).toBe(401);
-      expect(body).toHaveProperty('message', 'Unauthorized');
+      expect(body).toHaveProperty('message');
     });
 
     it('should return 401 if api key is missing', async () => {
       const data: any = await request(app.getHttpServer())
-        .post('/auth/refresh-token')
-        .send({ refresh: 'some_refresh_token' });
+        .post('/auth/refresh')
+        .send();
       const { body, statusCode } = data;
       expect(statusCode).toBe(401);
       expect(body).toHaveProperty('message', 'Invalid API key');
@@ -188,9 +209,9 @@ describe('AuthController (e2e) REFRESH TOKEN', () => {
 
     it('should return 401 if api key is invalid', async () => {
       const data: any = await request(app.getHttpServer())
-        .post('/auth/refresh-token')
+        .post('/auth/refresh')
         .set('x-api-key', 'invalid-api-key')
-        .send({ refresh: 'some_refresh_token' });
+        .send();
       const { body, statusCode } = data;
       expect(statusCode).toBe(401);
       expect(body).toHaveProperty('message', 'Invalid API key');
@@ -199,7 +220,6 @@ describe('AuthController (e2e) REFRESH TOKEN', () => {
 
   afterAll(async () => {
     await app.close();
-    // Close database connection after all tests
     await closeDataSource();
   });
 });

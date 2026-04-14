@@ -8,7 +8,9 @@ import {
   Delete,
   ParseIntPipe,
   UseGuards,
+  Query,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 /* Guards */
 import { AdminGuard } from '@auth/guards/admin-auth/admin-auth.guard';
@@ -29,6 +31,7 @@ import { Shipment } from './entities/shipment.entity';
 /* DTO's */
 import { CreateShipmentDto } from './dto/create-shipment.dto';
 import { UpdateShipmentDto } from './dto/update-shipment.dto';
+import { PaginationDto } from '@commons/dtos/Pagination.dto';
 
 @UseGuards(JwtAuthGuard, AdminGuard)
 @Controller('shipment')
@@ -47,9 +50,21 @@ export class ShipmentController
     return this.shipmentService.count();
   }
 
+  /**
+   * Retrieves a list of all shipments with optional pagination and search.
+   *
+   * @param paginationDto - Optional pagination and search parameters.
+   * @returns Array of Shipment objects or paginated result.
+   */
+  @ApiTags('Shipments')
+  @ApiOperation({ summary: 'Get all shipments with pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns paginated list of shipments',
+  })
   @Get()
-  findAll() {
-    return this.shipmentService.findAll();
+  findAll(@Query() paginationDto?: PaginationDto) {
+    return this.shipmentService.findAll(paginationDto);
   }
 
   @Get('shipping-company/:id')

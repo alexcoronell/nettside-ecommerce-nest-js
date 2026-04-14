@@ -47,15 +47,6 @@ describe('SubcategoryService', () => {
   });
 
   describe('count subcategories services', () => {
-    it('should return total all subcategories', async () => {
-      jest.spyOn(repository, 'count').mockResolvedValue(100);
-
-      const { statusCode, total } = await service.countAll();
-      expect(repository.count).toHaveBeenCalledTimes(1);
-      expect(statusCode).toBe(200);
-      expect(total).toEqual(100);
-    });
-
     it('should return total subcategories not removed', async () => {
       jest.spyOn(repository, 'count').mockResolvedValue(100);
       const { statusCode, total } = await service.count();
@@ -69,21 +60,24 @@ describe('SubcategoryService', () => {
   });
 
   describe('find subcategories services', () => {
-    it('findAll should return all subcategories', async () => {
+    it('findAll should return all subcategories with pagination', async () => {
       const mock = generateManySubcategories(50);
       jest
         .spyOn(repository, 'findAndCount')
-        .mockResolvedValue([mock, mock.length]);
+        .mockResolvedValue([mock.slice(0, 10), mock.length]);
 
-      const { statusCode, data, total } = await service.findAll();
+      const { statusCode, data, meta } = await service.findAll();
       expect(repository.findAndCount).toHaveBeenCalledTimes(1);
       expect(repository.findAndCount).toHaveBeenCalledWith({
         where: { isDeleted: false },
         order: { name: 'ASC' },
+        relations: ['category', 'createdBy', 'updatedBy'],
+        skip: 0,
+        take: 10,
       });
       expect(statusCode).toBe(200);
-      expect(total).toEqual(mock.length);
-      expect(data).toEqual(mock);
+      expect(meta.total).toEqual(mock.length);
+      expect(data).toEqual(mock.slice(0, 10));
     });
 
     it('findAll by category should returns all subcategories by category', async () => {
@@ -98,25 +92,6 @@ describe('SubcategoryService', () => {
       expect(repository.findAndCount).toHaveBeenCalledWith({
         where: { category: { id: categoryId }, isDeleted: false },
         order: { name: 'ASC' },
-      });
-      expect(statusCode).toBe(200);
-      expect(total).toEqual(mock.length);
-      expect(data).toEqual(mock);
-    });
-
-    it('findAllByCategoryAndName should returns all subcategories by category and name', async () => {
-      const categoryId = 3;
-      const tagNameTest = 'tagNameTest';
-      const mock = generateManySubcategories(1, categoryId, tagNameTest);
-      jest
-        .spyOn(repository, 'findAndCount')
-        .mockResolvedValue([mock, mock.length]);
-      const { statusCode, data, total } =
-        await service.findAllByCategoryAndName(categoryId, tagNameTest);
-
-      expect(repository.findAndCount).toHaveBeenCalledTimes(1);
-      expect(repository.findAndCount).toHaveBeenCalledWith({
-        where: { category: { id: categoryId }, name: tagNameTest },
       });
       expect(statusCode).toBe(200);
       expect(total).toEqual(mock.length);
@@ -160,32 +135,6 @@ describe('SubcategoryService', () => {
       );
     });
 
-    it('findOneByName should return a subcategory', async () => {
-      const mock = generateSubcategory();
-      const name = mock.name;
-
-      jest.spyOn(repository, 'findOne').mockResolvedValue(mock);
-
-      const { statusCode, data } = await service.findOneByName(name);
-      expect(repository.findOne).toHaveBeenCalledTimes(1);
-      expect(statusCode).toBe(200);
-      expect(data).toEqual(mock);
-    });
-
-    it('findOneByName should throw NotFoundException if subcategory does not exist', async () => {
-      const name = 'nameTest';
-      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
-
-      try {
-        await service.findOneByName(name);
-      } catch (error) {
-        expect(error).toBeInstanceOf(NotFoundException);
-        expect(error.message).toBe(
-          `The Subcategory with NAME: ${name} not found`,
-        );
-      }
-    });
-
     it('findOneBySlug should return a subcategory', async () => {
       const mock = generateSubcategory();
       const slug = mock.slug;
@@ -218,6 +167,7 @@ describe('SubcategoryService', () => {
       const mock = generateSubcategory();
       const userId: User['id'] = 1;
 
+      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
       jest.spyOn(repository, 'create').mockReturnValue(mock);
       jest.spyOn(repository, 'save').mockResolvedValue(mock);
 
@@ -238,8 +188,7 @@ describe('SubcategoryService', () => {
       const mock = generateSubcategory();
       const userId: User['id'] = 1;
 
-      jest.spyOn(repository, 'create').mockReturnValue(mock);
-      jest.spyOn(repository, 'save').mockResolvedValue(mock);
+      jest.spyOn(repository, 'findOne').mockResolvedValue(mock);
 
       const mockNewSubcategory: CreateSubcategoryDto = {
         ...mock,
@@ -251,7 +200,7 @@ describe('SubcategoryService', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(ConflictException);
         expect(error.message).toBe(
-          `The Subcategory already exists in this category`,
+          `The Subcategory NAME ${mock.name} is already in use with the same Category`,
         );
       }
     });
@@ -273,7 +222,7 @@ describe('SubcategoryService', () => {
       jest.spyOn(repository, 'save').mockResolvedValue(mock);
 
       const { statusCode, message } = await service.update(id, userId, changes);
-      expect(repository.findOne).toHaveBeenCalledTimes(1);
+      expect(repository.findOne).toHaveBeenCalledTimes(2);
       expect(repository.merge).toHaveBeenCalledTimes(1);
       expect(repository.save).toHaveBeenCalledTimes(1);
       expect(statusCode).toBe(200);
@@ -287,18 +236,23 @@ describe('SubcategoryService', () => {
       const id = mock.id;
       const userId: User['id'] = 1;
 
-      const changes: UpdateSubcategoryDto = { name: 'newName' };
+      const differentId = mock.id + 1;
+      const changes: UpdateSubcategoryDto = {
+        name: 'newName',
+        category: mock.category.id,
+      };
 
-      jest.spyOn(repository, 'findOne').mockResolvedValue(mock);
-      jest.spyOn(repository, 'merge').mockReturnValue(mock);
-      jest.spyOn(repository, 'save').mockResolvedValue(mock);
+      jest
+        .spyOn(repository, 'findOne')
+        .mockResolvedValueOnce(mock)
+        .mockResolvedValueOnce({ ...mock, id: differentId });
 
       try {
         await service.update(id, userId, changes);
       } catch (error) {
         expect(error).toBeInstanceOf(ConflictException);
         expect(error.message).toBe(
-          `The Subcategory already exists in other category`,
+          `The Subcategory NAME ${changes.name} is already in use with the same Category`,
         );
       }
     });

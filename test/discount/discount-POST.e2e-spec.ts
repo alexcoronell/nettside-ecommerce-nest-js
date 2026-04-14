@@ -1,8 +1,39 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
+jest.mock('uuid', () => ({
+  v4: () => 'mock-uuid-1234',
+}));
+
+jest.mock('@aws-sdk/client-s3', () => ({
+  S3Client: jest.fn().mockImplementation(() => ({
+    send: jest.fn().mockResolvedValue({}),
+  })),
+  HeadBucketCommand: jest.fn(),
+  CreateBucketCommand: jest.fn(),
+}));
+
+jest.mock('@aws-sdk/lib-storage', () => ({
+  Upload: jest.fn().mockImplementation(() => ({
+    done: jest.fn().mockResolvedValue({}),
+  })),
+}));
+
+jest.mock('@upload/constants/storage.constants', () => ({
+  STORAGE_CONFIG: {
+    endpoint: 'localhost:9000',
+    region: 'us-east-1',
+    credentials: { accessKeyId: 'test', secretAccessKey: 'test' },
+    forcePathStyle: true,
+  },
+  BUCKETS: {
+    BRAND_LOGOS: 'brand-logos',
+  },
+}));
+
+import * as cookieParser from 'cookie-parser';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException, INestApplication } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { App } from 'supertest/types';
 import { ConfigModule } from '@nestjs/config';
@@ -38,9 +69,9 @@ describe('DiscountController (e2e) [POST]', () => {
   let app: INestApplication<App>;
   let repo: any = undefined;
   let repoUser: any = undefined;
-  let adminAccessToken: string;
-  let sellerAccessToken: string;
-  let customerAccessToken: string;
+  let adminCookies: string[];
+  let sellerCookies: string[];
+  let customerCookies: string[];
 
   beforeAll(async () => {
     // Initialize database connection once for the entire test suite
@@ -71,6 +102,7 @@ describe('DiscountController (e2e) [POST]', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.use(cookieParser());
     await app.init();
     repo = app.get('DiscountRepository');
     repoUser = app.get('UserRepository');
@@ -84,20 +116,20 @@ describe('DiscountController (e2e) [POST]', () => {
 
     /* Login Users */
     const resLoginAdmin = await loginAdmin(app, repoUser);
-    adminAccessToken = resLoginAdmin.access_token;
+    adminCookies = resLoginAdmin.cookies;
     const resLoginSeller = await loginSeller(app, repoUser);
-    sellerAccessToken = resLoginSeller.access_token;
+    sellerCookies = resLoginSeller.cookies;
     const resLoginCustomer = await loginCustomer(app, repoUser);
-    customerAccessToken = resLoginCustomer.access_token;
+    customerCookies = resLoginCustomer.cookies;
   });
 
   describe('POST Discount', () => {
-    it('/ should create a discount, return 201 and the discount with admin user', async () => {
+    it('/ should create a discount, return 201 and the discount with admin cookies', async () => {
       const newDiscount = createDiscount();
       const res = await request(app.getHttpServer())
         .post('/discount')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .set('Cookie', adminCookies)
         .send(newDiscount);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(201);
@@ -109,7 +141,7 @@ describe('DiscountController (e2e) [POST]', () => {
       const res = await request(app.getHttpServer())
         .post('/discount')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`)
+        .set('Cookie', sellerCookies)
         .send(newDiscount);
       const { statusCode, error } = res.body;
       expect(statusCode).toBe(401);
@@ -121,37 +153,18 @@ describe('DiscountController (e2e) [POST]', () => {
       const res = await request(app.getHttpServer())
         .post('/discount')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`)
+        .set('Cookie', customerCookies)
         .send(newDiscount);
       const { statusCode, error } = res.body;
       expect(statusCode).toBe(401);
       expect(error).toBe('Unauthorized');
     });
 
-    it('/ should return a  conflict exception with existing discount code', async () => {
-      const newDiscount = createDiscount();
-      await repo.save(newDiscount);
-      const repeatedDiscount = {
-        ...createDiscount(),
-        code: newDiscount.code,
-      };
-      try {
-        await request(app.getHttpServer())
-          .post('/discount')
-          .send(repeatedDiscount);
-      } catch (error) {
-        expect(error).toBeInstanceOf(ConflictException);
-        expect(error.message).toBe(
-          `The Discount CODE: ${repeatedDiscount.code} is already in use`,
-        );
-      }
-    });
-
     it('/ should create a discount, return 401 if api key is missing', async () => {
       const newDiscount = createDiscount();
       const res = await request(app.getHttpServer())
         .post('/discount')
-        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .set('Cookie', adminCookies)
         .send(newDiscount);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);

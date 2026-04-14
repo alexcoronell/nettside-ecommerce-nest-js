@@ -8,7 +8,9 @@ import {
   Delete,
   ParseIntPipe,
   UseGuards,
+  Query,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 /* Interface */
 import { IBaseController } from '@commons/interfaces/i-base-controller';
@@ -25,6 +27,7 @@ import { PaymentMethod } from './entities/payment-method.entity';
 /* DTO's */
 import { CreatePaymentMethodDto } from '@payment_method/dto/create-payment-method.dto';
 import { UpdatePaymentMethodDto } from '@payment_method/dto/update-payment-method.dto';
+import { PaginationDto } from '@commons/dtos/Pagination.dto';
 
 /* Guards */
 import { AdminGuard } from '@auth/guards/admin-auth/admin-auth.guard';
@@ -74,12 +77,20 @@ export class PaymentMethodController
   }
 
   /**
-   * Retrieves all payment methods.
-   * @returns An array of all payment methods.
+   * Retrieves a list of all payment methods with optional pagination and search.
+   *
+   * @param paginationDto - Optional pagination and search parameters.
+   * @returns Array of PaymentMethod objects or paginated result.
    */
+  @ApiTags('Payment Methods')
+  @ApiOperation({ summary: 'Get all payment methods with pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns paginated list of payment methods',
+  })
   @Get()
-  findAll() {
-    return this.paymentMethodService.findAll();
+  findAll(@Query() paginationDto?: PaginationDto) {
+    return this.paymentMethodService.findAll(paginationDto);
   }
 
   /**

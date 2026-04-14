@@ -14,14 +14,25 @@ async function loginCustomer(app: INestApplication<App>, repo: any) {
   const customerUser = await repo.save(await seedNewCustomerUser());
 
   const login = await request(app.getHttpServer())
-    .post('/auth/user/login')
+    .post('/auth/login')
     .set('x-api-key', API_KEY)
     .send({
       email: customerUser?.email,
       password: customerPassword,
     });
-  const { access_token } = login.body;
-  return { customerUser, access_token };
+
+  const setCookieHeader = login.headers['set-cookie'] as unknown as
+    | string[]
+    | undefined;
+  const access_token =
+    setCookieHeader
+      ?.find((c: string) => c.startsWith('access_token='))
+      ?.split(';')[0]
+      ?.replace('access_token=', '') || '';
+
+  const cookies = setCookieHeader || [];
+
+  return { customerUser, access_token, cookies };
 }
 
 export { loginCustomer };

@@ -1,4 +1,4 @@
-import { faker } from '@faker-js/faker/.';
+import { faker } from '@faker-js/faker';
 
 /* Entities */
 import { Brand } from '@brand/entities/brand.entity';
@@ -19,6 +19,7 @@ export const createBrand = (): CreateBrandDto => {
   return {
     name,
     slug: createSlug(name),
+    logo: faker.image.url(),
   };
 };
 
@@ -38,6 +39,14 @@ export const generateBrand = (id: number = 1): Brand => ({
   updatedBy: generateUser(),
   deletedBy: null,
 });
+
+export const generateManyNewBrands = (size: number): CreateBrandDto[] => {
+  const brands: CreateBrandDto[] = [];
+  for (let i = 0; i < size; i++) {
+    brands.push(createBrand());
+  }
+  return brands;
+};
 
 export const generateManyBrands = (size: number): Brand[] => {
   const brands: Brand[] = [];

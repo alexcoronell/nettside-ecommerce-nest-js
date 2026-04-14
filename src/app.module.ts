@@ -6,7 +6,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
 /* Modules */
-import { DatabaseModule } from './database/database.module';
+import { DatabaseModule } from '@database/database.module';
 import { AuthModule } from '@auth/auth.module';
 import { BrandModule } from '@brand/brand.module';
 import { CategoryModule } from '@category/category.module';
@@ -29,9 +29,11 @@ import { SaleDetailModule } from './sale-detail/sale-detail.module';
 import { PurchaseModule } from './purchase/purchase.module';
 import { PurchaseDetailModule } from './purchase-detail/purchase-detail.module';
 import { ShipmentModule } from './shipment/shipment.module';
+import { UploadModule } from '@upload/upload.module';
 
 /* Guards */
 import { ApiKeyGuard } from '@commons/guards/api-key.guard';
+import { BootstrapModule } from './bootstrap/bootstrap.module';
 
 /* Config */
 import config from './config';
@@ -65,6 +67,8 @@ import config from './config';
     PurchaseModule,
     PurchaseDetailModule,
     ShipmentModule,
+    UploadModule,
+    BootstrapModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ApiKeyGuard }],

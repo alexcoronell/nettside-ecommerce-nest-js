@@ -8,7 +8,9 @@ import {
   Delete,
   ParseIntPipe,
   UseGuards,
+  Query,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 /* Interface */
 import { IBaseController } from '@commons/interfaces/i-base-controller';
@@ -27,6 +29,7 @@ import { Product } from './entities/product.entity';
 /* DTO's */
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { PaginationDto } from '@commons/dtos/Pagination.dto';
 
 /* Guards */
 import { JwtAuthGuard } from '@auth/guards/jwt-auth/jwt-auth.guard';
@@ -50,9 +53,21 @@ export class ProductController
     return this.productService.count();
   }
 
+  /**
+   * Retrieves a list of all products with optional pagination and search.
+   *
+   * @param paginationDto - Optional pagination and search parameters.
+   * @returns Array of Product objects or paginated result.
+   */
+  @ApiTags('Products')
+  @ApiOperation({ summary: 'Get all products with pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns paginated list of products',
+  })
   @Get()
-  findAll() {
-    return this.productService.findAll();
+  findAll(@Query() paginationDto?: PaginationDto) {
+    return this.productService.findAll(paginationDto);
   }
 
   @UseGuards(JwtAuthGuard, IsNotCustomerGuard)

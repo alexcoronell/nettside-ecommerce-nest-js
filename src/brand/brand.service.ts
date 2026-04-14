@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 
 /* Interfaces */
 import { IBaseService } from '@commons/interfaces/i-base-service';
@@ -11,9 +11,20 @@ import { Brand } from '@brand/entities/brand.entity';
 /* DTO's */
 import { CreateBrandDto } from '@brand/dto/create-brand.dto';
 import { UpdateBrandDto } from '@brand/dto/update-brand.dto';
+import {
+  PaginationDto,
+  PaginatedResult,
+  PaginationHelper,
+} from '@commons/dtos/Pagination.dto';
 
 /* Types */
 import { Result } from '@commons/types/result.type';
+
+/* Utils */
+import { createSlug } from '@commons/utils/create-slug.util';
+
+/* Services */
+import { UploadService } from '@upload/upload.service';
 
 @Injectable()
 export class BrandService
@@ -22,12 +33,8 @@ export class BrandService
   constructor(
     @InjectRepository(Brand)
     private readonly repo: Repository<Brand>,
+    private readonly uploadService: UploadService,
   ) {}
-
-  async countAll() {
-    const total = await this.repo.count();
-    return { statusCode: HttpStatus.OK, total };
-  }
 
   async count() {
     const total = await this.repo.count({
@@ -38,39 +45,55 @@ export class BrandService
     return { statusCode: HttpStatus.OK, total };
   }
 
-  async findAll() {
-    const [brands, total] = await this.repo.findAndCount({
-      where: {
-        isDeleted: false,
-      },
-      order: {
-        name: 'ASC',
-      },
-    });
+  /**
+   * Retrieves a list of all active (non-deleted) brands, sorted by name.
+   *
+   * Supports optional pagination and search via PaginationDto.
+   * When no pagination options are provided, all brands are returned.
+   *
+   * @param paginationDto - Optional pagination and search parameters.
+   * @returns {Promise<PaginatedResult<Brand>>} A standardized paginated response.
+   */
+  async findAll(
+    paginationDto?: PaginationDto,
+  ): Promise<PaginatedResult<Brand>> {
+    const { page, limit, skip } = PaginationHelper.normalizePagination(
+      paginationDto?.page,
+      paginationDto?.limit,
+    );
 
-    return {
-      statusCode: HttpStatus.OK,
-      data: brands,
-      total,
+    // Build where clause with filters
+    const where: FindOptionsWhere<Brand> = {
+      isDeleted: false,
     };
-  }
 
-  async findAllWithRelations() {
-    const [brands, total] = await this.repo.findAndCount({
+    // Build search conditions
+    const searchConditions: FindOptionsWhere<Brand>[] = [];
+    if (paginationDto?.search) {
+      const searchTerm = `%${paginationDto.search}%`;
+      searchConditions.push(
+        { ...where, name: ILike(searchTerm) },
+        { ...where, slug: ILike(searchTerm) },
+      );
+    }
+
+    // Determine sort field and order
+    const sortBy = paginationDto?.sortBy || 'name';
+    const sortOrder = paginationDto?.sortOrder || 'ASC';
+
+    // Execute query
+    const [data, total] = await this.repo.findAndCount({
+      where: searchConditions.length > 0 ? searchConditions : where,
       relations: ['createdBy', 'updatedBy'],
-      where: {
-        isDeleted: false,
-      },
       order: {
-        name: 'ASC',
+        [sortBy]: sortOrder,
       },
+      skip,
+      take: limit,
     });
 
-    return {
-      statusCode: HttpStatus.OK,
-      data: brands,
-      total,
-    };
+    // Return paginated result
+    return PaginationHelper.createPaginatedResult(data, total, page, limit);
   }
 
   async findOne(id: Brand['id']): Promise<Result<Brand>> {
@@ -87,21 +110,7 @@ export class BrandService
     };
   }
 
-  async findOneByName(name: string): Promise<Result<Brand>> {
-    const brand = await this.repo.findOne({
-      relations: ['createdBy', 'updatedBy'],
-      where: { name, isDeleted: false },
-    });
-    if (!brand) {
-      throw new NotFoundException(`The Brand with NAME: ${name} not found`);
-    }
-    return {
-      statusCode: HttpStatus.OK,
-      data: brand,
-    };
-  }
-
-  async findOneBySlug(slug: string): Promise<Result<Brand>> {
+  async findOneBySlug(slug: Brand['slug']): Promise<Result<Brand>> {
     const brand = await this.repo.findOne({
       relations: ['createdBy', 'updatedBy'],
       where: { slug, isDeleted: false },
@@ -118,6 +127,7 @@ export class BrandService
   async create(dto: CreateBrandDto, userId: number) {
     const newBrand = this.repo.create({
       ...dto,
+      slug: dto.slug || createSlug(dto.name),
       createdBy: { id: userId },
       updatedBy: { id: userId },
     });
@@ -129,10 +139,42 @@ export class BrandService
     };
   }
 
-  async update(id: number, userId: number, changes: UpdateBrandDto) {
-    const { data } = await this.findOne(id);
-    this.repo.merge(data as Brand, { ...changes, updatedBy: { id: userId } });
-    const rta = await this.repo.save(data as Brand);
+  async update(
+    id: number,
+    userId: number,
+    changes: UpdateBrandDto,
+    file?: Express.Multer.File,
+  ) {
+    const { data: existingBrand } = await this.findOne(id);
+    const brand = existingBrand as Brand;
+
+    let logoValue: string | null | undefined = changes.logo;
+
+    if (!file && brand.logo) {
+      const extracted = this.uploadService.extractKeyFromUrl(brand.logo);
+      if (extracted) {
+        await this.uploadService.deleteFile(extracted.key, extracted.bucket);
+      }
+      logoValue = null;
+    } else if (file) {
+      if (brand.logo) {
+        const extracted = this.uploadService.extractKeyFromUrl(brand.logo);
+        if (extracted) {
+          await this.uploadService.deleteFile(extracted.key, extracted.bucket);
+        }
+      }
+      const uploadResult = await this.uploadService.uploadLogo(file);
+      logoValue = uploadResult.url;
+    }
+
+    const updateData = {
+      ...changes,
+      ...(logoValue !== undefined && { logo: logoValue }),
+      updatedBy: { id: userId },
+    };
+
+    this.repo.merge(brand, updateData);
+    const rta = await this.repo.save(brand);
     return {
       statusCode: HttpStatus.OK,
       data: rta,

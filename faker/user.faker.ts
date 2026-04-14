@@ -1,4 +1,4 @@
-import { faker } from '@faker-js/faker/.';
+import { faker } from '@faker-js/faker';
 
 import { generateBaseEntity } from '@faker/base.faker';
 
@@ -17,6 +17,7 @@ export const createUser = (): CreateUserDto => ({
   email: faker.internet.email().toLowerCase(),
   password: faker.internet.password(),
   phoneNumber: faker.phone.number({ style: 'international' }),
+  role: faker.helpers.arrayElement(Object.values(UserRoleEnum)),
   department: faker.location.state(),
   city: faker.location.city(),
   address: faker.location.streetAddress(),
@@ -49,6 +50,14 @@ export const generateCustomer = (
   updatedBy: auditUser,
   deletedBy: null,
 });
+
+export const generateManyNewUsers = (size = 1): CreateUserDto[] => {
+  const users: CreateUserDto[] = [];
+  for (let i = 0; i < size; i++) {
+    users.push(createUser());
+  }
+  return users;
+};
 
 export const generateManyUsers = (size: number): User[] => {
   const limit = size ?? 10;

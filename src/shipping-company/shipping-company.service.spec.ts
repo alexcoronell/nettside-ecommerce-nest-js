@@ -68,22 +68,25 @@ describe('ShippingCompanyService', () => {
   });
 
   describe('find shipping companies services', () => {
-    it('findAll should return all shipping companies', async () => {
+    it('findAll should return all shipping companies with pagination', async () => {
       const mocks = generateManyShippingCompanies(50);
 
       jest
         .spyOn(repository, 'findAndCount')
-        .mockResolvedValue([mocks, mocks.length]);
+        .mockResolvedValue([mocks.slice(0, 10), mocks.length]);
 
-      const { statusCode, data, total } = await service.findAll();
+      const { statusCode, data, meta } = await service.findAll();
       expect(repository.findAndCount).toHaveBeenCalledTimes(1);
       expect(repository.findAndCount).toHaveBeenCalledWith({
         where: { isDeleted: false },
         order: { name: 'ASC' },
+        relations: ['createdBy', 'updatedBy'],
+        skip: 0,
+        take: 10,
       });
       expect(statusCode).toBe(200);
-      expect(total).toEqual(mocks.length);
-      expect(data).toEqual(mocks);
+      expect(meta.total).toEqual(mocks.length);
+      expect(data).toEqual(mocks.slice(0, 10));
     });
 
     it('findOne should return a shipping companies', async () => {

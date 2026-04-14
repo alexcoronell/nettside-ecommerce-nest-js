@@ -61,11 +61,6 @@ describe('CategoryController', () => {
   });
 
   describe('Count category controllers', () => {
-    it('should call countAll category service', async () => {
-      expect(await controller.countAll()).toBe(mockCategories.length);
-      expect(service.countAll).toHaveBeenCalledTimes(1);
-    });
-
     it('should call count category service', async () => {
       expect(await controller.count()).toBe(mockCategories.length);
       expect(service.count).toHaveBeenCalledTimes(1);
@@ -78,19 +73,9 @@ describe('CategoryController', () => {
       expect(service.findAll).toHaveBeenCalledTimes(1);
     });
 
-    it('should call findAllWithRelations category service', async () => {
-      expect(await controller.findAllWithRelations()).toBe(mockCategories);
-      expect(service.findAllWithRelations).toHaveBeenCalledTimes(1);
-    });
-
     it('should call findOne category service', async () => {
       expect(await controller.findOne(1)).toBe(mockCategory);
       expect(service.findOne).toHaveBeenCalledTimes(1);
-    });
-
-    it('should return an category by name', async () => {
-      expect(await controller.findOneByName(mockCategory.name));
-      expect(service.findOneByName).toHaveBeenCalledTimes(1);
     });
 
     it('should return an category by slug', async () => {

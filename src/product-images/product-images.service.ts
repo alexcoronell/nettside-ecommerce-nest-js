@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 
 /* Interfaces */
 import { IBaseService } from '@commons/interfaces/i-base-service';
@@ -11,6 +11,11 @@ import { ProductImage } from './entities/product-image.entity';
 /* DTO's */
 import { CreateProductImageDto } from '@product_images/dto/create-product-image.dto';
 import { UpdateProductImageDto } from './dto/update-product-image.dto';
+import {
+  PaginationDto,
+  PaginatedResult,
+  PaginationHelper,
+} from '@commons/dtos/Pagination.dto';
 
 /* Types */
 import { Result } from '@commons/types/result.type';
@@ -39,21 +44,55 @@ export class ProductImagesService
     return { statusCode: HttpStatus.OK, total };
   }
 
-  async findAll() {
-    const [productImages, total] = await this.repo.findAndCount({
-      where: {
-        isDeleted: false,
-      },
+  /**
+   * Retrieves a list of all active (non-deleted) product images, sorted by title.
+   *
+   * Supports optional pagination and search via PaginationDto.
+   * When no pagination options are provided, all product images are returned.
+   *
+   * @param paginationDto - Optional pagination and search parameters.
+   * @returns {Promise<PaginatedResult<ProductImage>>} A standardized paginated response.
+   */
+  async findAll(
+    paginationDto?: PaginationDto,
+  ): Promise<PaginatedResult<ProductImage>> {
+    const { page, limit, skip } = PaginationHelper.normalizePagination(
+      paginationDto?.page,
+      paginationDto?.limit,
+    );
+
+    // Build where clause with filters
+    const where: FindOptionsWhere<ProductImage> = {
+      isDeleted: false,
+    };
+
+    // Build search conditions
+    const searchConditions: FindOptionsWhere<ProductImage>[] = [];
+    if (paginationDto?.search) {
+      const searchTerm = `%${paginationDto.search}%`;
+      searchConditions.push(
+        { ...where, title: ILike(searchTerm) },
+        { ...where, filePath: ILike(searchTerm) },
+      );
+    }
+
+    // Determine sort field and order
+    const sortBy = paginationDto?.sortBy || 'title';
+    const sortOrder = paginationDto?.sortOrder || 'ASC';
+
+    // Execute query
+    const [data, total] = await this.repo.findAndCount({
+      where: searchConditions.length > 0 ? searchConditions : where,
+      relations: ['product', 'uploadedBy', 'updatedBy'],
       order: {
-        title: 'ASC',
+        [sortBy]: sortOrder,
       },
+      skip,
+      take: limit,
     });
 
-    return {
-      statusCode: HttpStatus.OK,
-      data: productImages,
-      total,
-    };
+    // Return paginated result
+    return PaginationHelper.createPaginatedResult(data, total, page, limit);
   }
 
   async findOne(id: ProductImage['id']): Promise<Result<ProductImage>> {

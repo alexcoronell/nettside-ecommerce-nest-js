@@ -8,8 +8,9 @@ import {
   Delete,
   ParseIntPipe,
   UseGuards,
+  Query,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 /* Interfaces */
 import { IBaseController } from '@commons/interfaces/i-base-controller';
@@ -24,6 +25,7 @@ import { UserService } from './user.service';
 import { User } from './entities/user.entity';
 
 /* DTO's */
+import { PaginationDto } from '@commons/dtos/Pagination.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -44,15 +46,6 @@ export class UserController
   implements IBaseController<ResponseUserDto, CreateUserDto, UpdateUserDto>
 {
   constructor(private userService: UserService) {}
-  /**
-   * Counts all users in the system.
-   * @returns The total number of users.
-   */
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  @Get('count-all')
-  countAll() {
-    return this.userService.countAll();
-  }
 
   /**
    * Counts specific users based on certain criteria.
@@ -71,29 +64,20 @@ export class UserController
   }
 
   /**
-   * Retrieves all users from the system.
-   * @returns An array of all users.
+   * Retrieves all users from the system with optional pagination.
+   *
+   * @param paginationDto - Pagination and filter parameters
+   * @returns An array of all users, or a paginated subset if page/limit are provided.
    */
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get all users with pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns paginated list of users',
+  })
   @Get()
-  findAll() {
-    return this.userService.findAll();
-  }
-
-  /**
-   * Retrieves all active users from the system.
-   * @returns An array of active users.
-   */
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  @Get('sellers')
-  findAllSellers() {
-    return this.userService.findAllSellers();
-  }
-
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  @Get('customers')
-  findAllCustomers() {
-    return this.userService.findAllCustomers();
+  findAll(@Query() paginationDto?: PaginationDto) {
+    return this.userService.findAll(paginationDto);
   }
 
   /**
@@ -105,12 +89,6 @@ export class UserController
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: User['id']) {
     return this.userService.findOne(+id);
-  }
-
-  @UseGuards(JwtAuthGuard, OwnerOrAdminGuard)
-  @Get('no-relations/:id')
-  findOneWithoutRelations(@Param('id', ParseIntPipe) id: User['id']) {
-    return this.userService.findOneWithoutRelations(id);
   }
 
   /**

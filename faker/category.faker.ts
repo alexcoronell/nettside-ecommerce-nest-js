@@ -1,4 +1,4 @@
-import { faker } from '@faker-js/faker/.';
+import { faker } from '@faker-js/faker';
 
 /* Entity */
 import { Category } from '@category/entities/category.entity';
@@ -15,7 +15,7 @@ import { createSlug } from '../src/commons/utils/create-slug.util';
 
 export const createCategory = (): CreateCategoryDto => {
   const name =
-    faker.commerce.productName() + faker.number.int({ min: 100, max: 200 });
+    faker.commerce.productName() + faker.number.int({ min: 1000, max: 2000 });
   return {
     name,
     slug: createSlug(name),
@@ -34,13 +34,24 @@ export const generateNewCategories = (
 
 export const generateCategory = (id: number = 1): Category => ({
   ...generateBaseEntity(id),
-  ...createCategory(),
   id,
+  name: `Category ${id}`,
+  slug: `category-${id}`,
   createdBy: generateUser(),
   updatedBy: generateUser(),
   deletedBy: null,
   ...generateRelations(),
 });
+
+export const generateManyNewCategories = (
+  size: number,
+): CreateCategoryDto[] => {
+  const categories: CreateCategoryDto[] = [];
+  for (let i = 0; i < size; i++) {
+    categories.push(createCategory());
+  }
+  return categories;
+};
 
 export const generateManyCategories = (size: number): Category[] => {
   const categories: Category[] = [];

@@ -2,12 +2,13 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException, INestApplication } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { App } from 'supertest/types';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Reflector, APP_INTERCEPTOR } from '@nestjs/core';
+import * as cookieParser from 'cookie-parser';
 
 /* Modules */
 import { AppModule } from '../../src/app.module';
@@ -48,12 +49,12 @@ describe('SubcategoryController (e2e) [GET]', () => {
   let repo: any = undefined;
   let repoCategory: any = undefined;
   let repoUser: any = undefined;
-  let adminAccessToken: string;
-  let sellerAccessToken: string;
-  let customerAccessToken: string;
+  let adminCookies: string[];
+  let sellerCookies: string[];
+  let customerCookies: string[];
   let category: Category;
   let subcategories: Subcategory[] = [];
-  const path = '/subcategory';
+  const PATH = '/subcategory';
 
   beforeAll(async () => {
     // Initialize database connection once for the entire test suite
@@ -85,6 +86,7 @@ describe('SubcategoryController (e2e) [GET]', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.use(cookieParser());
     await app.init();
     repo = app.get('SubcategoryRepository');
     repoCategory = app.get('CategoryRepository');
@@ -92,16 +94,15 @@ describe('SubcategoryController (e2e) [GET]', () => {
   });
 
   beforeEach(async () => {
-    // Clean all data before each test to ensure isolation
     await cleanDB();
 
     /* Login Users */
     const resLoginAdmin = await loginAdmin(app, repoUser);
-    adminAccessToken = resLoginAdmin.access_token;
+    adminCookies = resLoginAdmin.cookies;
     const resLoginSeller = await loginSeller(app, repoUser);
-    sellerAccessToken = resLoginSeller.access_token;
+    sellerCookies = resLoginSeller.cookies;
     const resLoginCustomer = await loginCustomer(app, repoUser);
-    customerAccessToken = resLoginCustomer.access_token;
+    customerCookies = resLoginCustomer.cookies;
 
     /* Create category and 5 subcategories for testing */
     const newCategory = generateCategory();
@@ -117,9 +118,9 @@ describe('SubcategoryController (e2e) [GET]', () => {
         name: 'Updated name',
       };
       const res = await request(app.getHttpServer())
-        .patch(`${path}/${id}`)
+        .patch(`${PATH}/${id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .set('Cookie', adminCookies)
         .send(updatedData);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
@@ -132,9 +133,9 @@ describe('SubcategoryController (e2e) [GET]', () => {
         name: 'Updated name',
       };
       const res = await request(app.getHttpServer())
-        .patch(`${path}/${id}`)
+        .patch(`${PATH}/${id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`)
+        .set('Cookie', sellerCookies)
         .send(updatedData);
       const { statusCode, error, message } = res.body;
       expect(statusCode).toBe(401);
@@ -148,9 +149,9 @@ describe('SubcategoryController (e2e) [GET]', () => {
         name: 'Updated name',
       };
       const res = await request(app.getHttpServer())
-        .patch(`${path}/${id}`)
+        .patch(`${PATH}/${id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`)
+        .set('Cookie', customerCookies)
         .send(updatedData);
       const { statusCode, error, message } = res.body;
       expect(statusCode).toBe(401);
@@ -164,7 +165,7 @@ describe('SubcategoryController (e2e) [GET]', () => {
         name: 'Updated name',
       };
       const res = await request(app.getHttpServer())
-        .patch(`${path}/${id}`)
+        .patch(`${PATH}/${id}`)
         .set('x-api-key', API_KEY)
         .send(updatedData);
       const { statusCode, message } = res.body;
@@ -178,8 +179,8 @@ describe('SubcategoryController (e2e) [GET]', () => {
         name: 'Updated name',
       };
       const res = await request(app.getHttpServer())
-        .patch(`${path}/${id}`)
-        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .patch(`${PATH}/${id}`)
+        .set('Cookie', adminCookies)
         .send(updatedData);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);
@@ -192,9 +193,9 @@ describe('SubcategoryController (e2e) [GET]', () => {
         name: 'Updated name',
       };
       const res = await request(app.getHttpServer())
-        .patch(`${path}/${id}`)
+        .patch(`${PATH}/${id}`)
         .set('x-api-key', 'invalid-api-key')
-        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .set('Cookie', adminCookies)
         .send(updatedData);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);
@@ -207,9 +208,9 @@ describe('SubcategoryController (e2e) [GET]', () => {
         name: 'Updated name',
       };
       const res = await request(app.getHttpServer())
-        .patch(`${path}/${id}`)
+        .patch(`${PATH}/${id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .set('Cookie', adminCookies)
         .send(updatedData);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(404);
@@ -225,16 +226,17 @@ describe('SubcategoryController (e2e) [GET]', () => {
         name: existingSubcategory.name,
         categoryId: category.id,
       };
-      try {
-        await request(app.getHttpServer())
-          .patch(`${path}/${id}`)
-          .send(repeatedNameSubcategory);
-      } catch (error) {
-        expect(error).toBeInstanceOf(ConflictException);
-        expect(error.message).toBe(
-          `The tag NAME ${repeatedNameSubcategory.name} is already in use`,
-        );
-      }
+      const res = await request(app.getHttpServer())
+        .patch(`${PATH}/${id}`)
+        .set('x-api-key', API_KEY)
+        .set('Cookie', adminCookies)
+        .send(repeatedNameSubcategory);
+      const { statusCode, error, message } = res.body;
+      expect(statusCode).toBe(409);
+      expect(error).toBe('Conflict');
+      expect(message).toBe(
+        `The Subcategory NAME ${repeatedNameSubcategory.name} is already in use with the same Category`,
+      );
     });
   });
 

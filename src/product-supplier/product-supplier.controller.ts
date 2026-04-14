@@ -8,7 +8,9 @@ import {
   Delete,
   ParseIntPipe,
   UseGuards,
+  Query,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 /* Interfaces */
 import { IBaseController } from '@commons/interfaces/i-base-controller';
@@ -25,6 +27,7 @@ import { ProductSupplier } from './entities/product-supplier.entity';
 /* DTO's */
 import { CreateProductSupplierDto } from './dto/create-product-supplier.dto';
 import { UpdateProductSupplierDto } from './dto/update-product-supplier.dto';
+import { PaginationDto } from '@commons/dtos/Pagination.dto';
 
 /* Guards */
 import { JwtAuthGuard } from '@auth/guards/jwt-auth/jwt-auth.guard';
@@ -55,10 +58,22 @@ export class ProductSupplierController
     return this.productSupplierService.count();
   }
 
+  /**
+   * Retrieves a list of all product suppliers with optional pagination and search.
+   *
+   * @param paginationDto - Optional pagination and search parameters.
+   * @returns Array of ProductSupplier objects or paginated result.
+   */
   @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiTags('Product Suppliers')
+  @ApiOperation({ summary: 'Get all product suppliers with pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns paginated list of product suppliers',
+  })
   @Get()
-  findAll() {
-    return this.productSupplierService.findAll();
+  findAll(@Query() paginationDto?: PaginationDto) {
+    return this.productSupplierService.findAll(paginationDto);
   }
 
   @UseGuards(JwtAuthGuard, AdminGuard)

@@ -9,6 +9,11 @@ import { Discount } from '@discount/entities/discount.entity';
 
 /* DTO's */
 import { CreateProductDiscountDto } from './dto/create-product-discount.dto';
+import {
+  PaginationDto,
+  PaginatedResult,
+  PaginationHelper,
+} from '@commons/dtos/Pagination.dto';
 
 /* Types */
 import { Result } from '@commons/types/result.type';
@@ -25,14 +30,39 @@ export class ProductDiscountService {
     return { statusCode: HttpStatus.OK, total };
   }
 
-  async findAll(): Promise<Result<ProductDiscount[]>> {
-    const [productDiscounts, total] = await this.repo.findAndCount();
+  /**
+   * Retrieves a list of all product discounts with optional pagination.
+   *
+   * Supports optional pagination via PaginationDto.
+   * When no pagination options are provided, all product discounts are returned.
+   *
+   * @param paginationDto - Optional pagination parameters.
+   * @returns {Promise<PaginatedResult<ProductDiscount>>} A standardized paginated response.
+   */
+  async findAll(
+    paginationDto?: PaginationDto,
+  ): Promise<PaginatedResult<ProductDiscount>> {
+    const { page, limit, skip } = PaginationHelper.normalizePagination(
+      paginationDto?.page,
+      paginationDto?.limit,
+    );
 
-    return {
-      statusCode: HttpStatus.OK,
-      data: productDiscounts,
-      total,
-    };
+    // Determine sort field and order
+    const sortBy = paginationDto?.sortBy || 'createdAt';
+    const sortOrder = paginationDto?.sortOrder || 'DESC';
+
+    // Execute query
+    const [data, total] = await this.repo.findAndCount({
+      relations: ['product', 'discount', 'createdBy'],
+      order: {
+        [sortBy]: sortOrder,
+      },
+      skip,
+      take: limit,
+    });
+
+    // Return paginated result
+    return PaginationHelper.createPaginatedResult(data, total, page, limit);
   }
 
   async findOne(

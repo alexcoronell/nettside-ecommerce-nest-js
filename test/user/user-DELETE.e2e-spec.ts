@@ -4,6 +4,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import * as cookieParser from 'cookie-parser';
 import { App } from 'supertest/types';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -35,9 +36,9 @@ const API_KEY = process.env.API_KEY || 'api-e2e-key';
 describe('UserControler (e2e) [DELETE]', () => {
   let app: INestApplication<App>;
   let repo: any = undefined;
-  let adminAccessToken: string;
-  let sellerAccessToken: string;
-  let customerAccessToken: string;
+  let adminCookies: string[];
+  let sellerCookies: string[];
+  let customerCookies: string[];
 
   beforeAll(async () => {
     // Initialize database connection once for the entire test suite
@@ -67,6 +68,7 @@ describe('UserControler (e2e) [DELETE]', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.use(cookieParser());
     await app.init();
     repo = app.get('UserRepository');
   });
@@ -77,13 +79,13 @@ describe('UserControler (e2e) [DELETE]', () => {
 
     /* Login Users */
     const resLoginAdmin = await loginAdmin(app, repo);
-    adminAccessToken = resLoginAdmin.access_token;
+    adminCookies = resLoginAdmin.cookies;
 
     const resLoginSeller = await loginSeller(app, repo);
-    sellerAccessToken = resLoginSeller.access_token;
+    sellerCookies = resLoginSeller.cookies;
 
     const resLoginCustomer = await loginCustomer(app, repo);
-    customerAccessToken = resLoginCustomer.access_token;
+    customerCookies = resLoginCustomer.cookies;
   });
 
   describe('DELETE User', () => {
@@ -93,7 +95,7 @@ describe('UserControler (e2e) [DELETE]', () => {
       const res = await request(app.getHttpServer())
         .delete(`/user/${id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, message } = res.body;
       const deletedInDB = await repo.findOne({
         relations: ['createdBy', 'updatedBy', 'deletedBy'],
@@ -137,7 +139,7 @@ describe('UserControler (e2e) [DELETE]', () => {
       const res = await request(app.getHttpServer())
         .delete(`/user/${id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
+        .set('Cookie', sellerCookies);
       const { statusCode, error } = res.body;
       expect(statusCode).toBe(401);
       expect(error).toBe(`Unauthorized`);
@@ -149,7 +151,7 @@ describe('UserControler (e2e) [DELETE]', () => {
       const res = await request(app.getHttpServer())
         .delete(`/user/${id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
+        .set('Cookie', customerCookies);
       const { statusCode, error, message } = res.body;
       expect(statusCode).toBe(401);
       expect(error).toBe('Unauthorized');

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 
 /* Interfaces */
 import { IBaseService } from '@commons/interfaces/i-base-service';
@@ -11,9 +11,18 @@ import { Category } from './entities/category.entity';
 /* DTO's */
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import {
+  PaginationDto,
+  PaginatedResult,
+  PaginationHelper,
+} from '@commons/dtos/Pagination.dto';
 
 /* Types */
 import { Result } from '@commons/types/result.type';
+
+/* Utils */
+import { createSlug } from '@commons/utils/create-slug.util';
+
 /**
  * Service for managing categories in the application.
  * Implements the IBaseService interface for CRUD operations.
@@ -32,15 +41,6 @@ export class CategoryService
   ) {}
 
   /**
-   * Counts all categories, including deleted ones.
-   * @returns An object containing the total count of categories and an HTTP status code.
-   */
-  async countAll() {
-    const total = await this.repo.count();
-    return { statusCode: HttpStatus.OK, total };
-  }
-
-  /**
    * Counts all categories that are not marked as deleted.
    * @returns An object containing the total count of non-deleted categories and an HTTP status code.
    */
@@ -54,46 +54,54 @@ export class CategoryService
   }
 
   /**
-   * Retrieves all categories that are not marked as deleted.
-   * @returns An object containing the list of categories, total count, and an HTTP status code.
+   * Retrieves a list of all active (non-deleted) categories, sorted by name.
+   *
+   * Supports optional pagination and search via PaginationDto.
+   * When no pagination options are provided, all categories are returned.
+   *
+   * @param paginationDto - Optional pagination and search parameters.
+   * @returns {Promise<PaginatedResult<Category>>} A standardized paginated response.
    */
-  async findAll() {
-    const [categories, total] = await this.repo.findAndCount({
-      where: {
-        isDeleted: false,
-      },
+  async findAll(
+    paginationDto?: PaginationDto,
+  ): Promise<PaginatedResult<Category>> {
+    const { page, limit, skip } = PaginationHelper.normalizePagination(
+      paginationDto?.page,
+      paginationDto?.limit,
+    );
+
+    // Build where clause with filters
+    const where: FindOptionsWhere<Category> = {
+      isDeleted: false,
+    };
+
+    // Build search conditions
+    const searchConditions: FindOptionsWhere<Category>[] = [];
+    if (paginationDto?.search) {
+      const searchTerm = `%${paginationDto.search}%`;
+      searchConditions.push(
+        { ...where, name: ILike(searchTerm) },
+        { ...where, slug: ILike(searchTerm) },
+      );
+    }
+
+    // Determine sort field and order
+    const sortBy = paginationDto?.sortBy || 'name';
+    const sortOrder = paginationDto?.sortOrder || 'ASC';
+
+    // Execute query
+    const [data, total] = await this.repo.findAndCount({
+      where: searchConditions.length > 0 ? searchConditions : where,
+      relations: ['createdBy', 'updatedBy'],
       order: {
-        name: 'ASC',
+        [sortBy]: sortOrder,
       },
+      skip,
+      take: limit,
     });
 
-    return {
-      statusCode: HttpStatus.OK,
-      data: categories,
-      total,
-    };
-  }
-
-  /**
-   * Retrieves all categories that are not marked as deleted.
-   * @returns An object containing the list of categories with relations, total count, and an HTTP status code.
-   */
-  async findAllWithRelations() {
-    const [categories, total] = await this.repo.findAndCount({
-      relations: ['createdBy, updatedBy'],
-      where: {
-        isDeleted: false,
-      },
-      order: {
-        name: 'ASC',
-      },
-    });
-
-    return {
-      statusCode: HttpStatus.OK,
-      data: categories,
-      total,
-    };
+    // Return paginated result
+    return PaginationHelper.createPaginatedResult(data, total, page, limit);
   }
 
   /**
@@ -109,26 +117,6 @@ export class CategoryService
     });
     if (!category) {
       throw new NotFoundException(`The Category with ID: ${id} not found`);
-    }
-    return {
-      statusCode: HttpStatus.OK,
-      data: category,
-    };
-  }
-
-  /**
-   * Finds a single category by its name.
-   * @param name - The name of the category to retrieve.
-   * @returns A Result object containing the category data and an HTTP status code.
-   * @throws NotFoundException if the category is not found.
-   */
-  async findOneByName(name: string): Promise<Result<Category>> {
-    const category = await this.repo.findOne({
-      relations: ['createdBy', 'updatedBy'],
-      where: { name, isDeleted: false },
-    });
-    if (!category) {
-      throw new NotFoundException(`The Category with NAME: ${name} not found`);
     }
     return {
       statusCode: HttpStatus.OK,
@@ -164,6 +152,7 @@ export class CategoryService
   async create(dto: CreateCategoryDto, userId: number) {
     const newCategory = this.repo.create({
       ...dto,
+      slug: dto.slug || createSlug(dto.name),
       createdBy: { id: userId },
       updatedBy: { id: userId },
     });

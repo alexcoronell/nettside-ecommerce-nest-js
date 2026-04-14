@@ -4,6 +4,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import * as cookieParser from 'cookie-parser';
 import { App } from 'supertest/types';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -43,9 +44,9 @@ describe('UserControler (e2e) [POST]', () => {
   let app: INestApplication<App>;
   let repo: any = undefined;
   let adminUser: User | null = null;
-  let adminAccessToken: string;
-  let sellerAccessToken: string;
-  let customerAccessToken: string;
+  let adminCookies: string[];
+  let sellerCookies: string[];
+  let customerCookies: string[];
 
   beforeAll(async () => {
     // Initialize database connection once for the entire test suite
@@ -75,6 +76,7 @@ describe('UserControler (e2e) [POST]', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.use(cookieParser());
     await app.init();
     repo = app.get('UserRepository');
   });
@@ -86,13 +88,13 @@ describe('UserControler (e2e) [POST]', () => {
     /* Login Users */
     const resLoginAdmin = await loginAdmin(app, repo);
     adminUser = resLoginAdmin.adminUser;
-    adminAccessToken = resLoginAdmin.access_token;
+    adminCookies = resLoginAdmin.cookies;
 
     const resLoginSeller = await loginSeller(app, repo);
-    sellerAccessToken = resLoginSeller.access_token;
+    sellerCookies = resLoginSeller.cookies;
 
     const resLoginCustomer = await loginCustomer(app, repo);
-    customerAccessToken = resLoginCustomer.access_token;
+    customerCookies = resLoginCustomer.cookies;
   });
 
   describe('POST User', () => {
@@ -105,7 +107,7 @@ describe('UserControler (e2e) [POST]', () => {
       const res = await request(app.getHttpServer())
         .post('/user')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .set('Cookie', adminCookies)
         .send(seedNewUser);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(201);
@@ -124,7 +126,7 @@ describe('UserControler (e2e) [POST]', () => {
         await request(app.getHttpServer())
           .post('/user')
           .set('x-api-key', API_KEY)
-          .set('Authorization', `Bearer ${adminAccessToken}`)
+          .set('Cookie', adminCookies)
           .send(newUser);
       } catch (error) {
         expect(error).toBeInstanceOf(ConflictException);
@@ -154,7 +156,7 @@ describe('UserControler (e2e) [POST]', () => {
       const res = await request(app.getHttpServer())
         .post('/user')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`)
+        .set('Cookie', sellerCookies)
         .send(seedNewUser);
       const { statusCode, error } = res.body;
       expect(statusCode).toBe(401);
@@ -170,7 +172,7 @@ describe('UserControler (e2e) [POST]', () => {
       const res = await request(app.getHttpServer())
         .post('/user')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`)
+        .set('Cookie', customerCookies)
         .send(seedNewUser);
       const { statusCode, message, error } = res.body;
       expect(statusCode).toBe(401);

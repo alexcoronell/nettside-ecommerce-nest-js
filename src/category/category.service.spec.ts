@@ -44,15 +44,6 @@ describe('CategoryService', () => {
   });
 
   describe('count categories services', () => {
-    it('should return total all categories', async () => {
-      jest.spyOn(repository, 'count').mockResolvedValue(100);
-
-      const { statusCode, total } = await service.countAll();
-      expect(repository.count).toHaveBeenCalledTimes(1);
-      expect(statusCode).toBe(200);
-      expect(total).toEqual(100);
-    });
-
     it('should return total categories not removed', async () => {
       jest.spyOn(repository, 'count').mockResolvedValue(100);
       const { statusCode, total } = await service.count();
@@ -66,41 +57,25 @@ describe('CategoryService', () => {
   });
 
   describe('find categories services', () => {
-    it('findAll should return all categories', async () => {
+    it('findAll should return all categories with pagination', async () => {
       const categories = generateManyCategories(50);
 
       jest
         .spyOn(repository, 'findAndCount')
-        .mockResolvedValue([categories, categories.length]);
+        .mockResolvedValue([categories.slice(0, 10), categories.length]);
 
-      const { statusCode, data, total } = await service.findAll();
+      const { statusCode, data, meta } = await service.findAll();
       expect(repository.findAndCount).toHaveBeenCalledTimes(1);
       expect(repository.findAndCount).toHaveBeenCalledWith({
         where: { isDeleted: false },
+        relations: ['createdBy', 'updatedBy'],
         order: { name: 'ASC' },
+        skip: 0,
+        take: 10,
       });
       expect(statusCode).toBe(200);
-      expect(total).toEqual(categories.length);
-      expect(data).toEqual(categories);
-    });
-
-    it('findAllWithRelations should return all categories', async () => {
-      const categories = generateManyCategories(50);
-
-      jest
-        .spyOn(repository, 'findAndCount')
-        .mockResolvedValue([categories, categories.length]);
-
-      const { statusCode, data, total } = await service.findAllWithRelations();
-      expect(repository.findAndCount).toHaveBeenCalledTimes(1);
-      expect(repository.findAndCount).toHaveBeenCalledWith({
-        relations: ['createdBy, updatedBy'],
-        where: { isDeleted: false },
-        order: { name: 'ASC' },
-      });
-      expect(statusCode).toBe(200);
-      expect(total).toEqual(categories.length);
-      expect(data).toEqual(categories);
+      expect(meta.total).toEqual(categories.length);
+      expect(data).toEqual(categories.slice(0, 10));
     });
 
     it('findOne should return a category', async () => {
@@ -139,31 +114,6 @@ describe('CategoryService', () => {
       await expect(service.findOne(id)).rejects.toThrowError(
         new NotFoundException(`The Category with ID: ${id} not found`),
       );
-    });
-
-    it('findOneByName should return a category', async () => {
-      const category = generateCategory();
-      const name = category.name;
-
-      jest.spyOn(repository, 'findOne').mockResolvedValue(category);
-
-      const { statusCode, data } = await service.findOneByName(name);
-      const dataCategory: Category = data as Category;
-      expect(repository.findOne).toHaveBeenCalledTimes(1);
-      expect(statusCode).toBe(200);
-      expect(dataCategory).toEqual(category);
-    });
-
-    it('findOneByName should throw NotFoundException if category does not exist', async () => {
-      const name = 'nameTest';
-      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
-
-      try {
-        await service.findOneByName(name);
-      } catch (error) {
-        expect(error).toBeInstanceOf(NotFoundException);
-        expect(error.message).toBe(`The Category with NAME: ${name} not found`);
-      }
     });
 
     it('findOneBySlug should return a category', async () => {

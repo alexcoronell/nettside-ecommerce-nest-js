@@ -37,7 +37,12 @@ A robust, production-ready RESTful API built with NestJS for managing a complete
 | Module                   | Description                                                                  |
 | ------------------------ | ---------------------------------------------------------------------------- |
 | **User Management**      | Multi-role authentication system with Admin, Seller, and Customer roles      |
+| **Authentication**       | JWT + API Key dual authentication with refresh tokens                        |
 | **Product Catalog**      | Complete product management with categories, subcategories, brands, and tags |
+| **Product Images**       | Multiple image support per product                                           |
+| **Product Tags**         | Many-to-many product-tag relationships                                       |
+| **Product Suppliers**    | Product-supplier relationships for inventory                                 |
+| **Product Discounts**    | Product-specific discount associations                                       |
 | **Inventory Management** | Stock tracking, supplier management, and purchase orders                     |
 | **Order Processing**     | Full sales lifecycle with detailed line items and payment methods            |
 | **Shipping**             | Multiple carrier support with real-time shipment tracking                    |
@@ -65,11 +70,14 @@ A robust, production-ready RESTful API built with NestJS for managing a complete
 | Language          | TypeScript 5.x          |
 | Database          | PostgreSQL 16           |
 | ORM               | TypeORM                 |
-| Authentication    | JWT + Passport          |
+| Authentication    | JWT + Passport + Bcrypt |
 | API Documentation | Swagger/OpenAPI         |
 | Testing           | Jest + Supertest        |
 | Package Manager   | pnpm                    |
 | Containerization  | Docker + Docker Compose |
+| Code Quality      | ESLint + Prettier       |
+| Git Hooks         | Husky + lint-staged     |
+| Build Tool        | SWC (Speedy Compiler)   |
 
 ---
 
@@ -107,6 +115,14 @@ pnpm run start:dev
 The API will be available at `http://localhost:3000/api/v1`
 Swagger documentation at `http://localhost:3000/api/docs`
 
+### Application Configuration
+
+- **Global Prefix**: `api/v1`
+- **CORS**: Enabled for `http://localhost:4200` (Angular frontend)
+- **Cookie Parser**: Enabled for JWT refresh tokens
+- **Global Exception Filter**: HttpExceptionFilter for centralized error handling
+- **Global Interceptor**: AuditInterceptor for tracking user modifications
+
 ---
 
 ## Project Structure
@@ -116,19 +132,23 @@ src/
 ├── auth/                      # Authentication & authorization
 │   ├── guards/                # JwtAuthGuard, AdminGuard, etc.
 │   ├── strategies/            # Passport strategies
+│   ├── decorators/            # Auth decorators
+│   ├── dto/                   # Auth DTOs
 │   └── auth.module.ts
+├── bootstrap/                  # Application bootstrap & initialization
 ├── brand/                     # Brand management
 ├── category/                  # Product categories
 ├── commons/                   # Shared utilities
 │   ├── constants/             # Error messages, status codes
 │   ├── decorators/            # @Public(), @UserId(), @NoAudit()
-│   ├── dtos/                  # Common DTOs (PaginationDto)
-│   ├── entities/              # BaseEntity with soft delete
+│   ├── dtos/                  # Common DTOs (PaginationDto, CreatePerson, etc.)
+│   ├── entities/              # BaseEntity, PersonEntity with soft delete
 │   ├── enums/                 # UserRole, SaleStatus, ShipmentStatus
 │   ├── filters/               # HttpExceptionFilter
-│   ├── guards/                 # ApiKeyGuard
-│   ├── interceptors/           # AuditInterceptor
-│   ├── interfaces/             # IBaseController, IBaseService
+│   ├── guards/                # ApiKeyGuard (global)
+│   ├── interceptors/          # AuditInterceptor (global)
+│   ├── interfaces/            # IBaseController, IBaseService
+│   ├── types/                 # Type definitions
 │   └── utils/                 # Helper functions
 ├── config/                    # Configuration module
 ├── database/                  # Database migrations
@@ -178,14 +198,23 @@ src/
 
 ### Key Patterns Used
 
-| Pattern                 | Implementation                                |
-| ----------------------- | --------------------------------------------- |
-| **Module Pattern**      | Feature-based modules with clear separation   |
-| **Repository Pattern**  | TypeORM entities with data access abstraction |
-| **DTO Pattern**         | Request validation with class-validator       |
-| **Guard Pattern**       | Authentication & authorization middleware     |
-| **Interceptor Pattern** | Cross-cutting concerns like audit logging     |
-| **Filter Pattern**      | Global exception handling                     |
+| Pattern                   | Implementation                                |
+| ------------------------- | --------------------------------------------- |
+| **Module Pattern**        | Feature-based modules with clear separation   |
+| **Repository Pattern**    | TypeORM entities with data access abstraction |
+| **DTO Pattern**           | Request validation with class-validator       |
+| **Guard Pattern**         | Authentication & authorization middleware     |
+| **Interceptor Pattern**   | Cross-cutting concerns like audit logging     |
+| **Filter Pattern**        | Global exception handling                     |
+| **Interface Segregation** | IBaseController, IBaseService interfaces      |
+
+### NestJS Best Practices Applied
+
+- **Dependency Injection**: Constructor injection with TypeORM repositories
+- **Feature Modules**: Each domain has its own module with clear boundaries
+- **Single Responsibility**: Focused services for each business domain
+- **TypeORM Transactions**: Support for database transactions in operations
+- **Soft Deletes**: All entities use BaseEntity with soft delete support
 
 ### Response Format
 
@@ -266,14 +295,28 @@ Interactive API documentation is available at `/api/docs` when the server is run
 
 ### Core Endpoints
 
-| Module     | Prefix        | Operations                 |
-| ---------- | ------------- | -------------------------- |
-| Users      | `/users`      | GET, POST, PATCH, DELETE   |
-| Products   | `/products`   | GET, POST, PATCH, DELETE   |
-| Categories | `/categories` | GET, POST, PATCH, DELETE   |
-| Brands     | `/brands`     | GET, POST, PATCH, DELETE   |
-| Sales      | `/sales`      | GET, POST, DELETE (cancel) |
-| Wishlist   | `/wishlist`   | GET, POST, DELETE          |
+| Module            | Prefix                | Operations                     |
+| ----------------- | --------------------- | ------------------------------ |
+| Auth              | `/auth`               | POST login, POST refresh-token |
+| Users             | `/users`              | GET, POST, PATCH, DELETE       |
+| Products          | `/products`           | GET, POST, PATCH, DELETE       |
+| Categories        | `/categories`         | GET, POST, PATCH, DELETE       |
+| Brands            | `/brands`             | GET, POST, PATCH, DELETE       |
+| Subcategories     | `/subcategories`      | GET, POST, PATCH, DELETE       |
+| Tags              | `/tags`               | GET, POST, PATCH, DELETE       |
+| Suppliers         | `/suppliers`          | GET, POST, PATCH, DELETE       |
+| Shipping          | `/shipments`          | GET, POST, PATCH, DELETE       |
+| Shipping Company  | `/shipping-companies` | GET, POST, PATCH, DELETE       |
+| Sales             | `/sales`              | GET, POST, DELETE (cancel)     |
+| Purchases         | `/purchases`          | GET, POST, PATCH, DELETE       |
+| Discounts         | `/discounts`          | GET, POST, PATCH, DELETE       |
+| Wishlist          | `/wishlist`           | GET, POST, DELETE              |
+| Store Details     | `/store-details`      | GET, PATCH                     |
+| Payment Methods   | `/payment-methods`    | GET, POST, PATCH, DELETE       |
+| Product Images    | `/product-images`     | GET, POST, DELETE              |
+| Product Tags      | `/product-tags`       | GET, POST, DELETE              |
+| Product Suppliers | `/product-suppliers`  | GET, POST, DELETE              |
+| Product Discounts | `/product-discounts`  | GET, POST, DELETE              |
 
 ### Query Parameters
 
@@ -303,6 +346,21 @@ Product
 ├── Subcategory (N:1)
 ├── Brand (N:1)
 ├── ProductImage (1:N)
+├── ProductTag (1:N)
+├── ProductSupplier (1:N)
+├── ProductDiscount (1:N)
+├── Wishlist (M:N)
+├── SaleDetail (1:N)
+└── PurchaseDetail (1:N)
+
+Product
+├── Category (N:1)
+├── Subcategory (N:1)
+├── Brand (N:1)
+├── ProductImage (1:N)
+├── ProductTag (1:N)
+├── ProductSupplier (1:N)
+├── ProductDiscount (1:N)
 ├── Wishlist (M:N)
 ├── SaleDetail (1:N)
 └── PurchaseDetail (1:N)
@@ -316,6 +374,11 @@ Sale
 Shipment
 ├── ShippingCompany (N:1)
 └── Sale (N:1)
+
+Purchase
+├── User (N:1)
+├── Supplier (N:1)
+└── PurchaseDetail (1:N)
 ```
 
 ### Soft Delete Pattern
@@ -331,6 +394,14 @@ All entities extend `BaseEntity` with:
   isDeleted: boolean; // Soft delete flag
 }
 ```
+
+### Database Configuration
+
+The application uses TypeORM with the following configuration:
+
+- **Synchronize**: Disabled (use migrations for schema changes)
+- **Logging**: SQL queries in development mode
+- **Entities**: Auto-loaded from entity files
 
 ### Migrations
 
@@ -359,10 +430,16 @@ pnpm run migration:revert
 docker compose up -d
 
 # Services
-- postgres:5432    # Development database
-- postgres-e2e:5433  # Test database
-- pgadmin:5050    # Database management UI
+- postgres:5432      # Development database (port 5432)
+- postgres-e2e:5433 # E2E test database (port 5433)
+- pgadmin:5050      # Database management UI (port 5050)
 ```
+
+| Service      | Port | Credentials                                       |
+| ------------ | ---- | ------------------------------------------------- |
+| postgres     | 5432 | user: postgres, pass: postgres                    |
+| postgres-e2e | 5433 | user: e2e, pass: e2e123                           |
+| pgadmin      | 5050 | email: admin@nestjs-ecommerce.com, pass: admin123 |
 
 ### Environment Configuration
 
@@ -420,31 +497,54 @@ pnpm run test:debug
 
 ```
 src/
-├── *.spec.ts           # Unit tests
+├── *.spec.ts           # Unit tests (co-located with modules)
 test/
-├── *.e2e-spec.ts       # E2E tests
-└── faker/              # Test data factories
+├── *.e2e-spec.ts       # E2E tests (mirrors src structure)
+├── auth/               # Auth E2E tests
+├── user/               # User E2E tests
+├── product/            # Product E2E tests
+└── ...                 # Other module E2E tests
 ```
+
+### Testing Configuration
+
+- **Unit Tests**: Jest with ts-jest transformer
+- **E2E Tests**: Supertest with separate test database
+- **Coverage**: Configured to exclude migrations, faker, and test directories
+- **Module Mapping**: Path aliases for clean imports in tests
 
 ---
 
 ## Environment Variables
 
-| Variable                            | Default             | Description                 |
-| ----------------------------------- | ------------------- | --------------------------- |
-| `MODE`                              | development         | Application mode            |
-| `API_ROUTE`                         | api/v1/             | API base path               |
-| `PORT`                              | 3000                | Server port                 |
-| `DB_HOST`                           | localhost           | Database host               |
-| `DB_PORT`                           | 5432                | Database port               |
-| `DB_USERNAME`                       | postgres            | Database username           |
-| `DB_PASSWORD`                       | postgres            | Database password           |
-| `DB_NAME`                           | nestjs_ecommerce_db | Database name               |
-| `API_KEY`                           | -                   | External client API key     |
-| `JWT_SECRET`                        | -                   | JWT signing secret          |
-| `JWT_TOKEN_EXPIRATION_TIME`         | 600                 | Access token TTL (seconds)  |
-| `JWT_REFRESH_TOKEN_SECRET`          | -                   | Refresh token secret        |
-| `JWT_REFRESH_TOKEN_EXPIRATION_TIME` | 604800              | Refresh token TTL (seconds) |
+### Development (.env)
+
+| Variable                            | Default               | Description                 |
+| ----------------------------------- | --------------------- | --------------------------- |
+| `MODE`                              | development           | Application mode            |
+| `API_ROUTE`                         | api/v1/               | API base path               |
+| `PORT`                              | 3000                  | Server port                 |
+| `DB_HOST`                           | localhost             | Database host               |
+| `DB_PORT`                           | 5432                  | Database port               |
+| `DB_USERNAME`                       | postgres              | Database username           |
+| `DB_PASSWORD`                       | postgres              | Database password           |
+| `DB_NAME`                           | nestjs_ecommerce_db   | Database name               |
+| `API_KEY`                           | -                     | External client API key     |
+| `JWT_SECRET`                        | -                     | JWT signing secret          |
+| `JWT_TOKEN_EXPIRATION_TIME`         | 600                   | Access token TTL (seconds)  |
+| `JWT_REFRESH_TOKEN_SECRET`          | -                     | Refresh token secret        |
+| `JWT_REFRESH_TOKEN_EXPIRATION_TIME` | 604800                | Refresh token TTL (seconds) |
+| `CORS_ORIGIN`                       | http://localhost:4200 | Allowed CORS origin         |
+
+### E2E Test Environment
+
+| Variable      | Default                 | Description        |
+| ------------- | ----------------------- | ------------------ |
+| `DB_HOST`     | localhost               | Test database host |
+| `DB_PORT`     | 5433                    | Test database port |
+| `DB_USERNAME` | e2e                     | Test database user |
+| `DB_PASSWORD` | e2e123                  | Test database pass |
+| `DB_NAME`     | nestjs_ecommerce_db_e2e | Test database name |
 
 ---
 

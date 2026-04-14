@@ -8,7 +8,9 @@ import {
   Delete,
   ParseIntPipe,
   UseGuards,
+  Query,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 /* Interface */
 import { IBaseController } from '@commons/interfaces/i-base-controller';
@@ -25,6 +27,7 @@ import { Purchase } from './entities/purchase.entity';
 /* DTO's */
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
 import { UpdatePurchaseDto } from './dto/update-purchase.dto';
+import { PaginationDto } from '@commons/dtos/Pagination.dto';
 
 /* Guards */
 import { JwtAuthGuard } from '@auth/guards/jwt-auth/jwt-auth.guard';
@@ -47,9 +50,21 @@ export class PurchaseController
     return this.purchaseService.count();
   }
 
+  /**
+   * Retrieves a list of all purchases with optional pagination.
+   *
+   * @param paginationDto - Optional pagination parameters.
+   * @returns Array of Purchase objects or paginated result.
+   */
+  @ApiTags('Purchases')
+  @ApiOperation({ summary: 'Get all purchases with pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns paginated list of purchases',
+  })
   @Get()
-  findAll() {
-    return this.purchaseService.findAll();
+  findAll(@Query() paginationDto?: PaginationDto) {
+    return this.purchaseService.findAll(paginationDto);
   }
 
   @Get(':id')

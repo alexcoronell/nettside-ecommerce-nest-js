@@ -7,7 +7,9 @@ import {
   Delete,
   ParseIntPipe,
   Patch,
+  Query,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 /* Interface */
 import { IBaseController } from '@commons/interfaces/i-base-controller';
@@ -24,6 +26,7 @@ import { ProductImage } from './entities/product-image.entity';
 /* DTO's */
 import { CreateProductImageDto } from '@product_images/dto/create-product-image.dto';
 import { UpdateProductImageDto } from './dto/update-product-image.dto';
+import { PaginationDto } from '@commons/dtos/Pagination.dto';
 
 @Controller('product-images')
 export class ProductImagesController
@@ -42,9 +45,21 @@ export class ProductImagesController
     return this.productImagesService.count();
   }
 
+  /**
+   * Retrieves a list of all product images with optional pagination and search.
+   *
+   * @param paginationDto - Optional pagination and search parameters.
+   * @returns Array of ProductImage objects or paginated result.
+   */
+  @ApiTags('Product Images')
+  @ApiOperation({ summary: 'Get all product images with pagination' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns paginated list of product images',
+  })
   @Get()
-  findAll() {
-    return this.productImagesService.findAll();
+  findAll(@Query() paginationDto?: PaginationDto) {
+    return this.productImagesService.findAll(paginationDto);
   }
 
   @Get(':id')

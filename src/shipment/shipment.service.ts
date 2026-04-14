@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 
 /* Interfaces */
 import { IBaseService } from '@commons/interfaces/i-base-service';
@@ -13,6 +13,11 @@ import { ShippingCompany } from '@shipping_company/entities/shipping-company.ent
 /* DTO's */
 import { CreateShipmentDto } from './dto/create-shipment.dto';
 import { UpdateShipmentDto } from './dto/update-shipment.dto';
+import {
+  PaginationDto,
+  PaginatedResult,
+  PaginationHelper,
+} from '@commons/dtos/Pagination.dto';
 
 /* Types */
 import { Result } from '@commons/types/result.type';
@@ -40,22 +45,52 @@ export class ShipmentService
     return { statusCode: HttpStatus.OK, total };
   }
 
-  async findAll() {
-    const [shipments, total] = await this.repo.findAndCount({
+  /**
+   * Retrieves a list of all active (non-deleted) shipments, sorted by shipmentDate.
+   *
+   * Supports optional pagination and search via PaginationDto.
+   * When no pagination options are provided, all shipments are returned.
+   *
+   * @param paginationDto - Optional pagination and search parameters.
+   * @returns {Promise<PaginatedResult<Shipment>>} A standardized paginated response.
+   */
+  async findAll(
+    paginationDto?: PaginationDto,
+  ): Promise<PaginatedResult<Shipment>> {
+    const { page, limit, skip } = PaginationHelper.normalizePagination(
+      paginationDto?.page,
+      paginationDto?.limit,
+    );
+
+    // Build where clause with filters
+    const where: FindOptionsWhere<Shipment> = {
+      isDeleted: false,
+    };
+
+    // Build search conditions
+    const searchConditions: FindOptionsWhere<Shipment>[] = [];
+    if (paginationDto?.search) {
+      const searchTerm = `%${paginationDto.search}%`;
+      searchConditions.push({ ...where, trackingNumber: ILike(searchTerm) });
+    }
+
+    // Determine sort field and order
+    const sortBy = paginationDto?.sortBy || 'shipmentDate';
+    const sortOrder = paginationDto?.sortOrder || 'DESC';
+
+    // Execute query
+    const [data, total] = await this.repo.findAndCount({
+      where: searchConditions.length > 0 ? searchConditions : where,
       relations: ['sale', 'shippingCompany', 'createdBy', 'updatedBy'],
-      where: {
-        isDeleted: false,
-      },
       order: {
-        shipmentDate: 'DESC',
+        [sortBy]: sortOrder,
       },
+      skip,
+      take: limit,
     });
 
-    return {
-      statusCode: HttpStatus.OK,
-      data: shipments,
-      total,
-    };
+    // Return paginated result
+    return PaginationHelper.createPaginatedResult(data, total, page, limit);
   }
 
   async findAllByShippingCompanyId(

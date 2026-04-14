@@ -1,6 +1,37 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
+jest.mock('uuid', () => ({
+  v4: () => 'mock-uuid-1234',
+}));
+
+jest.mock('@aws-sdk/client-s3', () => ({
+  S3Client: jest.fn().mockImplementation(() => ({
+    send: jest.fn().mockResolvedValue({}),
+  })),
+  HeadBucketCommand: jest.fn(),
+  CreateBucketCommand: jest.fn(),
+}));
+
+jest.mock('@aws-sdk/lib-storage', () => ({
+  Upload: jest.fn().mockImplementation(() => ({
+    done: jest.fn().mockResolvedValue({}),
+  })),
+}));
+
+jest.mock('@upload/constants/storage.constants', () => ({
+  STORAGE_CONFIG: {
+    endpoint: 'localhost:9000',
+    region: 'us-east-1',
+    credentials: { accessKeyId: 'test', secretAccessKey: 'test' },
+    forcePathStyle: true,
+  },
+  BUCKETS: {
+    BRAND_LOGOS: 'brand-logos',
+  },
+}));
+
+import * as cookieParser from 'cookie-parser';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
@@ -44,12 +75,12 @@ describe('SubcategoryController (e2e) [GET]', () => {
   let repo: any = undefined;
   let repoCategory: any = undefined;
   let repoUser: any = undefined;
-  let adminAccessToken: string;
-  let sellerAccessToken: string;
-  let customerAccessToken: string;
+  let adminCookies: string[];
+  let sellerCookies: string[];
+  let customerCookies: string[];
   let category: Category;
   const ID = 1;
-  const path = '/subcategory';
+  const PATH = '/subcategory';
 
   beforeAll(async () => {
     // Initialize database connection once for the entire test suite
@@ -81,6 +112,7 @@ describe('SubcategoryController (e2e) [GET]', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.use(cookieParser());
     await app.init();
     repo = app.get('SubcategoryRepository');
     repoCategory = app.get('CategoryRepository');
@@ -88,16 +120,15 @@ describe('SubcategoryController (e2e) [GET]', () => {
   });
 
   beforeEach(async () => {
-    // Clean all data before each test to ensure isolation
     await cleanDB();
 
     /* Login Users */
     const resLoginAdmin = await loginAdmin(app, repoUser);
-    adminAccessToken = resLoginAdmin.access_token;
+    adminCookies = resLoginAdmin.cookies;
     const resLoginSeller = await loginSeller(app, repoUser);
-    sellerAccessToken = resLoginSeller.access_token;
+    sellerCookies = resLoginSeller.cookies;
     const resLoginCustomer = await loginCustomer(app, repoUser);
-    customerAccessToken = resLoginCustomer.access_token;
+    customerCookies = resLoginCustomer.cookies;
 
     /* Create category and 5 subcategories for testing */
     const newCategory = generateCategory();
@@ -109,9 +140,9 @@ describe('SubcategoryController (e2e) [GET]', () => {
   describe('DELETE Subcategory', () => {
     it('/:id should delete a Subcategory with admin user', async () => {
       const res = await request(app.getHttpServer())
-        .delete(`${path}/${ID}`)
+        .delete(`${PATH}/${ID}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode } = res.body;
       const deletedInDB = await repo.findOne({
         where: { id: ID, isDeleted: false },
@@ -122,9 +153,9 @@ describe('SubcategoryController (e2e) [GET]', () => {
 
     it('/:id should return 401 if user is seller', async () => {
       const res = await request(app.getHttpServer())
-        .delete(`${path}/${ID}`)
+        .delete(`${PATH}/${ID}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
+        .set('Cookie', sellerCookies);
       const { statusCode, error } = res.body;
       expect(statusCode).toBe(401);
       expect(error).toBe('Unauthorized');
@@ -132,9 +163,9 @@ describe('SubcategoryController (e2e) [GET]', () => {
 
     it('/:id should return 401 if user is customer', async () => {
       const res = await request(app.getHttpServer())
-        .delete(`${path}/${ID}`)
+        .delete(`${PATH}/${ID}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
+        .set('Cookie', customerCookies);
       const { statusCode, error } = res.body;
       expect(statusCode).toBe(401);
       expect(error).toBe('Unauthorized');
@@ -142,8 +173,8 @@ describe('SubcategoryController (e2e) [GET]', () => {
 
     it('/:id should return 401 if api key is missing', async () => {
       const res = await request(app.getHttpServer())
-        .delete(`${path}/${ID}`)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .delete(`${PATH}/${ID}`)
+        .set('Cookie', adminCookies);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);
       expect(message).toBe('Invalid API key');
@@ -151,9 +182,9 @@ describe('SubcategoryController (e2e) [GET]', () => {
 
     it('/:id should return 401 if api key is invalid', async () => {
       const res = await request(app.getHttpServer())
-        .delete(`${path}/${ID}`)
+        .delete(`${PATH}/${ID}`)
         .set('x-api-key', 'invalid-api-key')
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);
       expect(message).toBe('Invalid API key');
@@ -162,9 +193,9 @@ describe('SubcategoryController (e2e) [GET]', () => {
     it('/:id should return 404 if shipping company does not exist', async () => {
       const id = 9999;
       const res = await request(app.getHttpServer())
-        .delete(`${path}/${id}`)
+        .delete(`${PATH}/${id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(404);
       expect(message).toBe(`The Subcategory with ID: ${id} not found`);
