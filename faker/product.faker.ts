@@ -17,15 +17,22 @@ export const createProduct = (
   category?: number,
   subcategory?: number,
   brand?: number,
-): CreateProductDto => ({
-  name: faker.commerce.productName() + faker.number.int({ min: 100, max: 200 }),
-  description: faker.commerce.productDescription(),
-  price: parseInt(faker.commerce.price()),
-  stock: faker.number.int({ min: 0, max: 1000 }),
-  category: category || faker.number.int({ min: 1, max: 100 }),
-  subcategory: subcategory || faker.number.int({ min: 1, max: 100 }),
-  brand: brand || faker.number.int({ min: 1, max: 100 }),
-});
+): CreateProductDto => {
+  const name =
+    faker.commerce.productName() + faker.number.int({ min: 100, max: 200 });
+  const description = faker.commerce.productDescription();
+  const price = parseInt(faker.commerce.price());
+  const stock = faker.number.int({ min: 0, max: 1000 });
+  return {
+    name,
+    description,
+    price,
+    stock,
+    category: category || faker.number.int({ min: 1, max: 100 }),
+    subcategory: subcategory || faker.number.int({ min: 1, max: 100 }),
+    brand: brand || faker.number.int({ min: 1, max: 100 }),
+  };
+};
 
 export const generateNewProducts = (
   size: number = 1,
@@ -40,24 +47,34 @@ export const generateNewProducts = (
   return newProducts;
 };
 
-export const generateProduct = (id: number = 1): Product => ({
-  ...generateBaseEntity(id),
-  ...createProduct(),
-  id,
-  brand: generateBrand(),
-  category: generateCategory(),
-  subcategory: generateSubcategory(),
-  createdBy: generateUser(),
-  updatedBy: generateUser(),
-  deletedBy: null,
-  images: [],
-  productSuppliers: [],
-  tags: [],
-  productDiscounts: [],
-  wishlists: [],
-  saleDetails: [],
-  purchaseDetails: [],
-});
+export const generateProduct = (id: number = 1): Product => {
+  const name =
+    faker.commerce.productName() + faker.number.int({ min: 100, max: 200 });
+  const description = faker.commerce.productDescription();
+  const price = parseInt(faker.commerce.price());
+  const stock = faker.number.int({ min: 0, max: 1000 });
+  return {
+    ...generateBaseEntity(id),
+    name,
+    description,
+    price,
+    stock,
+    id,
+    brand: generateBrand(),
+    category: generateCategory(),
+    subcategory: generateSubcategory(),
+    createdBy: generateUser(),
+    updatedBy: generateUser(),
+    deletedBy: null,
+    images: [],
+    productSuppliers: [],
+    tags: [],
+    productDiscounts: [],
+    wishlists: [],
+    saleDetails: [],
+    purchaseDetails: [],
+  };
+};
 
 export const generateManyProducts = (size: number): Product[] => {
   const products: Product[] = [];
