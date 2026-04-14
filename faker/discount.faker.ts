@@ -10,22 +10,35 @@ import { CreateDiscountDto } from 'src/discount/dto/create-discount.dto';
 import { generateBaseEntity } from '@faker/base.faker';
 import { generateUser } from './user.faker';
 
-export const createDiscount = (): CreateDiscountDto => ({
-  code: faker.commerce.productName() + faker.number.int({ min: 100, max: 200 }),
-  description: faker.lorem.sentence(),
-  type: faker.lorem.word(),
-  value: faker.number.float({ min: 10, max: 50, fractionDigits: 2 }),
-  startDate: faker.date.anytime(),
-  endDate: faker.date.anytime(),
-  minimumOrderAmount: faker.number.float({
+export const createDiscount = (): CreateDiscountDto => {
+  const code =
+    faker.commerce.productName() + faker.number.int({ min: 100, max: 200 });
+  const description = faker.lorem.sentence();
+  const type = faker.lorem.word();
+  const value = faker.number.float({ min: 10, max: 50, fractionDigits: 2 });
+  const startDate = faker.date.anytime();
+  const endDate = faker.date.anytime();
+  const minimumOrderAmount = faker.number.float({
     min: 10,
     max: 50,
     fractionDigits: 2,
-  }),
-  usageLimit: faker.number.int({ min: 1, max: 5 }),
-  usageLimitPerUser: faker.number.int({ min: 1, max: 5 }),
-  active: faker.datatype.boolean(),
-});
+  });
+  const usageLimit = faker.number.int({ min: 1, max: 5 });
+  const usageLimitPerUser = faker.number.int({ min: 1, max: 5 });
+  const active = faker.datatype.boolean();
+  return {
+    code,
+    description,
+    type,
+    value,
+    startDate,
+    endDate,
+    minimumOrderAmount,
+    usageLimit,
+    usageLimitPerUser,
+    active,
+  };
+};
 
 export const generateNewDiscounts = (size = 1): CreateDiscountDto[] => {
   const newDiscounts: CreateDiscountDto[] = [];
@@ -35,15 +48,42 @@ export const generateNewDiscounts = (size = 1): CreateDiscountDto[] => {
   return newDiscounts;
 };
 
-export const generateDiscount = (id: number = 1): Discount => ({
-  ...generateBaseEntity(id),
-  ...createDiscount(),
-  id,
-  createdBy: generateUser(),
-  updatedBy: generateUser(),
-  deletedBy: null,
-  productDiscounts: [],
-});
+export const generateDiscount = (id: number = 1): Discount => {
+  const code =
+    faker.commerce.productName() + faker.number.int({ min: 100, max: 200 });
+  const description = faker.lorem.sentence();
+  const type = faker.lorem.word();
+  const value = faker.number.float({ min: 10, max: 50, fractionDigits: 2 });
+  const startDate = faker.date.anytime();
+  const endDate = faker.date.anytime();
+  const minimumOrderAmount = faker.number.float({
+    min: 10,
+    max: 50,
+    fractionDigits: 2,
+  });
+  const usageLimit = faker.number.int({ min: 1, max: 5 });
+  const usageLimitPerUser = faker.number.int({ min: 1, max: 5 });
+  const active = faker.datatype.boolean();
+
+  return {
+    ...generateBaseEntity(id),
+    code,
+    description,
+    type,
+    value,
+    startDate,
+    endDate,
+    minimumOrderAmount,
+    usageLimit,
+    usageLimitPerUser,
+    active,
+    id,
+    createdBy: generateUser(),
+    updatedBy: generateUser(),
+    deletedBy: null,
+    productDiscounts: [],
+  };
+};
 
 export const generateManyDiscounts = (size: number): Discount[] => {
   const discounts: Discount[] = [];
