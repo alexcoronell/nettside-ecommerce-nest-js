@@ -11,6 +11,8 @@ import { CreateSubcategoryDto } from '@subcategory/dto/create-subcategory.dto';
 
 import { UserRoleEnum } from '@commons/enums/user-role.enum';
 
+import { createSlug } from '@commons/utils/create-slug.util';
+
 @Injectable()
 export class FakeSubcategoriesSeeder {
   constructor(
@@ -40,6 +42,7 @@ export class FakeSubcategoriesSeeder {
     for (const subcategoryData of subcategories) {
       const subcategory = this.subcategoryRepository.create({
         ...subcategoryData,
+        slug: createSlug(subcategoryData.name),
         category: faker.helpers.arrayElement(categories),
         createdBy: faker.helpers.arrayElement(Object.values(adminUsers)),
         updatedBy: faker.helpers.arrayElement(Object.values(adminUsers)),
