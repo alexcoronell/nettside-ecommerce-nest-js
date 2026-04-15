@@ -132,6 +132,14 @@ export class DiscountController {
     type: ResponseDiscountDto,
     isArray: false,
   })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Missing or invalid JWT token',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - User is a customer',
+  })
   @ApiQuery({
     name: 'page',
     required: false,
