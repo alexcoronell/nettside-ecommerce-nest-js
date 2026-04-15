@@ -26,7 +26,7 @@ import { dataSource } from '../utils/seed';
 /* Faker */
 import {
   createPaymentMethod,
-  generateNewPaymentMethods,
+  generateManyPaymentMethods,
 } from '@faker/paymentMethod.faker';
 
 /* Login Users */
@@ -77,8 +77,6 @@ describe('PaymentMethodController (e2e) [GET]', () => {
     await app.init();
     repo = app.get('PaymentMethodRepository');
     repoUser = app.get('UserRepository');
-    const paymentMethods = generateNewPaymentMethods(10);
-    await repo.save(paymentMethods);
   });
 
   beforeEach(async () => {
@@ -96,7 +94,7 @@ describe('PaymentMethodController (e2e) [GET]', () => {
 
   describe('GET Payment Method - Count-All', () => {
     it('/count-all should return 200 with admin access token', async () => {
-      const paymentMethods = generateNewPaymentMethods(10);
+      const paymentMethods = generateManyPaymentMethods(10);
       await repo.save(paymentMethods);
       const res = await request(app.getHttpServer())
         .get('/payment-method/count-all')
@@ -108,7 +106,7 @@ describe('PaymentMethodController (e2e) [GET]', () => {
     });
 
     it('/count-all should return 200 with seller access token', async () => {
-      const paymentMethods = generateNewPaymentMethods(10);
+      const paymentMethods = generateManyPaymentMethods(10);
       await repo.save(paymentMethods);
       const res = await request(app.getHttpServer())
         .get('/payment-method/count-all')
@@ -150,7 +148,7 @@ describe('PaymentMethodController (e2e) [GET]', () => {
 
   describe('GET Payment Method - Count', () => {
     it('/count should return 200 with admin access token', async () => {
-      const paymentMethods = generateNewPaymentMethods(10);
+      const paymentMethods = generateManyPaymentMethods(10);
       await repo.save(paymentMethods);
       const res = await request(app.getHttpServer())
         .get('/payment-method/count')
@@ -162,7 +160,7 @@ describe('PaymentMethodController (e2e) [GET]', () => {
     });
 
     it('/count should return 200 with seller access token', async () => {
-      const paymentMethods = generateNewPaymentMethods(10);
+      const paymentMethods = generateManyPaymentMethods(10);
       await repo.save(paymentMethods);
       const res = await request(app.getHttpServer())
         .get('/payment-method/count')
@@ -204,7 +202,7 @@ describe('PaymentMethodController (e2e) [GET]', () => {
 
   describe('GET Payment Method - / Find', () => {
     it('/ should return all payment methods with admin user', async () => {
-      const paymentMethods = generateNewPaymentMethods(10);
+      const paymentMethods = generateManyPaymentMethods(10);
       await repo.save(paymentMethods);
       const res = await request(app.getHttpServer())
         .get('/payment-method')
@@ -226,7 +224,7 @@ describe('PaymentMethodController (e2e) [GET]', () => {
     });
 
     it('/ should return all payment methods with seller user', async () => {
-      const paymentMethods = generateNewPaymentMethods(10);
+      const paymentMethods = generateManyPaymentMethods(10);
       await repo.save(paymentMethods);
       const res = await request(app.getHttpServer())
         .get('/payment-method')
@@ -247,30 +245,20 @@ describe('PaymentMethodController (e2e) [GET]', () => {
       });
     });
 
-    it('/ should return all payment methods with customer user', async () => {
-      const paymentMethods = generateNewPaymentMethods(10);
+    it('/ should return 401 with customer user', async () => {
+      const paymentMethods = generateManyPaymentMethods(10);
       await repo.save(paymentMethods);
       const res = await request(app.getHttpServer())
         .get('/payment-method')
         .set('x-api-key', API_KEY)
         .set('Authorization', `Bearer ${customerAccessToken}`);
-      const { statusCode, data } = res.body;
-      expect(statusCode).toBe(200);
-      expect(data.length).toEqual(paymentMethods.length);
-      data.forEach((data) => {
-        const paymentMethod = paymentMethods.find(
-          (su) => su.name === data.name,
-        );
-        expect(data).toEqual(
-          expect.objectContaining({
-            name: paymentMethod?.name,
-          }),
-        );
-      });
+      const { statusCode, error } = res.body;
+      expect(statusCode).toBe(401);
+      expect(error).toBe('Unauthorized');
     });
 
     it('/ should return all payment methods without logged user', async () => {
-      const paymentMethods = generateNewPaymentMethods(10);
+      const paymentMethods = generateManyPaymentMethods(10);
       await repo.save(paymentMethods);
       const res = await request(app.getHttpServer())
         .get('/payment-method')

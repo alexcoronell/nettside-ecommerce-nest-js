@@ -27,7 +27,7 @@ import { dataSource } from '../utils/seed';
 import { UpdatePaymentMethodDto } from '@payment_method/dto/update-payment-method.dto';
 
 /* Faker */
-import { generateNewPaymentMethods } from '@faker/paymentMethod.faker';
+import { generateManyPaymentMethods } from '@faker/paymentMethod.faker';
 
 /* Login Users */
 import { loginAdmin } from '../utils/login-admin';
@@ -77,7 +77,7 @@ describe('PaymentMethodController (e2e) [PATCH]', () => {
     await app.init();
     repo = app.get('PaymentMethodRepository');
     repoUser = app.get('UserRepository');
-    const paymentMethods = generateNewPaymentMethods(10);
+    const paymentMethods = generateManyPaymentMethods(10);
     await repo.save(paymentMethods);
   });
 
@@ -96,7 +96,7 @@ describe('PaymentMethodController (e2e) [PATCH]', () => {
 
   describe('PATCH Payment Method', () => {
     it('/:id should update a payment method with admin user', async () => {
-      const newPaymentMethods = generateNewPaymentMethods(10);
+      const newPaymentMethods = generateManyPaymentMethods(10);
       const dataNewPaymentMethods = await repo.save(newPaymentMethods);
       const id = dataNewPaymentMethods[0].id;
       const updatedData: UpdatePaymentMethodDto = {
@@ -113,7 +113,7 @@ describe('PaymentMethodController (e2e) [PATCH]', () => {
     });
 
     it('/:id should return 401 if the user is seller', async () => {
-      const newPaymentMethods = generateNewPaymentMethods(10);
+      const newPaymentMethods = generateManyPaymentMethods(10);
       const dataNewPaymentMethods = await repo.save(newPaymentMethods);
       const id = dataNewPaymentMethods[0].id;
       const updatedData: UpdatePaymentMethodDto = {
@@ -130,7 +130,7 @@ describe('PaymentMethodController (e2e) [PATCH]', () => {
     });
 
     it('/:id should return 401 if the user is customer', async () => {
-      const newPaymentMethods = generateNewPaymentMethods(10);
+      const newPaymentMethods = generateManyPaymentMethods(10);
       const dataNewPaymentMethods = await repo.save(newPaymentMethods);
       const id = dataNewPaymentMethods[0].id;
       const updatedData: UpdatePaymentMethodDto = {
@@ -147,7 +147,7 @@ describe('PaymentMethodController (e2e) [PATCH]', () => {
     });
 
     it('/:id should return Conflict if payment method name is already taken', async () => {
-      const newPaymentMethods = await repo.save(generateNewPaymentMethods(10));
+      const newPaymentMethods = await repo.save(generateManyPaymentMethods(10));
 
       const paymentMethod = newPaymentMethods[0];
       const id = newPaymentMethods[1].id;
@@ -183,7 +183,7 @@ describe('PaymentMethodController (e2e) [PATCH]', () => {
     });
 
     it('/:id should return 401 if api key is missing', async () => {
-      const newPaymentMethods = generateNewPaymentMethods(10);
+      const newPaymentMethods = generateManyPaymentMethods(10);
       const dataNewPaymentMethods = await repo.save(newPaymentMethods);
       const id = dataNewPaymentMethods[0].id;
       const updatedData: UpdatePaymentMethodDto = {
@@ -199,7 +199,7 @@ describe('PaymentMethodController (e2e) [PATCH]', () => {
     });
 
     it('/:id should return 401 if api key is invalid', async () => {
-      const newPaymentMethods = generateNewPaymentMethods(10);
+      const newPaymentMethods = generateManyPaymentMethods(10);
       const dataNewPaymentMethods = await repo.save(newPaymentMethods);
       const id = dataNewPaymentMethods[0].id;
       const updatedData: UpdatePaymentMethodDto = {

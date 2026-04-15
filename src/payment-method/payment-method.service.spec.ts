@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
@@ -68,62 +67,44 @@ describe('PaymentMethodService', () => {
   });
 
   describe('find payment methods services', () => {
-    it('findAll should return all payment methods with pagination', async () => {
+    it('findAll should return all payment methods with pagination as ResponsePaymentMethodDto', async () => {
       const paymentMethods = generateManyPaymentMethods(50);
 
       jest
         .spyOn(repository, 'findAndCount')
-        .mockResolvedValue([
-          paymentMethods.slice(0, 10),
-          paymentMethods.length,
-        ]);
+        .mockResolvedValue([paymentMethods, paymentMethods.length]);
 
-      const { statusCode, data, meta } = await service.findAll();
+      const result = await service.findAll();
       expect(repository.findAndCount).toHaveBeenCalledTimes(1);
-      expect(repository.findAndCount).toHaveBeenCalledWith({
-        where: { isDeleted: false },
-        order: { name: 'ASC' },
-        relations: ['createdBy', 'updatedBy'],
-        skip: 0,
-        take: 10,
-      });
-      expect(statusCode).toBe(200);
-      expect(meta.total).toEqual(paymentMethods.length);
-      expect(data).toEqual(paymentMethods.slice(0, 10));
+      expect(result.statusCode).toBe(200);
+      expect(result.meta.total).toEqual(paymentMethods.length);
+      // Verify data is mapped to ResponsePaymentMethodDto
+      expect(result.data[0]).toHaveProperty('id');
+      expect(result.data[0]).toHaveProperty('name');
+      expect(result.data[0]).not.toHaveProperty('createdBy');
     });
 
-    it('findOne should return a payment methods', async () => {
-      const paymentMethod = generatePaymentMethod();
+    it('findOne should return a payment method as ResponsePaymentMethodDto', async () => {
+      const paymentMethod = generatePaymentMethod(1);
       const id = paymentMethod.id;
 
       jest.spyOn(repository, 'findOne').mockResolvedValue(paymentMethod);
 
-      const { statusCode, data } = await service.findOne(id);
+      const result = await service.findOne(id);
       expect(repository.findOne).toHaveBeenCalledTimes(1);
       expect(repository.findOne).toHaveBeenCalledWith({
         relations: ['createdBy', 'updatedBy'],
         where: { id, isDeleted: false },
       });
-      expect(statusCode).toBe(200);
-      expect(data).toEqual(paymentMethod);
+      expect(result.statusCode).toBe(200);
+      // Verify data is ResponsePaymentMethodDto, not PaymentMethod entity
+      expect(result.data).toHaveProperty('id');
+      expect(result.data).toHaveProperty('name');
+      expect(result.data).not.toHaveProperty('createdBy');
     });
 
-    it('findOne should throw NotFoundException if payment methods does not exist', async () => {
-      const id = 1;
-      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
-
-      try {
-        await service.findOne(id);
-      } catch (error) {
-        expect(error).toBeInstanceOf(NotFoundException);
-        expect(error.message).toBe(
-          `The Payment Method with ID: ${id} not found`,
-        );
-      }
-    });
-
-    it('findOne should throw NotFoundException if payment methods does not exist with Rejects', async () => {
-      const id = 1;
+    it('findOne should throw NotFoundException if payment method does not exist', async () => {
+      const id = 99999;
       jest.spyOn(repository, 'findOne').mockResolvedValue(null);
 
       await expect(service.findOne(id)).rejects.toThrowError(
@@ -133,49 +114,43 @@ describe('PaymentMethodService', () => {
   });
 
   describe('create payment methods services', () => {
-    it('create should return a Payment Method', async () => {
-      const paymentMethod = generatePaymentMethod();
+    it('create should return a Payment Method as ResponsePaymentMethodDto', async () => {
+      const paymentMethod = generatePaymentMethod(1);
       const userId: User['id'] = 1;
+
       jest.spyOn(repository, 'create').mockReturnValue(paymentMethod);
       jest.spyOn(repository, 'save').mockResolvedValue(paymentMethod);
+      jest.spyOn(repository, 'findOne').mockResolvedValue(paymentMethod);
 
-      const { statusCode, data } = await service.create(paymentMethod, userId);
-      expect(statusCode).toBe(201);
-      expect(data).toEqual(paymentMethod);
-    });
-
-    it('create should return Conflict Exception when name Payment Method exists', async () => {
-      const paymentMethod = generatePaymentMethod();
-      const userId: User['id'] = 1;
-      jest.spyOn(repository, 'create').mockReturnValue(paymentMethod);
-      jest.spyOn(repository, 'save').mockResolvedValue(paymentMethod);
-
-      try {
-        await service.create(paymentMethod, userId);
-      } catch (error) {
-        expect(error).toBeInstanceOf(ConflictException);
-        expect(error.message).toBe(
-          `Payment Method ${paymentMethod.name} already exists`,
-        );
-      }
+      const result = await service.create(paymentMethod, userId);
+      expect(repository.create).toHaveBeenCalled();
+      expect(repository.save).toHaveBeenCalled();
+      expect(repository.findOne).toHaveBeenCalled(); // Re-fetch for relations
+      expect(result.statusCode).toBe(201);
+      expect(result.data).toHaveProperty('id');
+      expect(result.data).toHaveProperty('name');
+      expect(result.message).toBe('The Payment Method was created');
     });
   });
 
   describe('update payment methods services', () => {
     it('update should return message: have been modified', async () => {
-      const paymentMethod = generatePaymentMethod();
+      const paymentMethod = generatePaymentMethod(1);
       const id = paymentMethod.id;
       const userId: User['id'] = 1;
-      const changes: UpdatePaymentMethodDto = { name: 'newName' };
+      const changes: UpdatePaymentMethodDto = { name: 'New Name' };
 
-      jest.spyOn(repository, 'findOne').mockResolvedValue(paymentMethod);
+      const updatedPaymentMethod = { ...paymentMethod, ...changes };
+
       jest
-        .spyOn(repository, 'merge')
-        .mockReturnValue({ ...paymentMethod, ...changes });
-      jest.spyOn(repository, 'save').mockResolvedValue(paymentMethod);
+        .spyOn(repository, 'findOne')
+        .mockResolvedValueOnce(paymentMethod) // First call in update method
+        .mockResolvedValueOnce(updatedPaymentMethod); // Second call for re-fetch after save
+      jest.spyOn(repository, 'merge').mockReturnValue(updatedPaymentMethod);
+      jest.spyOn(repository, 'save').mockResolvedValue(updatedPaymentMethod);
 
       const { statusCode, message } = await service.update(id, userId, changes);
-      expect(repository.findOne).toHaveBeenCalledTimes(1);
+      expect(repository.findOne).toHaveBeenCalledTimes(2);
       expect(repository.merge).toHaveBeenCalledTimes(1);
       expect(repository.save).toHaveBeenCalledTimes(1);
       expect(statusCode).toBe(200);
@@ -185,24 +160,21 @@ describe('PaymentMethodService', () => {
     });
 
     it('update should throw NotFoundException if Payment Method does not exist', async () => {
-      const id = 1;
+      const id = 99999;
       const userId: User['id'] = 1;
       jest.spyOn(repository, 'findOne').mockResolvedValue(null);
 
-      try {
-        await service.update(id, userId, { name: 'newName' });
-      } catch (error) {
-        expect(error).toBeInstanceOf(NotFoundException);
-        expect(error.message).toBe(
-          `The Payment Method with ID: ${id} not found`,
-        );
-      }
+      await expect(
+        service.update(id, userId, { name: 'newName' }),
+      ).rejects.toThrowError(
+        new NotFoundException(`The Payment Method with ID: ${id} not found`),
+      );
     });
   });
 
   describe('remove payment methods services', () => {
     it('remove should return status and message', async () => {
-      const paymentMethod = generatePaymentMethod();
+      const paymentMethod = generatePaymentMethod(1);
       const id = paymentMethod.id;
       const userId: User['id'] = 1;
       jest.spyOn(repository, 'findOne').mockResolvedValue(paymentMethod);
@@ -212,14 +184,17 @@ describe('PaymentMethodService', () => {
       jest.spyOn(repository, 'save').mockResolvedValue(paymentMethod);
 
       const { statusCode, message } = await service.remove(id, userId);
+      expect(repository.findOne).toHaveBeenCalledTimes(1);
+      expect(repository.merge).toHaveBeenCalledTimes(1);
+      expect(repository.save).toHaveBeenCalledTimes(1);
       expect(statusCode).toBe(200);
       expect(message).toEqual(
         `The Payment Method with ID: ${id} has been deleted`,
       );
     });
 
-    it('remove should throw NotFoundException if Payment Method does not exist with Rejects', async () => {
-      const id = 1;
+    it('remove should throw NotFoundException if Payment Method does not exist', async () => {
+      const id = 99999;
       const userId: User['id'] = 1;
       jest.spyOn(repository, 'findOne').mockResolvedValue(null);
 

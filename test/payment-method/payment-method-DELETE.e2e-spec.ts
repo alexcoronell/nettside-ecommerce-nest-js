@@ -24,7 +24,7 @@ import { initDataSource, cleanDB, closeDataSource } from '../utils/seed';
 import { dataSource } from '../utils/seed';
 
 /* Faker */
-import { generateNewPaymentMethods } from '@faker/paymentMethod.faker';
+import { generateManyPaymentMethods } from '@faker/paymentMethod.faker';
 
 /* Login Users */
 import { loginAdmin } from '../utils/login-admin';
@@ -74,7 +74,7 @@ describe('PaymentMethodController (e2e) [DELETE]', () => {
     await app.init();
     repo = app.get('PaymentMethodRepository');
     repoUser = app.get('UserRepository');
-    const paymentMethods = generateNewPaymentMethods(10);
+    const paymentMethods = generateManyPaymentMethods(10);
     await repo.save(paymentMethods);
   });
 
@@ -93,7 +93,7 @@ describe('PaymentMethodController (e2e) [DELETE]', () => {
 
   describe('DELETE Payment Method', () => {
     it('/:id should delete a payment method  with admin user', async () => {
-      const paymentMethods = generateNewPaymentMethods(10);
+      const paymentMethods = generateManyPaymentMethods(10);
       const dataPaymentMethods = await repo.save(paymentMethods);
       const id = dataPaymentMethods[0].id;
       const res = await request(app.getHttpServer())
@@ -109,7 +109,7 @@ describe('PaymentMethodController (e2e) [DELETE]', () => {
     });
 
     it('/:id should return 401 if user is seller', async () => {
-      const paymentMethods = generateNewPaymentMethods(10);
+      const paymentMethods = generateManyPaymentMethods(10);
       const dataPaymentMethods = await repo.save(paymentMethods);
       const id = dataPaymentMethods[0].id;
       const res = await request(app.getHttpServer())
@@ -122,7 +122,7 @@ describe('PaymentMethodController (e2e) [DELETE]', () => {
     });
 
     it('/:id should return 401 if user is customer', async () => {
-      const paymentMethods = generateNewPaymentMethods(10);
+      const paymentMethods = generateManyPaymentMethods(10);
       const dataPaymentMethods = await repo.save(paymentMethods);
       const id = dataPaymentMethods[0].id;
       const res = await request(app.getHttpServer())
@@ -135,7 +135,7 @@ describe('PaymentMethodController (e2e) [DELETE]', () => {
     });
 
     it('/:id should return 401 if api key is missing', async () => {
-      const paymentMethods = generateNewPaymentMethods(10);
+      const paymentMethods = generateManyPaymentMethods(10);
       const dataPaymentMethods = await repo.save(paymentMethods);
       const id = dataPaymentMethods[0].id;
       const res = await request(app.getHttpServer())
@@ -147,7 +147,7 @@ describe('PaymentMethodController (e2e) [DELETE]', () => {
     });
 
     it('/:id should return 401 if api key is invalid', async () => {
-      const paymentMethods = generateNewPaymentMethods(10);
+      const paymentMethods = generateManyPaymentMethods(10);
       const dataPaymentMethods = await repo.save(paymentMethods);
       const id = dataPaymentMethods[0].id;
       const res = await request(app.getHttpServer())

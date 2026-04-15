@@ -1,3 +1,15 @@
+/**
+ * @fileoverview PaymentMethodService - Service for payment method business logic
+ *
+ * Handles all business operations for payment method management including
+ * CRUD operations, pagination, and search.
+ *
+ * @module PaymentMethodService
+ * @version 1.0.0
+ * @author Nettside E-commerce Team
+ */
+
+/* NestJS */
 import { Injectable, NotFoundException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, ILike, Repository } from 'typeorm';
@@ -11,6 +23,7 @@ import { PaymentMethod } from '@payment_method/entities/payment-method.entity';
 /* DTO's */
 import { CreatePaymentMethodDto } from '@payment_method/dto/create-payment-method.dto';
 import { UpdatePaymentMethodDto } from '@payment_method/dto/update-payment-method.dto';
+import { ResponsePaymentMethodDto } from '@payment_method/dto/response-payment-method.dto';
 import {
   PaginationDto,
   PaginatedResult,
@@ -20,45 +33,62 @@ import {
 /* Types */
 import { Result } from '@commons/types/result.type';
 
-@Injectable()
+/* Mappers */
+import {
+  mapPaymentMethodToResponseDto,
+  mapPaymentMethodsToResponseDto,
+} from './mappers/payment-method.mapper';
+
 /**
- * Service for managing PaymentMethod entities.
+ * Service for managing payment method operations.
  *
- * Provides CRUD operations and utility methods for PaymentMethod, including
- * soft deletion, counting, and retrieval by name or ID.
+ * @description
+ * Provides business logic for:
+ * - Counting all and active payment methods
+ * - Listing payment methods with pagination, search, and sorting
+ * - Finding payment methods by ID
+ * - Creating, updating, and soft-deleting payment methods
  *
- * @implements IBaseService<PaymentMethod, CreatePaymentMethodDto, UpdatePaymentMethodDto>
+ * All public methods return ResponsePaymentMethodDto for consistent API responses.
  */
+@Injectable()
 export class PaymentMethodService
   implements
-    IBaseService<PaymentMethod, CreatePaymentMethodDto, UpdatePaymentMethodDto>
+    IBaseService<
+      ResponsePaymentMethodDto,
+      CreatePaymentMethodDto,
+      UpdatePaymentMethodDto
+    >
 {
-  /**
-   * Constructs a new PaymentMethodService.
-   *
-   * @param repo - The repository instance for PaymentMethod entity.
-   */
   constructor(
     @InjectRepository(PaymentMethod)
     private readonly repo: Repository<PaymentMethod>,
   ) {}
 
   /**
-   * Counts all PaymentMethod records, including deleted ones.
+   * Counts all payment methods in the system (including deleted).
    *
-   * @returns An object containing the total count and HTTP status code.
+   * @returns Promise resolving to an object with statusCode and total count
+   *
+   * @example
+   * const result = await paymentMethodService.countAll();
+   * // Returns: { statusCode: 200, total: 15 }
    */
-  async countAll() {
+  async countAll(): Promise<Result<number>> {
     const total = await this.repo.count();
     return { statusCode: HttpStatus.OK, total };
   }
 
   /**
-   * Counts all PaymentMethod records that are not marked as deleted.
+   * Counts all active (non-deleted) payment methods in the system.
    *
-   * @returns An object containing the total count and HTTP status code.
+   * @returns Promise resolving to an object with statusCode and total count
+   *
+   * @example
+   * const result = await paymentMethodService.count();
+   * // Returns: { statusCode: 200, total: 12 }
    */
-  async count() {
+  async count(): Promise<Result<number>> {
     const total = await this.repo.count({
       where: {
         isDeleted: false,
@@ -68,17 +98,26 @@ export class PaymentMethodService
   }
 
   /**
-   * Retrieves a list of all active (non-deleted) payment methods, sorted by name.
+   * Retrieves a paginated list of active payment methods with optional search and sorting.
    *
-   * Supports optional pagination and search via PaginationDto.
-   * When no pagination options are provided, all payment methods are returned.
+   * @param paginationDto - Optional pagination parameters (page, limit, search, sortBy, sortOrder)
+   * @returns Promise resolving to a paginated result containing an array of ResponsePaymentMethodDto
    *
-   * @param paginationDto - Optional pagination and search parameters.
-   * @returns {Promise<PaginatedResult<PaymentMethod>>} A standardized paginated response.
+   * @example
+   * // Get first page with 10 items
+   * const result = await paymentMethodService.findAll({ page: 1, limit: 10 });
+   *
+   * @example
+   * // Search and sort
+   * const result = await paymentMethodService.findAll({
+   *   search: 'card',
+   *   sortBy: 'name',
+   *   sortOrder: 'ASC'
+   * });
    */
   async findAll(
     paginationDto?: PaginationDto,
-  ): Promise<PaginatedResult<PaymentMethod>> {
+  ): Promise<PaginatedResult<ResponsePaymentMethodDto>> {
     const { page, limit, skip } = PaginationHelper.normalizePagination(
       paginationDto?.page,
       paginationDto?.limit,
@@ -89,7 +128,7 @@ export class PaymentMethodService
       isDeleted: false,
     };
 
-    // Build search conditions
+    // Build search conditions for name
     const searchConditions: FindOptionsWhere<PaymentMethod>[] = [];
     if (paginationDto?.search) {
       const searchTerm = `%${paginationDto.search}%`;
@@ -100,8 +139,8 @@ export class PaymentMethodService
     const sortBy = paginationDto?.sortBy || 'name';
     const sortOrder = paginationDto?.sortOrder || 'ASC';
 
-    // Execute query
-    const [data, total] = await this.repo.findAndCount({
+    // Execute query with relations
+    const [paymentMethods, total] = await this.repo.findAndCount({
       where: searchConditions.length > 0 ? searchConditions : where,
       relations: ['createdBy', 'updatedBy'],
       order: {
@@ -111,90 +150,165 @@ export class PaymentMethodService
       take: limit,
     });
 
-    // Return paginated result
+    // Map to DTO and return paginated result
+    const data = mapPaymentMethodsToResponseDto(paymentMethods);
     return PaginationHelper.createPaginatedResult(data, total, page, limit);
   }
 
   /**
-   * Finds a PaymentMethod by its ID, including related createdBy and updatedBy entities.
-   * Throws NotFoundException if not found or marked as deleted.
+   * Finds a single payment method by its ID.
    *
-   * @param id - The ID of the PaymentMethod to retrieve.
-   * @returns A result object containing the PaymentMethod and HTTP status code.
-   * @throws NotFoundException if the PaymentMethod is not found.
+   * @param id - The unique identifier of the payment method
+   * @returns Promise resolving to a Result containing the ResponsePaymentMethodDto
+   * @throws NotFoundException if payment method is not found or is deleted
+   *
+   * @example
+   * const result = await paymentMethodService.findOne(1);
+   * // Returns: { statusCode: 200, data: { id: 1, name: 'Credit Card', ... } }
    */
-  async findOne(id: PaymentMethod['id']): Promise<Result<PaymentMethod>> {
+  async findOne(
+    id: PaymentMethod['id'],
+  ): Promise<Result<ResponsePaymentMethodDto>> {
     const paymentMethod = await this.repo.findOne({
       relations: ['createdBy', 'updatedBy'],
       where: { id, isDeleted: false },
     });
+
     if (!paymentMethod) {
       throw new NotFoundException(
         `The Payment Method with ID: ${id} not found`,
       );
     }
+
     return {
       statusCode: HttpStatus.OK,
-      data: paymentMethod,
+      data: mapPaymentMethodToResponseDto(paymentMethod),
     };
   }
 
   /**
-   * Creates a new PaymentMethod entity.
+   * Creates a new payment method.
    *
-   * @param dto - The data transfer object containing creation data.
-   * @returns An object containing the created PaymentMethod, HTTP status code, and a message.
+   * @param dto - CreatePaymentMethodDto containing the payment method data
+   * @param userId - ID of the user creating the payment method
+   * @returns Promise resolving to a Result containing the created ResponsePaymentMethodDto
+   *
+   * @example
+   * const result = await paymentMethodService.create(
+   *   { name: 'PayPal' },
+   *   1
+   * );
+   * // Returns: { statusCode: 201, data: { ... }, message: 'The Payment Method was created' }
    */
-  async create(dto: CreatePaymentMethodDto, userId: number) {
+  async create(
+    dto: CreatePaymentMethodDto,
+    userId: number,
+  ): Promise<Result<ResponsePaymentMethodDto>> {
+    // Create new payment method entity
     const newPaymentMethod = this.repo.create({
       ...dto,
       createdBy: { id: userId },
       updatedBy: { id: userId },
     });
+
     const paymentMethod = await this.repo.save(newPaymentMethod);
+
+    // Fetch with relations for proper mapping
+    const savedPaymentMethod = await this.repo.findOne({
+      relations: ['createdBy', 'updatedBy'],
+      where: { id: paymentMethod.id },
+    });
+
     return {
       statusCode: HttpStatus.CREATED,
-      data: paymentMethod,
+      data: mapPaymentMethodToResponseDto(savedPaymentMethod!),
       message: 'The Payment Method was created',
     };
   }
 
   /**
-   * Updates an existing PaymentMethod entity by its ID.
+   * Updates an existing payment method.
    *
-   * @param id - The ID of the PaymentMethod to update.
-   * @param changes - The data transfer object containing update data.
-   * @returns An object containing the updated PaymentMethod, HTTP status code, and a message.
+   * @param id - ID of the payment method to update
+   * @param userId - ID of the user performing the update
+   * @param changes - UpdatePaymentMethodDto containing the fields to update
+   * @returns Promise resolving to a Result containing the updated ResponsePaymentMethodDto
+   * @throws NotFoundException if payment method is not found
+   *
+   * @example
+   * const result = await paymentMethodService.update(1, 1, { name: 'New Name' });
+   * // Returns: { statusCode: 200, data: { ... }, message: 'The Payment Method with ID: 1 has been modified' }
    */
-  async update(id: number, userId: number, changes: UpdatePaymentMethodDto) {
-    const { data } = await this.findOne(id);
-    this.repo.merge(data as PaymentMethod, {
+  async update(
+    id: number,
+    userId: number,
+    changes: UpdatePaymentMethodDto,
+  ): Promise<Result<ResponsePaymentMethodDto>> {
+    const paymentMethodEntity = await this.repo.findOne({
+      where: { id, isDeleted: false },
+    });
+
+    if (!paymentMethodEntity) {
+      throw new NotFoundException(
+        `The Payment Method with ID: ${id} not found`,
+      );
+    }
+
+    // Merge changes and update
+    this.repo.merge(paymentMethodEntity, {
       ...changes,
       updatedBy: { id: userId },
     });
-    const rta = await this.repo.save(data as PaymentMethod);
+
+    const savedPaymentMethod = await this.repo.save(paymentMethodEntity);
+
+    // Fetch with relations for proper mapping
+    const updatedPaymentMethod = await this.repo.findOne({
+      relations: ['createdBy', 'updatedBy'],
+      where: { id: savedPaymentMethod.id },
+    });
+
     return {
       statusCode: HttpStatus.OK,
-      data: rta,
+      data: mapPaymentMethodToResponseDto(updatedPaymentMethod!),
       message: `The Payment Method with ID: ${id} has been modified`,
     };
   }
 
   /**
-   * Soft deletes a PaymentMethod entity by its ID by setting isDeleted to true.
+   * Soft deletes a payment method by marking it as deleted.
    *
-   * @param id - The ID of the PaymentMethod to delete.
-   * @returns An object containing HTTP status code and a message.
+   * @param id - ID of the payment method to delete
+   * @param userId - ID of the user performing the deletion
+   * @returns Promise resolving to an object with statusCode and message
+   * @throws NotFoundException if payment method is not found
+   *
+   * @example
+   * const result = await paymentMethodService.remove(1, 1);
+   * // Returns: { statusCode: 200, message: 'The Payment Method with ID: 1 has been deleted' }
    */
-  async remove(id: PaymentMethod['id'], userId: number) {
-    const { data } = await this.findOne(id);
-
-    const changes = { isDeleted: true };
-    this.repo.merge(data as PaymentMethod, {
-      ...changes,
-      deletedBy: { id: userId },
+  async remove(
+    id: PaymentMethod['id'],
+    userId: number,
+  ): Promise<{ statusCode: number; message: string }> {
+    const paymentMethodEntity = await this.repo.findOne({
+      where: { id, isDeleted: false },
     });
-    await this.repo.save(data as PaymentMethod);
+
+    if (!paymentMethodEntity) {
+      throw new NotFoundException(
+        `The Payment Method with ID: ${id} not found`,
+      );
+    }
+
+    // Soft delete by marking as deleted
+    const changes = {
+      isDeleted: true,
+      deletedBy: { id: userId },
+    };
+    this.repo.merge(paymentMethodEntity, changes);
+    await this.repo.save(paymentMethodEntity);
+
     return {
       statusCode: HttpStatus.OK,
       message: `The Payment Method with ID: ${id} has been deleted`,

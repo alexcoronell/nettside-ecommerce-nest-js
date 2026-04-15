@@ -26,7 +26,7 @@ import { dataSource } from '../utils/seed';
 /* Faker */
 import {
   createPaymentMethod,
-  generateNewPaymentMethods,
+  generatePaymentMethod,
 } from '@faker/paymentMethod.faker';
 
 /* Login Users */
@@ -77,8 +77,6 @@ describe('CategoryController (e2e) [POST]', () => {
     await app.init();
     repo = app.get('PaymentMethodRepository');
     repoUser = app.get('UserRepository');
-    const paymentMethods = generateNewPaymentMethods(10);
-    await repo.save(paymentMethods);
   });
 
   beforeEach(async () => {
@@ -132,7 +130,7 @@ describe('CategoryController (e2e) [POST]', () => {
     });
 
     it('/ should return a  conflict exception with existing category name', async () => {
-      const newPaymentMethod = createPaymentMethod();
+      const newPaymentMethod = generatePaymentMethod();
       await repo.save(newPaymentMethod);
       const repeatedPaymentMethod = {
         ...createPaymentMethod(),
