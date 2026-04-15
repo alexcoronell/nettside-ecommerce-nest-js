@@ -1,36 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-jest.mock('uuid', () => ({
-  v4: () => 'mock-uuid-1234',
-}));
-
-jest.mock('@aws-sdk/client-s3', () => ({
-  S3Client: jest.fn().mockImplementation(() => ({
-    send: jest.fn().mockResolvedValue({}),
-  })),
-  HeadBucketCommand: jest.fn(),
-  CreateBucketCommand: jest.fn(),
-}));
-
-jest.mock('@aws-sdk/lib-storage', () => ({
-  Upload: jest.fn().mockImplementation(() => ({
-    done: jest.fn().mockResolvedValue({}),
-  })),
-}));
-
-jest.mock('@upload/constants/storage.constants', () => ({
-  STORAGE_CONFIG: {
-    endpoint: 'localhost:9000',
-    region: 'us-east-1',
-    credentials: { accessKeyId: 'test', secretAccessKey: 'test' },
-    forcePathStyle: true,
-  },
-  BUCKETS: {
-    BRAND_LOGOS: 'brand-logos',
-  },
-}));
-
 import * as cookieParser from 'cookie-parser';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
@@ -55,7 +25,7 @@ import { initDataSource, cleanDB, closeDataSource } from '../utils/seed';
 import { dataSource } from '../utils/seed';
 
 /* Faker */
-import { createDiscount, generateNewDiscounts } from '@faker/discount.faker';
+import { generateDiscount, generateManyDiscounts } from '@faker/discount.faker';
 
 /* Login Users */
 import { loginAdmin } from '../utils/login-admin';
@@ -106,8 +76,6 @@ describe('DiscountController (e2e) [GET]', () => {
     await app.init();
     repo = app.get('DiscountRepository');
     repoUser = app.get('UserRepository');
-    const discounts = generateNewDiscounts(10);
-    await repo.save(discounts);
   });
 
   beforeEach(async () => {
@@ -125,7 +93,7 @@ describe('DiscountController (e2e) [GET]', () => {
 
   describe('GET Discount - Count', () => {
     it('/count should return 200 with admin cookies', async () => {
-      const discounts = generateNewDiscounts(10);
+      const discounts = generateManyDiscounts(10);
       await repo.save(discounts);
       const res = await request(app.getHttpServer())
         .get('/discount/count')
@@ -137,7 +105,7 @@ describe('DiscountController (e2e) [GET]', () => {
     });
 
     it('/count should return 200 with seller cookies', async () => {
-      const discounts = generateNewDiscounts(10);
+      const discounts = generateManyDiscounts(10);
       await repo.save(discounts);
       const res = await request(app.getHttpServer())
         .get('/discount/count')
@@ -179,7 +147,7 @@ describe('DiscountController (e2e) [GET]', () => {
 
   describe('GET Discount - / Find', () => {
     it('/ should return all discounts with admin cookies', async () => {
-      const discounts = generateNewDiscounts(10);
+      const discounts = generateManyDiscounts(10);
       await repo.save(discounts);
       const res = await request(app.getHttpServer())
         .get('/discount')
@@ -199,7 +167,7 @@ describe('DiscountController (e2e) [GET]', () => {
     });
 
     it('/ should return all discounts with seller cookies', async () => {
-      const discounts = generateNewDiscounts(10);
+      const discounts = generateManyDiscounts(10);
       await repo.save(discounts);
       const res = await request(app.getHttpServer())
         .get('/discount')
@@ -219,7 +187,7 @@ describe('DiscountController (e2e) [GET]', () => {
     });
 
     it('/ should return 401 with customer cookies', async () => {
-      const discounts = generateNewDiscounts(10);
+      const discounts = generateManyDiscounts(10);
       await repo.save(discounts);
       const res = await request(app.getHttpServer())
         .get('/discount')
@@ -231,7 +199,7 @@ describe('DiscountController (e2e) [GET]', () => {
     });
 
     it('/ should return all discounts without logged user', async () => {
-      const discounts = generateNewDiscounts(10);
+      const discounts = generateManyDiscounts(10);
       await repo.save(discounts);
       const res = await request(app.getHttpServer())
         .get('/discount')
@@ -260,36 +228,36 @@ describe('DiscountController (e2e) [GET]', () => {
 
   describe('GET Discount - /:id FindOne', () => {
     it('/:id should return one discount by id with admin cookies', async () => {
-      const discount = createDiscount();
-      const dataNewDiscount = await repo.save(discount);
+      const discount = generateDiscount(1);
+      const savedDiscount = await repo.save(discount);
       const res = await request(app.getHttpServer())
-        .get(`/discount/${dataNewDiscount.id}`)
+        .get(`/discount/${savedDiscount.id}`)
         .set('x-api-key', API_KEY)
         .set('Cookie', adminCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
-      expect(data.id).toEqual(dataNewDiscount.id);
-      expect(data.name).toEqual(dataNewDiscount.name);
+      expect(data.id).toEqual(savedDiscount.id);
+      expect(data.code).toEqual(savedDiscount.code);
     });
 
     it('/:id should return one discount by id with seller cookies', async () => {
-      const discount = createDiscount();
-      const dataNewDiscount = await repo.save(discount);
+      const discount = generateDiscount(2);
+      const savedDiscount = await repo.save(discount);
       const res = await request(app.getHttpServer())
-        .get(`/discount/${dataNewDiscount.id}`)
+        .get(`/discount/${savedDiscount.id}`)
         .set('x-api-key', API_KEY)
         .set('Cookie', sellerCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
-      expect(data.id).toEqual(dataNewDiscount.id);
-      expect(data.name).toEqual(dataNewDiscount.name);
+      expect(data.id).toEqual(savedDiscount.id);
+      expect(data.code).toEqual(savedDiscount.code);
     });
 
     it('/:id should return 401 by id with customer cookies', async () => {
-      const discount = createDiscount();
-      const dataNewDiscount = await repo.save(discount);
+      const discount = generateDiscount(3);
+      const savedDiscount = await repo.save(discount);
       const res = await request(app.getHttpServer())
-        .get(`/discount/${dataNewDiscount.id}`)
+        .get(`/discount/${savedDiscount.id}`)
         .set('x-api-key', API_KEY)
         .set('Cookie', customerCookies);
       const { statusCode, error, message } = res.body;
@@ -299,10 +267,10 @@ describe('DiscountController (e2e) [GET]', () => {
     });
 
     it('/:id should return 401 by id without access token', async () => {
-      const discount = createDiscount();
-      const dataNewDiscount = await repo.save(discount);
+      const discount = generateDiscount(4);
+      const savedDiscount = await repo.save(discount);
       const res = await request(app.getHttpServer())
-        .get(`/discount/${dataNewDiscount.id}`)
+        .get(`/discount/${savedDiscount.id}`)
         .set('x-api-key', API_KEY);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);
@@ -310,10 +278,10 @@ describe('DiscountController (e2e) [GET]', () => {
     });
 
     it('/:id should return 401 by id without api key', async () => {
-      const discount = createDiscount();
-      const dataNewDiscount = await repo.save(discount);
+      const discount = generateDiscount(5);
+      const savedDiscount = await repo.save(discount);
       const res = await request(app.getHttpServer())
-        .get(`/discount/${dataNewDiscount.id}`)
+        .get(`/discount/${savedDiscount.id}`)
         .set('Cookie', adminCookies);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);
@@ -321,8 +289,6 @@ describe('DiscountController (e2e) [GET]', () => {
     });
 
     it('/:id should return 404 by id if discount does not exist', async () => {
-      const discount = createDiscount();
-      await repo.save(discount);
       const res = await request(app.getHttpServer())
         .get(`/discount/9999999`)
         .set('x-api-key', API_KEY)

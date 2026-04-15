@@ -55,7 +55,7 @@ import { initDataSource, cleanDB, closeDataSource } from '../utils/seed';
 import { dataSource } from '../utils/seed';
 
 /* Faker */
-import { createDiscount, generateNewDiscounts } from '@faker/discount.faker';
+import { createDiscount, generateManyDiscounts } from '@faker/discount.faker';
 
 /* Login Users */
 import { loginAdmin } from '../utils/login-admin';
@@ -106,7 +106,7 @@ describe('DiscountController (e2e) [POST]', () => {
     await app.init();
     repo = app.get('DiscountRepository');
     repoUser = app.get('UserRepository');
-    const discounts = generateNewDiscounts(10);
+    const discounts = generateManyDiscounts(10);
     await repo.save(discounts);
   });
 

@@ -160,7 +160,7 @@ describe('DiscountController', () => {
       const id = 1;
       const userId = 1;
       const changes: UpdateDiscountDto = { code: 'newCode' };
-      const result = await controller.update(id, userId, changes);
+      const result = await controller.update(id, changes, userId);
       expect(result).toEqual(updateResponse);
       expect(service.update).toHaveBeenCalledTimes(1);
       expect(service.update).toHaveBeenCalledWith(id, userId, changes);
@@ -170,7 +170,7 @@ describe('DiscountController', () => {
       const id = 5;
       const userId = 3;
       const changes: UpdateDiscountDto = { description: 'Updated description' };
-      await controller.update(id, userId, changes);
+      await controller.update(id, changes, userId);
       expect(service.update).toHaveBeenCalledWith(id, userId, changes);
     });
   });

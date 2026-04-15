@@ -1,36 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-jest.mock('uuid', () => ({
-  v4: () => 'mock-uuid-1234',
-}));
-
-jest.mock('@aws-sdk/client-s3', () => ({
-  S3Client: jest.fn().mockImplementation(() => ({
-    send: jest.fn().mockResolvedValue({}),
-  })),
-  HeadBucketCommand: jest.fn(),
-  CreateBucketCommand: jest.fn(),
-}));
-
-jest.mock('@aws-sdk/lib-storage', () => ({
-  Upload: jest.fn().mockImplementation(() => ({
-    done: jest.fn().mockResolvedValue({}),
-  })),
-}));
-
-jest.mock('@upload/constants/storage.constants', () => ({
-  STORAGE_CONFIG: {
-    endpoint: 'localhost:9000',
-    region: 'us-east-1',
-    credentials: { accessKeyId: 'test', secretAccessKey: 'test' },
-    forcePathStyle: true,
-  },
-  BUCKETS: {
-    BRAND_LOGOS: 'brand-logos',
-  },
-}));
-
 import * as cookieParser from 'cookie-parser';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
@@ -58,7 +28,7 @@ import { dataSource } from '../utils/seed';
 import { UpdateDiscountDto } from '@discount/dto/update-discount.dto';
 
 /* Faker */
-import { generateNewDiscounts } from '@faker/discount.faker';
+import { generateManyDiscounts } from '@faker/discount.faker';
 
 /* Login Users */
 import { loginAdmin } from '../utils/login-admin';
@@ -109,8 +79,6 @@ describe('DiscountController (e2e) [PATCH]', () => {
     await app.init();
     repo = app.get('DiscountRepository');
     repoUser = app.get('UserRepository');
-    const discounts = generateNewDiscounts(10);
-    await repo.save(discounts);
   });
 
   beforeEach(async () => {
@@ -128,7 +96,7 @@ describe('DiscountController (e2e) [PATCH]', () => {
 
   describe('PATCH Discount', () => {
     it('/:id should update a discount with admin cookies', async () => {
-      const newDiscounts = generateNewDiscounts(10);
+      const newDiscounts = generateManyDiscounts(10);
       const dataNewDiscounts = await repo.save(newDiscounts);
       const id = dataNewDiscounts[0].id;
       const updatedData: UpdateDiscountDto = {
@@ -146,7 +114,7 @@ describe('DiscountController (e2e) [PATCH]', () => {
     });
 
     it('/:id should return 401 if the user is seller', async () => {
-      const newDiscounts = generateNewDiscounts(10);
+      const newDiscounts = generateManyDiscounts(10);
       const dataNewDiscounts = await repo.save(newDiscounts);
       const id = dataNewDiscounts[0].id;
       const updatedData: UpdateDiscountDto = {
@@ -163,7 +131,7 @@ describe('DiscountController (e2e) [PATCH]', () => {
     });
 
     it('/:id should return 401 if the user is customer', async () => {
-      const newDiscounts = generateNewDiscounts(10);
+      const newDiscounts = generateManyDiscounts(10);
       const dataNewDiscounts = await repo.save(newDiscounts);
       const id = dataNewDiscounts[0].id;
       const updatedData: UpdateDiscountDto = {
@@ -195,7 +163,7 @@ describe('DiscountController (e2e) [PATCH]', () => {
     });
 
     it('/:id should return 401 if api key is missing', async () => {
-      const newDiscounts = generateNewDiscounts(10);
+      const newDiscounts = generateManyDiscounts(10);
       const dataNewDiscounts = await repo.save(newDiscounts);
       const id = dataNewDiscounts[0].id;
       const updatedData: UpdateDiscountDto = {
@@ -211,7 +179,7 @@ describe('DiscountController (e2e) [PATCH]', () => {
     });
 
     it('/:id should return 401 if api key is invalid', async () => {
-      const newDiscounts = generateNewDiscounts(10);
+      const newDiscounts = generateManyDiscounts(10);
       const dataNewDiscounts = await repo.save(newDiscounts);
       const id = dataNewDiscounts[0].id;
       const updatedData: UpdateDiscountDto = {
