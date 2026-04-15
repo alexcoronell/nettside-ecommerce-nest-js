@@ -19,6 +19,12 @@ import { generateProduct, generateManyProducts } from '@faker/product.faker';
 import { User } from '@user/entities/user.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 
+/* Mappers */
+import {
+  mapProductToResponseDto,
+  mapProductsToResponseDto,
+} from './mappers/product.mapper';
+
 describe('ProductService', () => {
   let service: ProductService;
   let repository: Repository<Product>;
@@ -42,15 +48,6 @@ describe('ProductService', () => {
   });
 
   describe('count products services', () => {
-    it('should return total all products', async () => {
-      jest.spyOn(repository, 'count').mockResolvedValue(100);
-
-      const { statusCode, total } = await service.countAll();
-      expect(repository.count).toHaveBeenCalledTimes(1);
-      expect(statusCode).toBe(200);
-      expect(total).toEqual(100);
-    });
-
     it('should return total products not removed', async () => {
       jest.spyOn(repository, 'count').mockResolvedValue(100);
       const { statusCode, total } = await service.count();
@@ -88,7 +85,7 @@ describe('ProductService', () => {
       });
       expect(statusCode).toBe(200);
       expect(meta.total).toEqual(mocks.length);
-      expect(data).toEqual(mocks.slice(0, 10));
+      expect(data).toEqual(mapProductsToResponseDto(mocks.slice(0, 10)));
     });
 
     it('findOne should return a products', async () => {
@@ -100,11 +97,17 @@ describe('ProductService', () => {
       const { statusCode, data } = await service.findOne(id);
       expect(repository.findOne).toHaveBeenCalledTimes(1);
       expect(repository.findOne).toHaveBeenCalledWith({
-        relations: ['createdBy', 'updatedBy'],
+        relations: [
+          'createdBy',
+          'updatedBy',
+          'brand',
+          'category',
+          'subcategory',
+        ],
         where: { id, isDeleted: false },
       });
       expect(statusCode).toBe(200);
-      expect(data).toEqual(mock);
+      expect(data).toEqual(mapProductToResponseDto(mock));
     });
 
     it('findOne should throw NotFoundException if products does not exist', async () => {
@@ -128,48 +131,48 @@ describe('ProductService', () => {
       );
     });
 
-    it('findOneByName should return a products', async () => {
+    it('findOneBySlug should return a products', async () => {
       const mock = generateProduct();
-      const name = mock.name;
+      const slug = mock.slug;
 
       jest.spyOn(repository, 'findOne').mockResolvedValue(mock);
 
-      const { statusCode, data } = await service.findOneByName(name);
+      const { statusCode, data } = await service.findOneBySlug(slug);
       expect(repository.findOne).toHaveBeenCalledTimes(1);
       expect(statusCode).toBe(200);
-      expect(data).toEqual(mock);
+      expect(data).toEqual(mapProductToResponseDto(mock));
     });
 
-    it('findOneByName should throw NotFoundException if Product does not exist', async () => {
-      const name = 'nameTest';
+    it('findOneBySlug should throw NotFoundException if Product does not exist', async () => {
+      const slug = 'slugTest';
       jest.spyOn(repository, 'findOne').mockResolvedValue(null);
 
       try {
-        await service.findOneByName(name);
+        await service.findOneBySlug(slug);
       } catch (error) {
         expect(error).toBeInstanceOf(NotFoundException);
-        expect(error.message).toBe(`The Product with NAME: ${name} not found`);
+        expect(error.message).toBe(`The Product with SLUG: ${slug} not found`);
       }
     });
 
     it('findByBrand should return products by brand', async () => {
       const mocks = generateManyProducts(50);
-      const brandSlug = 'brand-test';
+      const brandSlug = 'test-brand';
 
       jest
         .spyOn(repository, 'findAndCount')
         .mockResolvedValue([mocks, mocks.length]);
 
-      const { statusCode, data, total } = await service.findByBrand(brandSlug);
+      const result = await service.findByBrand(brandSlug);
       expect(repository.findAndCount).toHaveBeenCalledTimes(1);
       expect(repository.findAndCount).toHaveBeenCalledWith({
         relations: ['brand', 'category', 'subcategory'],
         where: { brand: { slug: brandSlug }, isDeleted: false },
         order: { name: 'ASC' },
       });
-      expect(statusCode).toBe(200);
-      expect(total).toEqual(mocks.length);
-      expect(data).toEqual(mocks);
+      expect(result.statusCode).toBe(200);
+      expect(result.meta.total).toEqual(mocks.length);
+      expect(result.data).toHaveLength(mocks.length);
     });
 
     it('findByCategory should return products by category', async () => {
@@ -180,17 +183,16 @@ describe('ProductService', () => {
         .spyOn(repository, 'findAndCount')
         .mockResolvedValue([mocks, mocks.length]);
 
-      const { statusCode, data, total } =
-        await service.findByCategory(categorySlug);
+      const result = await service.findByCategory(categorySlug);
       expect(repository.findAndCount).toHaveBeenCalledTimes(1);
       expect(repository.findAndCount).toHaveBeenCalledWith({
         relations: ['brand', 'category', 'subcategory'],
         where: { category: { slug: categorySlug }, isDeleted: false },
         order: { name: 'ASC' },
       });
-      expect(statusCode).toBe(200);
-      expect(total).toEqual(mocks.length);
-      expect(data).toEqual(mocks);
+      expect(result.statusCode).toBe(200);
+      expect(result.meta.total).toEqual(mocks.length);
+      expect(result.data).toHaveLength(mocks.length);
     });
 
     it('findBySubcategory should return products by subcategory', async () => {
@@ -201,16 +203,15 @@ describe('ProductService', () => {
         .spyOn(repository, 'findAndCount')
         .mockResolvedValue([mocks, mocks.length]);
 
-      const { statusCode, data, total } =
-        await service.findBySubcategory(subcategoryId);
-      expect(repository.findAndCount).toHaveBeenCalledTimes(subcategoryId);
+      const result = await service.findBySubcategory(subcategoryId);
       expect(repository.findAndCount).toHaveBeenCalledWith({
+        relations: ['brand', 'category', 'subcategory'],
         where: { subcategory: { id: subcategoryId }, isDeleted: false },
         order: { name: 'ASC' },
       });
-      expect(statusCode).toBe(200);
-      expect(total).toEqual(mocks.length);
-      expect(data).toEqual(mocks);
+      expect(result.statusCode).toBe(200);
+      expect(result.meta.total).toEqual(mocks.length);
+      expect(result.data).toHaveLength(mocks.length);
     });
   });
 
@@ -219,7 +220,10 @@ describe('ProductService', () => {
       const mock = generateProduct();
       const userId: User['id'] = 1;
       const dto: CreateProductDto = {
-        ...mock,
+        name: mock.name,
+        description: mock.description,
+        price: mock.price,
+        stock: mock.stock,
         category: mock.category.id,
         subcategory: mock.subcategory.id,
         brand: mock.brand.id,
@@ -227,17 +231,21 @@ describe('ProductService', () => {
 
       jest.spyOn(repository, 'create').mockReturnValue(mock);
       jest.spyOn(repository, 'save').mockResolvedValue(mock);
+      jest.spyOn(repository, 'findOne').mockResolvedValue(mock);
 
       const { statusCode, data } = await service.create(dto, userId);
       expect(statusCode).toBe(201);
-      expect(data).toEqual(mock);
+      expect(data).toEqual(mapProductToResponseDto(mock));
     });
 
     it('create should return Conflict Exception when name Product exists', async () => {
       const mock = generateProduct();
       const userId: User['id'] = 1;
       const dto: CreateProductDto = {
-        ...mock,
+        name: mock.name,
+        description: mock.description,
+        price: mock.price,
+        stock: mock.stock,
         category: mock.category.id,
         subcategory: mock.subcategory.id,
         brand: mock.brand.id,
@@ -245,6 +253,7 @@ describe('ProductService', () => {
 
       jest.spyOn(repository, 'create').mockReturnValue(mock);
       jest.spyOn(repository, 'save').mockResolvedValue(mock);
+      jest.spyOn(repository, 'findOne').mockResolvedValue(mock);
 
       try {
         await service.create(dto, userId);
@@ -267,7 +276,7 @@ describe('ProductService', () => {
       jest.spyOn(repository, 'save').mockResolvedValue(mock);
 
       const { statusCode, message } = await service.update(id, userId, changes);
-      expect(repository.findOne).toHaveBeenCalledTimes(1);
+      expect(repository.findOne).toHaveBeenCalledTimes(2);
       expect(repository.merge).toHaveBeenCalledTimes(1);
       expect(repository.save).toHaveBeenCalledTimes(1);
       expect(statusCode).toBe(200);

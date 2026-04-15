@@ -53,9 +53,11 @@ export const generateProduct = (id: number = 1): Product => {
   const description = faker.commerce.productDescription();
   const price = parseInt(faker.commerce.price());
   const stock = faker.number.int({ min: 0, max: 1000 });
+  const slug = faker.helpers.slugify(name).toLowerCase();
   return {
     ...generateBaseEntity(id),
     name,
+    slug,
     description,
     price,
     stock,

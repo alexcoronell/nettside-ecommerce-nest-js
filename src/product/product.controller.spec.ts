@@ -43,7 +43,7 @@ describe('ProductController', () => {
     findOne: jest
       .fn()
       .mockResolvedValue({ statusCode: 200, data: mockProduct }),
-    findOneByName: jest
+    findOneBySlug: jest
       .fn()
       .mockResolvedValue({ statusCode: 200, data: mockProduct }),
     findByBrand: jest.fn().mockResolvedValue({
@@ -92,14 +92,6 @@ describe('ProductController', () => {
   });
 
   describe('Count products controllers', () => {
-    it('should call countAll product service', async () => {
-      expect(await controller.countAll()).toEqual({
-        statusCode: 200,
-        total: mockProducts.length,
-      });
-      expect(service.countAll).toHaveBeenCalledTimes(1);
-    });
-
     it('should call count product service', async () => {
       expect(await controller.count()).toEqual({
         statusCode: 200,
@@ -127,9 +119,9 @@ describe('ProductController', () => {
       expect(service.findOne).toHaveBeenCalledTimes(1);
     });
 
-    it('should return an product by name', async () => {
-      expect(await controller.findOneByname(mockProduct.name));
-      expect(service.findOneByName).toHaveBeenCalledTimes(1);
+    it('should return an product by slug', async () => {
+      expect(await controller.findOneBySlug(mockProduct.slug));
+      expect(service.findOneBySlug).toHaveBeenCalledTimes(1);
     });
 
     it('should call findByBrand product service', async () => {

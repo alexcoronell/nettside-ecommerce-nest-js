@@ -24,7 +24,6 @@ import { ProductService } from './product.service';
 /* Entities */
 import { Brand } from '@brand/entities/brand.entity';
 import { Category } from '@category/entities/category.entity';
-import { Product } from './entities/product.entity';
 
 /* DTO's */
 import { CreateProductDto } from './dto/create-product.dto';
@@ -35,18 +34,14 @@ import { PaginationDto } from '@commons/dtos/Pagination.dto';
 import { JwtAuthGuard } from '@auth/guards/jwt-auth/jwt-auth.guard';
 import { IsNotCustomerGuard } from '@auth/guards/is-not-customer/is-not-customer.guard';
 import { AdminGuard } from '@auth/guards/admin-auth/admin-auth.guard';
+import { ResponseProductDto } from './dto/response-product.dto';
 
 @Controller('product')
 export class ProductController
-  implements IBaseController<Product, CreateProductDto, UpdateProductDto>
+  implements
+    IBaseController<ResponseProductDto, CreateProductDto, UpdateProductDto>
 {
   constructor(private readonly productService: ProductService) {}
-
-  @UseGuards(JwtAuthGuard, AdminGuard)
-  @Get('count-all')
-  countAll() {
-    return this.productService.countAll();
-  }
 
   @Get('count')
   count() {
@@ -76,9 +71,9 @@ export class ProductController
     return this.productService.findOne(+id);
   }
 
-  @Get('name/:name')
-  findOneByname(@Param('name') name: string) {
-    return this.productService.findOneByName(name);
+  @Get('slug/:slug')
+  findOneBySlug(@Param('slug') slug: string) {
+    return this.productService.findOneBySlug(slug);
   }
 
   @Get('brand/:brandSlug')

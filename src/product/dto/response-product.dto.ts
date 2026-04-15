@@ -18,6 +18,9 @@ export class ResponseProductDto {
   @ApiProperty()
   readonly name: string;
 
+  @ApiProperty()
+  readonly slug: string;
+
   @ApiPropertyOptional()
   readonly description: string | null;
 
