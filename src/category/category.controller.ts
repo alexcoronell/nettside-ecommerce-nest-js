@@ -223,11 +223,13 @@ export class CategoryController {
    * @throws NotFoundException if category with given slug does not exist
    *
    * @endpoint GET /category/slug/:slug
-   * @public
+   * @security JWT + Non-customer role (Admin or Seller)
    */
+  @ApiBearerAuth('JWT')
   @ApiOperation({
     summary: 'Get category by slug',
-    description: 'Retrieves a single category by its URL-friendly slug.',
+    description:
+      'Retrieves a single category by its URL-friendly slug. Admin or Seller only.',
   })
   @ApiParam({
     name: 'slug',
@@ -241,9 +243,18 @@ export class CategoryController {
     type: ResponseCategoryDto,
   })
   @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Missing or invalid JWT token',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - User is a customer',
+  })
+  @ApiResponse({
     status: 404,
     description: 'Category not found',
   })
+  @UseGuards(JwtAuthGuard, IsNotCustomerGuard)
   @Get('slug/:slug')
   findOneBySlug(@Param('slug') slug: string) {
     return this.categoryService.findOneBySlug(slug);

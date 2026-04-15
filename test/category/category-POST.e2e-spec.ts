@@ -1,39 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-jest.mock('uuid', () => ({
-  v4: () => 'mock-uuid-1234',
-}));
-
-jest.mock('@aws-sdk/client-s3', () => ({
-  S3Client: jest.fn().mockImplementation(() => ({
-    send: jest.fn().mockResolvedValue({}),
-  })),
-  HeadBucketCommand: jest.fn(),
-  CreateBucketCommand: jest.fn(),
-}));
-
-jest.mock('@aws-sdk/lib-storage', () => ({
-  Upload: jest.fn().mockImplementation(() => ({
-    done: jest.fn().mockResolvedValue({}),
-  })),
-}));
-
-jest.mock('@upload/constants/storage.constants', () => ({
-  STORAGE_CONFIG: {
-    endpoint: 'localhost:9000',
-    region: 'us-east-1',
-    credentials: { accessKeyId: 'test', secretAccessKey: 'test' },
-    forcePathStyle: true,
-  },
-  BUCKETS: {
-    BRAND_LOGOS: 'brand-logos',
-    PRODUCT_IMAGES: 'product-images',
-    AVATARS: 'avatars',
-  },
-  PUBLIC_URL_BASE: 'http://localhost:9000',
-}));
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
@@ -58,7 +25,7 @@ import { initDataSource, cleanDB, closeDataSource } from '../utils/seed';
 import { dataSource } from '../utils/seed';
 
 /* Faker */
-import { createCategory, generateNewCategories } from '@faker/category.faker';
+import { createCategory, generateCategory } from '@faker/category.faker';
 
 /* Login Users */
 import { loginAdmin } from '../utils/login-admin';
@@ -108,8 +75,6 @@ describe('CategoryController (e2e) [POST]', () => {
     await app.init();
     repo = app.get('CategoryRepository');
     repoUser = app.get('UserRepository');
-    const categories = generateNewCategories(10);
-    await repo.save(categories);
   });
 
   beforeEach(async () => {
@@ -163,7 +128,7 @@ describe('CategoryController (e2e) [POST]', () => {
     });
 
     it('/ should return a  conflict exception with existing category name', async () => {
-      const newCategory = createCategory();
+      const newCategory = generateCategory();
       await repo.save(newCategory);
       const repeatedCategory = {
         ...createCategory(),
@@ -184,7 +149,7 @@ describe('CategoryController (e2e) [POST]', () => {
     });
 
     it('/ should return a  conflict exception with existing category slug', async () => {
-      const newCategory = createCategory();
+      const newCategory = generateCategory();
       const savedCategory = await repo.save(newCategory);
       // Create a new category that will generate the same slug
       const repeatedCategory = {

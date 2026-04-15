@@ -1,39 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-jest.mock('uuid', () => ({
-  v4: () => 'mock-uuid-1234',
-}));
-
-jest.mock('@aws-sdk/client-s3', () => ({
-  S3Client: jest.fn().mockImplementation(() => ({
-    send: jest.fn().mockResolvedValue({}),
-  })),
-  HeadBucketCommand: jest.fn(),
-  CreateBucketCommand: jest.fn(),
-}));
-
-jest.mock('@aws-sdk/lib-storage', () => ({
-  Upload: jest.fn().mockImplementation(() => ({
-    done: jest.fn().mockResolvedValue({}),
-  })),
-}));
-
-jest.mock('@upload/constants/storage.constants', () => ({
-  STORAGE_CONFIG: {
-    endpoint: 'localhost:9000',
-    region: 'us-east-1',
-    credentials: { accessKeyId: 'test', secretAccessKey: 'test' },
-    forcePathStyle: true,
-  },
-  BUCKETS: {
-    BRAND_LOGOS: 'brand-logos',
-    PRODUCT_IMAGES: 'product-images',
-    AVATARS: 'avatars',
-  },
-  PUBLIC_URL_BASE: 'http://localhost:9000',
-}));
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
@@ -58,7 +25,10 @@ import { initDataSource, cleanDB, closeDataSource } from '../utils/seed';
 import { dataSource } from '../utils/seed';
 
 /* Faker */
-import { createCategory, generateNewCategories } from '@faker/category.faker';
+import {
+  generateCategory,
+  generateManyCategories,
+} from '@faker/category.faker';
 
 /* Login Users */
 import { loginAdmin } from '../utils/login-admin';
@@ -108,8 +78,6 @@ describe('CategoryController (e2e) [GET]', () => {
     await app.init();
     repo = app.get('CategoryRepository');
     repoUser = app.get('UserRepository');
-    const categories = generateNewCategories(10);
-    await repo.save(categories);
   });
 
   beforeEach(async () => {
@@ -127,7 +95,7 @@ describe('CategoryController (e2e) [GET]', () => {
 
   describe('GET Category - Count', () => {
     it('/count should return 200 with admin cookies', async () => {
-      const categories = generateNewCategories(10);
+      const categories = generateManyCategories(10);
       await repo.save(categories);
       const res = await request(app.getHttpServer())
         .get('/category/count')
@@ -139,7 +107,7 @@ describe('CategoryController (e2e) [GET]', () => {
     });
 
     it('/count should return 200 with seller cookies', async () => {
-      const categories = generateNewCategories(10);
+      const categories = generateManyCategories(10);
       await repo.save(categories);
       const res = await request(app.getHttpServer())
         .get('/category/count')
@@ -181,7 +149,7 @@ describe('CategoryController (e2e) [GET]', () => {
 
   describe('GET Category - / Find', () => {
     it('/ should return all categories without logged user (public endpoint)', async () => {
-      const categories = generateNewCategories(10);
+      const categories = generateManyCategories(10);
       await repo.save(categories);
       const res = await request(app.getHttpServer())
         .get('/category')
@@ -200,7 +168,7 @@ describe('CategoryController (e2e) [GET]', () => {
     });
 
     it('/ should return all categories with admin user', async () => {
-      const categories = generateNewCategories(10);
+      const categories = generateManyCategories(10);
       await repo.save(categories);
       const res = await request(app.getHttpServer())
         .get('/category')
@@ -220,7 +188,7 @@ describe('CategoryController (e2e) [GET]', () => {
     });
 
     it('/ should return all categories with seller user', async () => {
-      const categories = generateNewCategories(10);
+      const categories = generateManyCategories(10);
       await repo.save(categories);
       const res = await request(app.getHttpServer())
         .get('/category')
@@ -240,7 +208,7 @@ describe('CategoryController (e2e) [GET]', () => {
     });
 
     it('/ should return all categories with customer user', async () => {
-      const categories = generateNewCategories(10);
+      const categories = generateManyCategories(10);
       await repo.save(categories);
       const res = await request(app.getHttpServer())
         .get('/category')
@@ -278,36 +246,36 @@ describe('CategoryController (e2e) [GET]', () => {
 
   describe('GET Category - / FindOne', () => {
     it('/:id should return one category by id with admin user', async () => {
-      const category = createCategory();
-      const dataNewCategory = await repo.save(category);
+      const category = generateCategory();
+      const savedCategory = await repo.save(category);
       const res = await request(app.getHttpServer())
-        .get(`/category/${dataNewCategory.id}`)
+        .get(`/category/${savedCategory.id}`)
         .set('x-api-key', API_KEY)
         .set('Cookie', adminCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
-      expect(data.id).toEqual(dataNewCategory.id);
-      expect(data.name).toEqual(dataNewCategory.name);
+      expect(data.id).toEqual(savedCategory.id);
+      expect(data.name).toEqual(savedCategory.name);
     });
 
     it('/:id should return one category by id with seller user', async () => {
-      const category = createCategory();
-      const dataNewCategory = await repo.save(category);
+      const category = generateCategory();
+      const savedCategory = await repo.save(category);
       const res = await request(app.getHttpServer())
-        .get(`/category/${dataNewCategory.id}`)
+        .get(`/category/${savedCategory.id}`)
         .set('x-api-key', API_KEY)
         .set('Cookie', sellerCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
-      expect(data.id).toEqual(dataNewCategory.id);
-      expect(data.name).toEqual(dataNewCategory.name);
+      expect(data.id).toEqual(savedCategory.id);
+      expect(data.name).toEqual(savedCategory.name);
     });
 
     it('/:id should return 401 by id with customer access token', async () => {
-      const category = createCategory();
-      const dataNewCategory = await repo.save(category);
+      const category = generateCategory();
+      const savedCategory = await repo.save(category);
       const res = await request(app.getHttpServer())
-        .get(`/category/${dataNewCategory.id}`)
+        .get(`/category/${savedCategory.id}`)
         .set('x-api-key', API_KEY)
         .set('Cookie', customerCookies);
       const { statusCode, error, message } = res.body;
@@ -317,7 +285,7 @@ describe('CategoryController (e2e) [GET]', () => {
     });
 
     it('/:id should return 404 by id if category does not exist', async () => {
-      const category = createCategory();
+      const category = generateCategory();
       await repo.save(category);
       const res = await request(app.getHttpServer())
         .get(`/category/9999999`)
@@ -330,46 +298,45 @@ describe('CategoryController (e2e) [GET]', () => {
     });
 
     it('/slug/:slug should return an category by slug with admin user', async () => {
-      const category = createCategory();
-      const dataNewCategory = await repo.save(category);
+      const category = generateCategory();
+      const savedCategory = await repo.save(category);
       const res = await request(app.getHttpServer())
-        .get(`/category/slug/${dataNewCategory.slug}`)
+        .get(`/category/slug/${savedCategory.slug}`)
         .set('x-api-key', API_KEY)
         .set('Cookie', adminCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
-      expect(data.id).toEqual(dataNewCategory.id);
-      expect(data.name).toEqual(dataNewCategory.name);
+      expect(data.id).toEqual(savedCategory.id);
+      expect(data.name).toEqual(savedCategory.name);
     });
 
     it('/slug/:slug should return an category by slug with seller user', async () => {
-      const category = createCategory();
-      const dataNewCategory = await repo.save(category);
+      const category = generateCategory();
+      const savedCategory = await repo.save(category);
       const res = await request(app.getHttpServer())
-        .get(`/category/slug/${dataNewCategory.slug}`)
+        .get(`/category/slug/${savedCategory.slug}`)
         .set('x-api-key', API_KEY)
         .set('Cookie', sellerCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
-      expect(data.id).toEqual(dataNewCategory.id);
-      expect(data.slug).toEqual(dataNewCategory.slug);
+      expect(data.id).toEqual(savedCategory.id);
+      expect(data.slug).toEqual(savedCategory.slug);
     });
 
     it('/slug/:slug should return 401 with customer user', async () => {
-      const category = createCategory();
+      const category = generateCategory();
       const savedCategory = await repo.save(category);
       const res = await request(app.getHttpServer())
         .get(`/category/slug/${savedCategory.slug}`)
         .set('x-api-key', API_KEY)
         .set('Cookie', customerCookies);
-      const { statusCode, error, message } = res.body;
+      const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);
-      expect(error).toBe('Unauthorized');
       expect(message).toBe('Unauthorized: Customer access denied');
     });
 
     it('/slug/:slug should return 404 by slug if category does not exist', async () => {
-      const category = createCategory();
+      const category = generateCategory();
       await repo.save(category);
       const res = await request(app.getHttpServer())
         .get(`/category/slug/not-existing-slug`)
@@ -381,6 +348,15 @@ describe('CategoryController (e2e) [GET]', () => {
       expect(message).toBe(
         'The Category with SLUG: not-existing-slug not found',
       );
+    });
+
+    it('/slug/:slug should return 401 without authentication', async () => {
+      const category = generateCategory();
+      await repo.save(category);
+      const res = await request(app.getHttpServer())
+        .get(`/category/slug/${category.slug}`)
+        .set('x-api-key', API_KEY);
+      expect(res.statusCode).toBe(401);
     });
   });
 

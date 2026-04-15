@@ -1,39 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-jest.mock('uuid', () => ({
-  v4: () => 'mock-uuid-1234',
-}));
-
-jest.mock('@aws-sdk/client-s3', () => ({
-  S3Client: jest.fn().mockImplementation(() => ({
-    send: jest.fn().mockResolvedValue({}),
-  })),
-  HeadBucketCommand: jest.fn(),
-  CreateBucketCommand: jest.fn(),
-}));
-
-jest.mock('@aws-sdk/lib-storage', () => ({
-  Upload: jest.fn().mockImplementation(() => ({
-    done: jest.fn().mockResolvedValue({}),
-  })),
-}));
-
-jest.mock('@upload/constants/storage.constants', () => ({
-  STORAGE_CONFIG: {
-    endpoint: 'localhost:9000',
-    region: 'us-east-1',
-    credentials: { accessKeyId: 'test', secretAccessKey: 'test' },
-    forcePathStyle: true,
-  },
-  BUCKETS: {
-    BRAND_LOGOS: 'brand-logos',
-    PRODUCT_IMAGES: 'product-images',
-    AVATARS: 'avatars',
-  },
-  PUBLIC_URL_BASE: 'http://localhost:9000',
-}));
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
@@ -61,7 +28,7 @@ import { dataSource } from '../utils/seed';
 import { UpdateCategoryDto } from '@category/dto/update-category.dto';
 
 /* Faker */
-import { generateNewCategories } from '@faker/category.faker';
+import { generateManyCategories } from '@faker/category.faker';
 
 /* Login Users */
 import { loginAdmin } from '../utils/login-admin';
@@ -111,8 +78,6 @@ describe('CategoryController (e2e) [PATCH]', () => {
     await app.init();
     repo = app.get('CategoryRepository');
     repoUser = app.get('UserRepository');
-    const categories = generateNewCategories(10);
-    await repo.save(categories);
   });
 
   beforeEach(async () => {
@@ -130,7 +95,7 @@ describe('CategoryController (e2e) [PATCH]', () => {
 
   describe('PATCH Category', () => {
     it('/:id should update a category with admin user', async () => {
-      const newCategories = generateNewCategories(10);
+      const newCategories = generateManyCategories(10);
       const dataNewCategories = await repo.save(newCategories);
       const id = dataNewCategories[0].id;
       const updatedData: UpdateCategoryDto = {
@@ -147,7 +112,7 @@ describe('CategoryController (e2e) [PATCH]', () => {
     });
 
     it('/:id should return 401 if the user is seller', async () => {
-      const newCategories = generateNewCategories(10);
+      const newCategories = generateManyCategories(10);
       const dataNewCategories = await repo.save(newCategories);
       const id = dataNewCategories[0].id;
       const updatedData: UpdateCategoryDto = {
@@ -164,7 +129,7 @@ describe('CategoryController (e2e) [PATCH]', () => {
     });
 
     it('/:id should return 401 if the user is customer', async () => {
-      const newCategories = generateNewCategories(10);
+      const newCategories = generateManyCategories(10);
       const dataNewCategories = await repo.save(newCategories);
       const id = dataNewCategories[0].id;
       const updatedData: UpdateCategoryDto = {
@@ -181,7 +146,7 @@ describe('CategoryController (e2e) [PATCH]', () => {
     });
 
     it('/:id should return Conflict if category name is already taken', async () => {
-      const newCategories = await repo.save(generateNewCategories(10));
+      const newCategories = await repo.save(generateManyCategories(10));
 
       const category = newCategories[0];
       const id = newCategories[1].id;
@@ -204,7 +169,7 @@ describe('CategoryController (e2e) [PATCH]', () => {
     });
 
     it('/:id should return Conflict if category slug is already taken', async () => {
-      const newCategories = await repo.save(generateNewCategories(10));
+      const newCategories = await repo.save(generateManyCategories(10));
 
       const category = newCategories[0];
       const id = newCategories[1].id;
@@ -243,7 +208,7 @@ describe('CategoryController (e2e) [PATCH]', () => {
     });
 
     it('/:id should return 401 if api key is missing', async () => {
-      const newCategories = generateNewCategories(10);
+      const newCategories = generateManyCategories(10);
       const dataNewCategories = await repo.save(newCategories);
       const id = dataNewCategories[0].id;
       const updatedData: UpdateCategoryDto = {
@@ -259,7 +224,7 @@ describe('CategoryController (e2e) [PATCH]', () => {
     });
 
     it('/:id should return 401 if api key is invalid', async () => {
-      const newCategories = generateNewCategories(10);
+      const newCategories = generateManyCategories(10);
       const dataNewCategories = await repo.save(newCategories);
       const id = dataNewCategories[0].id;
       const updatedData: UpdateCategoryDto = {
