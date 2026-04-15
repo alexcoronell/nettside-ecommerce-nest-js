@@ -37,6 +37,12 @@ import { UpdateBrandDto } from '@brand/dto/update-brand.dto';
 /* Faker */
 import { generateBrand, generateManyBrands } from '@faker/brand.faker';
 
+/* Mappers */
+import {
+  mapBrandToResponseDto,
+  mapBrandsToResponseDto,
+} from '@brand/mappers/brand.mapper';
+
 const mockUploadService = {
   uploadLogo: jest.fn(),
   deleteFile: jest.fn(),
@@ -103,7 +109,7 @@ describe('BrandService', () => {
       });
       expect(statusCode).toBe(200);
       expect(meta.total).toEqual(brands.length);
-      expect(data).toEqual(brands.slice(0, 10));
+      expect(data).toEqual(mapBrandsToResponseDto(brands.slice(0, 10)));
     });
 
     it('findOne should return a brand', async () => {
@@ -113,14 +119,13 @@ describe('BrandService', () => {
       jest.spyOn(repository, 'findOne').mockResolvedValue(brand);
 
       const { statusCode, data } = await service.findOne(id);
-      const dataBrand: Brand = data as Brand;
       expect(repository.findOne).toHaveBeenCalledTimes(1);
       expect(repository.findOne).toHaveBeenCalledWith({
         relations: ['createdBy', 'updatedBy'],
         where: { id, isDeleted: false },
       });
       expect(statusCode).toBe(200);
-      expect(dataBrand).toEqual(brand);
+      expect(data).toEqual(mapBrandToResponseDto(brand));
     });
 
     it('findOne should throw NotFoundException if Brand does not exist', async () => {
@@ -152,10 +157,11 @@ describe('BrandService', () => {
 
       jest.spyOn(repository, 'create').mockReturnValue(brand);
       jest.spyOn(repository, 'save').mockResolvedValue(brand);
+      jest.spyOn(repository, 'findOne').mockResolvedValue(brand);
 
       const { statusCode, data } = await service.create(brand, userId);
       expect(statusCode).toBe(201);
-      expect(data).toEqual(brand);
+      expect(data).toEqual(mapBrandToResponseDto(brand));
     });
 
     it('create should return Conflict Exception when name brand exists', async () => {
@@ -181,14 +187,15 @@ describe('BrandService', () => {
       const brand = generateBrand();
       const id = brand.id;
       const userId: User['id'] = 1;
-      const changes: UpdateBrandDto = { name: 'new name', slug: 'new-name' };
+      const changes: UpdateBrandDto = { name: 'new name' };
 
       jest.spyOn(repository, 'findOne').mockResolvedValue(brand);
       jest.spyOn(repository, 'merge').mockReturnValue({ ...brand, ...changes });
       jest.spyOn(repository, 'save').mockResolvedValue(brand);
+      jest.spyOn(repository, 'findOne').mockResolvedValue(brand);
 
       const { statusCode, message } = await service.update(id, userId, changes);
-      expect(repository.findOne).toHaveBeenCalledTimes(1);
+      expect(repository.findOne).toHaveBeenCalledTimes(2);
       expect(repository.merge).toHaveBeenCalledTimes(1);
       expect(repository.save).toHaveBeenCalledTimes(1);
       expect(statusCode).toBe(200);
@@ -217,11 +224,12 @@ describe('BrandService', () => {
       jest.spyOn(repository, 'findOne').mockResolvedValueOnce(brands[0]);
       jest.spyOn(repository, 'merge').mockReturnValue(brands[1]);
       jest.spyOn(repository, 'save').mockResolvedValue(brands[1]);
+      jest.spyOn(repository, 'findOne').mockResolvedValueOnce(brands[1]);
 
       try {
         await service.update(id, userId, changes);
       } catch (error) {
-        expect(repository.findOne).toHaveBeenCalledTimes(1);
+        expect(repository.findOne).toHaveBeenCalledTimes(2);
         expect(error).toBeInstanceOf(ConflictException);
         expect(error.message).toBe(
           `The Brand name: ${changes.name} is already in use`,
@@ -245,6 +253,7 @@ describe('BrandService', () => {
         .spyOn(repository, 'merge')
         .mockReturnValue({ ...brand, ...changes, logo: null });
       jest.spyOn(repository, 'save').mockResolvedValue(brand);
+      jest.spyOn(repository, 'findOne').mockResolvedValue(brand);
 
       const { statusCode, data } = await service.update(
         id,
@@ -257,7 +266,7 @@ describe('BrandService', () => {
         'brand-logos',
       );
       expect(statusCode).toBe(200);
-      expect(data).toEqual(brand);
+      expect(data).toEqual(mapBrandToResponseDto(brand));
     });
 
     it('update should upload new logo and delete old one when file is provided', async () => {
@@ -286,6 +295,7 @@ describe('BrandService', () => {
         logo: 'http://localhost:9000/brand-logos/new.png',
       });
       jest.spyOn(repository, 'save').mockResolvedValue(brand);
+      jest.spyOn(repository, 'findOne').mockResolvedValue(brand);
 
       const { statusCode, data } = await service.update(
         id,
@@ -299,7 +309,7 @@ describe('BrandService', () => {
       );
       expect(mockUploadService.uploadLogo).toHaveBeenCalledWith(mockFile);
       expect(statusCode).toBe(200);
-      expect(data).toEqual(brand);
+      expect(data).toEqual(mapBrandToResponseDto(brand));
     });
 
     it('update should upload new logo without deleting when brand has no existing logo', async () => {
@@ -324,6 +334,7 @@ describe('BrandService', () => {
         logo: 'http://localhost:9000/brand-logos/new.png',
       });
       jest.spyOn(repository, 'save').mockResolvedValue(brand);
+      jest.spyOn(repository, 'findOne').mockResolvedValue(brand);
 
       const { statusCode, data } = await service.update(
         id,
@@ -334,7 +345,7 @@ describe('BrandService', () => {
       expect(mockUploadService.deleteFile).not.toHaveBeenCalled();
       expect(mockUploadService.uploadLogo).toHaveBeenCalledWith(mockFile);
       expect(statusCode).toBe(200);
-      expect(data).toEqual(brand);
+      expect(data).toEqual(mapBrandToResponseDto(brand));
     });
   });
 

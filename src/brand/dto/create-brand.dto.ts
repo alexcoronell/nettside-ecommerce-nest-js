@@ -20,11 +20,6 @@ export class CreateBrandDto {
 
   @IsString()
   @IsOptional()
-  @ApiPropertyOptional()
-  readonly slug?: string;
-
-  @IsString()
-  @IsOptional()
   @ApiPropertyOptional({ required: false, nullable: true })
   readonly logo?: string | null;
 }

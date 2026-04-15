@@ -11,6 +11,7 @@ import { Brand } from '@brand/entities/brand.entity';
 /* DTO's */
 import { CreateBrandDto } from '@brand/dto/create-brand.dto';
 import { UpdateBrandDto } from '@brand/dto/update-brand.dto';
+import { ResponseBrandDto } from '@brand/dto/response-brand.dto';
 import {
   PaginationDto,
   PaginatedResult,
@@ -26,9 +27,15 @@ import { createSlug } from '@commons/utils/create-slug.util';
 /* Services */
 import { UploadService } from '@upload/upload.service';
 
+/* Mappers */
+import {
+  mapBrandToResponseDto,
+  mapBrandsToResponseDto,
+} from './mappers/brand.mapper';
+
 @Injectable()
 export class BrandService
-  implements IBaseService<Brand, CreateBrandDto, UpdateBrandDto>
+  implements IBaseService<ResponseBrandDto, CreateBrandDto, UpdateBrandDto>
 {
   constructor(
     @InjectRepository(Brand)
@@ -52,11 +59,11 @@ export class BrandService
    * When no pagination options are provided, all brands are returned.
    *
    * @param paginationDto - Optional pagination and search parameters.
-   * @returns {Promise<PaginatedResult<Brand>>} A standardized paginated response.
+   * @returns {Promise<PaginatedResult<ResponseBrandDto>>} A standardized paginated response.
    */
   async findAll(
     paginationDto?: PaginationDto,
-  ): Promise<PaginatedResult<Brand>> {
+  ): Promise<PaginatedResult<ResponseBrandDto>> {
     const { page, limit, skip } = PaginationHelper.normalizePagination(
       paginationDto?.page,
       paginationDto?.limit,
@@ -82,7 +89,7 @@ export class BrandService
     const sortOrder = paginationDto?.sortOrder || 'ASC';
 
     // Execute query
-    const [data, total] = await this.repo.findAndCount({
+    const [brands, total] = await this.repo.findAndCount({
       where: searchConditions.length > 0 ? searchConditions : where,
       relations: ['createdBy', 'updatedBy'],
       order: {
@@ -92,11 +99,12 @@ export class BrandService
       take: limit,
     });
 
-    // Return paginated result
+    // Map to DTO and return paginated result
+    const data = mapBrandsToResponseDto(brands);
     return PaginationHelper.createPaginatedResult(data, total, page, limit);
   }
 
-  async findOne(id: Brand['id']): Promise<Result<Brand>> {
+  async findOne(id: Brand['id']): Promise<Result<ResponseBrandDto>> {
     const brand = await this.repo.findOne({
       relations: ['createdBy', 'updatedBy'],
       where: { id, isDeleted: false },
@@ -106,11 +114,11 @@ export class BrandService
     }
     return {
       statusCode: HttpStatus.OK,
-      data: brand,
+      data: mapBrandToResponseDto(brand),
     };
   }
 
-  async findOneBySlug(slug: Brand['slug']): Promise<Result<Brand>> {
+  async findOneBySlug(slug: Brand['slug']): Promise<Result<ResponseBrandDto>> {
     const brand = await this.repo.findOne({
       relations: ['createdBy', 'updatedBy'],
       where: { slug, isDeleted: false },
@@ -120,21 +128,26 @@ export class BrandService
     }
     return {
       statusCode: HttpStatus.OK,
-      data: brand,
+      data: mapBrandToResponseDto(brand),
     };
   }
 
   async create(dto: CreateBrandDto, userId: number) {
     const newBrand = this.repo.create({
       ...dto,
-      slug: dto.slug || createSlug(dto.name),
+      slug: createSlug(dto.name),
       createdBy: { id: userId },
       updatedBy: { id: userId },
     });
     const brand = await this.repo.save(newBrand);
+    // Fetch with relations for mapping
+    const savedBrand = await this.repo.findOne({
+      relations: ['createdBy', 'updatedBy'],
+      where: { id: brand.id },
+    });
     return {
       statusCode: HttpStatus.CREATED,
-      data: brand,
+      data: mapBrandToResponseDto(savedBrand!),
       message: 'The Brand was created',
     };
   }
@@ -145,20 +158,26 @@ export class BrandService
     changes: UpdateBrandDto,
     file?: Express.Multer.File,
   ) {
-    const { data: existingBrand } = await this.findOne(id);
-    const brand = existingBrand as Brand;
+    const brandEntity = await this.repo.findOne({
+      where: { id, isDeleted: false },
+    });
+    if (!brandEntity) {
+      throw new NotFoundException(`The Brand with ID: ${id} not found`);
+    }
 
     let logoValue: string | null | undefined = changes.logo;
 
-    if (!file && brand.logo) {
-      const extracted = this.uploadService.extractKeyFromUrl(brand.logo);
+    if (!file && brandEntity.logo) {
+      const extracted = this.uploadService.extractKeyFromUrl(brandEntity.logo);
       if (extracted) {
         await this.uploadService.deleteFile(extracted.key, extracted.bucket);
       }
       logoValue = null;
     } else if (file) {
-      if (brand.logo) {
-        const extracted = this.uploadService.extractKeyFromUrl(brand.logo);
+      if (brandEntity.logo) {
+        const extracted = this.uploadService.extractKeyFromUrl(
+          brandEntity.logo,
+        );
         if (extracted) {
           await this.uploadService.deleteFile(extracted.key, extracted.bucket);
         }
@@ -173,21 +192,31 @@ export class BrandService
       updatedBy: { id: userId },
     };
 
-    this.repo.merge(brand, updateData);
-    const rta = await this.repo.save(brand);
+    this.repo.merge(brandEntity, updateData);
+    const rta = await this.repo.save(brandEntity);
+    // Fetch with relations for mapping
+    const updatedBrand = await this.repo.findOne({
+      relations: ['createdBy', 'updatedBy'],
+      where: { id: rta.id },
+    });
     return {
       statusCode: HttpStatus.OK,
-      data: rta,
+      data: mapBrandToResponseDto(updatedBrand!),
       message: `The Brand with ID: ${id} has been modified`,
     };
   }
 
   async remove(id: Brand['id'], userId: number) {
-    const { data } = await this.findOne(id);
+    const brandEntity = await this.repo.findOne({
+      where: { id, isDeleted: false },
+    });
+    if (!brandEntity) {
+      throw new NotFoundException(`The Brand with ID: ${id} not found`);
+    }
 
     const changes = { isDeleted: true, deletedBy: { id: userId } };
-    this.repo.merge(data as Brand, changes);
-    await this.repo.save(data as Brand);
+    this.repo.merge(brandEntity, changes);
+    await this.repo.save(brandEntity);
     return {
       statusCode: HttpStatus.OK,
       message: `The Brand with ID: ${id} has been deleted`,

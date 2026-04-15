@@ -21,11 +21,6 @@ export class UpdateBrandDto {
 
   @IsString()
   @IsOptional()
-  @ApiPropertyOptional()
-  readonly slug?: string;
-
-  @IsString()
-  @IsOptional()
   @ApiPropertyOptional({ required: false, nullable: true })
   readonly logo?: string | null;
 }
