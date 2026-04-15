@@ -25,7 +25,7 @@ import { initDataSource, cleanDB, closeDataSource } from '../utils/seed';
 import { dataSource } from '../utils/seed';
 
 /* Faker */
-import { generateNewBrands } from '@faker/brand.faker';
+import { generateManyBrands } from '@faker/brand.faker';
 
 /* Login Users */
 import { loginAdmin } from '../utils/login-admin';
@@ -34,39 +34,6 @@ import { loginCustomer } from '../utils/login-customer';
 
 /* ApiKey */
 const API_KEY = process.env.API_KEY || 'api-e2e-key';
-
-jest.mock('uuid', () => ({
-  v4: () => 'mock-uuid-1234',
-}));
-
-jest.mock('@aws-sdk/client-s3', () => ({
-  S3Client: jest.fn().mockImplementation(() => ({
-    send: jest.fn().mockResolvedValue({}),
-  })),
-  HeadBucketCommand: jest.fn(),
-  CreateBucketCommand: jest.fn(),
-}));
-
-jest.mock('@aws-sdk/lib-storage', () => ({
-  Upload: jest.fn().mockImplementation(() => ({
-    done: jest.fn().mockResolvedValue({}),
-  })),
-}));
-
-jest.mock('@upload/constants/storage.constants', () => ({
-  STORAGE_CONFIG: {
-    endpoint: 'localhost:9000',
-    region: 'us-east-1',
-    credentials: { accessKeyId: 'test', secretAccessKey: 'test' },
-    forcePathStyle: true,
-  },
-  BUCKETS: {
-    BRAND_LOGOS: 'brand-logos',
-    PRODUCT_IMAGES: 'product-images',
-    AVATARS: 'avatars',
-  },
-  PUBLIC_URL_BASE: 'http://localhost:9000',
-}));
 
 describe('BrandController (e2e) [DELETE]', () => {
   let app: INestApplication<App>;
@@ -108,7 +75,7 @@ describe('BrandController (e2e) [DELETE]', () => {
     await app.init();
     repo = app.get('BrandRepository');
     repoUser = app.get('UserRepository');
-    const brands = generateNewBrands(10);
+    const brands = generateManyBrands(10);
     await repo.save(brands);
   });
 
@@ -127,7 +94,7 @@ describe('BrandController (e2e) [DELETE]', () => {
 
   describe('DELETE Brand', () => {
     it('/:id should delete a brand with admin user', async () => {
-      const newBrands = generateNewBrands(10);
+      const newBrands = generateManyBrands(10);
       const dataNewBrands = await repo.save(newBrands);
       const id = dataNewBrands[0].id;
       const res = await request(app.getHttpServer())
@@ -143,7 +110,7 @@ describe('BrandController (e2e) [DELETE]', () => {
     });
 
     it('/:id should return 401 if user is seller', async () => {
-      const newBrands = generateNewBrands(10);
+      const newBrands = generateManyBrands(10);
       const dataNewBrands = await repo.save(newBrands);
       const id = dataNewBrands[0].id;
       const res = await request(app.getHttpServer())
@@ -156,7 +123,7 @@ describe('BrandController (e2e) [DELETE]', () => {
     });
 
     it('/:id should return 401 if user is customer', async () => {
-      const newBrands = generateNewBrands(10);
+      const newBrands = generateManyBrands(10);
       const dataNewBrands = await repo.save(newBrands);
       const id = dataNewBrands[0].id;
       const res = await request(app.getHttpServer())
@@ -169,7 +136,7 @@ describe('BrandController (e2e) [DELETE]', () => {
     });
 
     it('/:id should return 401 if api key is missing', async () => {
-      const newBrands = generateNewBrands(10);
+      const newBrands = generateManyBrands(10);
       const dataNewBrands = await repo.save(newBrands);
       const id = dataNewBrands[0].id;
       const res = await request(app.getHttpServer())
@@ -181,7 +148,7 @@ describe('BrandController (e2e) [DELETE]', () => {
     });
 
     it('/:id should return 401 if api key is invalid', async () => {
-      const newBrands = generateNewBrands(10);
+      const newBrands = generateManyBrands(10);
       const dataNewBrands = await repo.save(newBrands);
       const id = dataNewBrands[0].id;
       const res = await request(app.getHttpServer())

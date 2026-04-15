@@ -10,6 +10,8 @@ import { CreateBrandDto } from '@brand/dto/create-brand.dto';
 
 import { UserRoleEnum } from '@commons/enums/user-role.enum';
 
+import { createSlug } from '@commons/utils/create-slug.util';
+
 @Injectable()
 export class FakeBrandsSeeder {
   constructor(
@@ -36,6 +38,7 @@ export class FakeBrandsSeeder {
       const user = faker.helpers.arrayElement(Object.values(adminUsers));
       const brand = this.brandRepository.create({
         ...brandData,
+        slug: createSlug(brandData.name),
         createdBy: user,
         updatedBy: user,
       });

@@ -1,39 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-jest.mock('uuid', () => ({
-  v4: () => 'mock-uuid-1234',
-}));
-
-jest.mock('@aws-sdk/client-s3', () => ({
-  S3Client: jest.fn().mockImplementation(() => ({
-    send: jest.fn().mockResolvedValue({}),
-  })),
-  HeadBucketCommand: jest.fn(),
-  CreateBucketCommand: jest.fn(),
-}));
-
-jest.mock('@aws-sdk/lib-storage', () => ({
-  Upload: jest.fn().mockImplementation(() => ({
-    done: jest.fn().mockResolvedValue({}),
-  })),
-}));
-
-jest.mock('@upload/constants/storage.constants', () => ({
-  STORAGE_CONFIG: {
-    endpoint: 'localhost:9000',
-    region: 'us-east-1',
-    credentials: { accessKeyId: 'test', secretAccessKey: 'test' },
-    forcePathStyle: true,
-  },
-  BUCKETS: {
-    BRAND_LOGOS: 'brand-logos',
-    PRODUCT_IMAGES: 'product-images',
-    AVATARS: 'avatars',
-  },
-  PUBLIC_URL_BASE: 'http://localhost:9000',
-}));
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
@@ -62,7 +29,7 @@ import { dataSource } from '../utils/seed';
 import { UpdateBrandDto } from '@brand/dto/update-brand.dto';
 
 /* Faker */
-import { generateNewBrands } from '@faker/brand.faker';
+import { generateManyBrands } from '@faker/brand.faker';
 
 /* Login Users */
 import { loginAdmin } from '../utils/login-admin';
@@ -113,7 +80,7 @@ describe('BrandController (e2e) [PATCH]', () => {
     await app.init();
     repo = app.get('BrandRepository');
     repoUser = app.get('UserRepository');
-    const brands = generateNewBrands(10);
+    const brands = generateManyBrands(10);
     await repo.save(brands);
   });
 
@@ -132,26 +99,24 @@ describe('BrandController (e2e) [PATCH]', () => {
 
   describe('PATCH Brand', () => {
     it('/:id should update a brand with multipart form data', async () => {
-      const newBrands = generateNewBrands(10);
+      const newBrands = generateManyBrands(10);
       const dataNewBrands = await repo.save(newBrands);
       const id = dataNewBrands[0].id;
       const updatedData: UpdateBrandDto = {
         name: 'Updated name',
-        slug: 'updated-name',
       };
       const res = await request(app.getHttpServer())
         .patch(`/brand/${id}`)
         .set('x-api-key', API_KEY)
         .set('Cookie', adminCookies)
-        .field('name', updatedData.name!)
-        .field('slug', updatedData.slug!);
+        .field('name', updatedData.name!);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
       expect(data.name).toBe(updatedData.name);
     });
 
     it('/:id should update brand logo with new file', async () => {
-      const newBrands = generateNewBrands(10);
+      const newBrands = generateManyBrands(10);
       const dataNewBrands = await repo.save(newBrands);
       const id = dataNewBrands[0].id;
       const res = await request(app.getHttpServer())
@@ -165,7 +130,7 @@ describe('BrandController (e2e) [PATCH]', () => {
     });
 
     it('/:id should update brand without changing logo', async () => {
-      const newBrands = generateNewBrands(10);
+      const newBrands = generateManyBrands(10);
       const dataNewBrands = await repo.save(newBrands);
       const id = dataNewBrands[0].id;
       const res = await request(app.getHttpServer())
@@ -179,7 +144,7 @@ describe('BrandController (e2e) [PATCH]', () => {
     });
 
     it('/:id should return 401 if the user is seller', async () => {
-      const newBrands = generateNewBrands(10);
+      const newBrands = generateManyBrands(10);
       const dataNewBrands = await repo.save(newBrands);
       const id = dataNewBrands[0].id;
       const updatedData: UpdateBrandDto = {
@@ -196,7 +161,7 @@ describe('BrandController (e2e) [PATCH]', () => {
     });
 
     it('/:id should return 401 if the user is customer', async () => {
-      const newBrands = generateNewBrands(10);
+      const newBrands = generateManyBrands(10);
       const dataNewBrands = await repo.save(newBrands);
       const id = dataNewBrands[0].id;
       const updatedData: UpdateBrandDto = {
@@ -213,7 +178,7 @@ describe('BrandController (e2e) [PATCH]', () => {
     });
 
     it('/:id should return Conflict if brand name is already taken', async () => {
-      const newBrands = await repo.save(generateNewBrands(10));
+      const newBrands = await repo.save(generateManyBrands(10));
 
       const brand = newBrands[0];
       const id = newBrands[1].id;
@@ -251,7 +216,7 @@ describe('BrandController (e2e) [PATCH]', () => {
     });
 
     it('/:id should return 401 if api key is missing', async () => {
-      const newBrands = generateNewBrands(10);
+      const newBrands = generateManyBrands(10);
       const dataNewBrands = await repo.save(newBrands);
       const id = dataNewBrands[0].id;
       const updatedData: UpdateBrandDto = {
@@ -267,7 +232,7 @@ describe('BrandController (e2e) [PATCH]', () => {
     });
 
     it('/:id should return 401 if api key is invalid', async () => {
-      const newBrands = generateNewBrands(10);
+      const newBrands = generateManyBrands(10);
       const dataNewBrands = await repo.save(newBrands);
       const id = dataNewBrands[0].id;
       const updatedData: UpdateBrandDto = {

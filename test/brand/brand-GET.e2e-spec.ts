@@ -25,7 +25,7 @@ import { initDataSource, cleanDB, closeDataSource } from '../utils/seed';
 import { dataSource } from '../utils/seed';
 
 /* Faker */
-import { createBrand, generateNewBrands } from '@faker/brand.faker';
+import { generateBrand, generateManyBrands } from '@faker/brand.faker';
 
 /* Login Users */
 import { loginAdmin } from '../utils/login-admin';
@@ -108,8 +108,6 @@ describe('BrandController (e2e) [GET]', () => {
     await app.init();
     repo = app.get('BrandRepository');
     repoUser = app.get('UserRepository');
-    const brands = generateNewBrands(10);
-    await repo.save(brands);
   });
 
   beforeEach(async () => {
@@ -127,7 +125,7 @@ describe('BrandController (e2e) [GET]', () => {
 
   describe('GET Brand - Count', () => {
     it('/count should return 200 with admin cookies', async () => {
-      const brands = generateNewBrands(10);
+      const brands = generateManyBrands(10);
       await repo.save(brands);
       const res = await request(app.getHttpServer())
         .get('/brand/count')
@@ -139,7 +137,7 @@ describe('BrandController (e2e) [GET]', () => {
     });
 
     it('/count should return 200 with seller cookies', async () => {
-      const brands = generateNewBrands(10);
+      const brands = generateManyBrands(10);
       await repo.save(brands);
       const res = await request(app.getHttpServer())
         .get('/brand/count')
@@ -179,7 +177,7 @@ describe('BrandController (e2e) [GET]', () => {
 
   describe('GET Brand - / Find', () => {
     it('/ should return all brands without logged user', async () => {
-      const brands = generateNewBrands(10);
+      const brands = generateManyBrands(10);
       await repo.save(brands);
       const res = await request(app.getHttpServer())
         .get('/brand')
@@ -198,7 +196,7 @@ describe('BrandController (e2e) [GET]', () => {
     });
 
     it('/ should return all brands with admin cookies', async () => {
-      const brands = generateNewBrands(10);
+      const brands = generateManyBrands(10);
       await repo.save(brands);
       const res = await request(app.getHttpServer())
         .get('/brand')
@@ -210,7 +208,7 @@ describe('BrandController (e2e) [GET]', () => {
     });
 
     it('/ should return all brands with seller cookies', async () => {
-      const brands = generateNewBrands(10);
+      const brands = generateManyBrands(10);
       await repo.save(brands);
       const res = await request(app.getHttpServer())
         .get('/brand')
@@ -222,7 +220,7 @@ describe('BrandController (e2e) [GET]', () => {
     });
 
     it('/ should return all brands with customer cookies', async () => {
-      const brands = generateNewBrands(10);
+      const brands = generateManyBrands(10);
       await repo.save(brands);
       const res = await request(app.getHttpServer())
         .get('/brand')
@@ -252,7 +250,7 @@ describe('BrandController (e2e) [GET]', () => {
 
   describe('GET Brand - / FindOne', () => {
     it('/:id should return a brand by id with admin cookies', async () => {
-      const brand = createBrand();
+      const brand = generateBrand();
       const dataNewBrand = await repo.save(brand);
       const res = await request(app.getHttpServer())
         .get(`/brand/${dataNewBrand.id}`)
@@ -265,7 +263,7 @@ describe('BrandController (e2e) [GET]', () => {
     });
 
     it('/:id should return a brand by id with seller cookies', async () => {
-      const brand = createBrand();
+      const brand = generateBrand();
       const dataNewBrand = await repo.save(brand);
       const res = await request(app.getHttpServer())
         .get(`/brand/${dataNewBrand.id}`)
@@ -278,7 +276,7 @@ describe('BrandController (e2e) [GET]', () => {
     });
 
     it('/:id should return 401 by id with customer cookies', async () => {
-      const brand = createBrand();
+      const brand = generateBrand();
       const dataNewBrand = await repo.save(brand);
       const res = await request(app.getHttpServer())
         .get(`/brand/${dataNewBrand.id}`)
@@ -291,7 +289,7 @@ describe('BrandController (e2e) [GET]', () => {
     });
 
     it('/name/:name should return 404 by id if brand does not exist', async () => {
-      const brand = createBrand();
+      const brand = generateBrand();
       await repo.save(brand);
       const res = await request(app.getHttpServer())
         .get(`/brand/9999999`)
