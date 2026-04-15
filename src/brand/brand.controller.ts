@@ -91,11 +91,11 @@ export class BrandController {
   }
 
   /**
-   * Finds a brand by its unique identifier.
-   * @param id Numeric identifier of the brand.
-   * @returns Brand object corresponding to the provided ID.
+   * Finds a brand by its slug.
+   * @param slug Slug identifier of the brand.
+   * @returns Brand object corresponding to the provided slug.
    */
-  @Get('slug/:id')
+  @Get('slug/:slug')
   findOneBySlug(@Param('slug') slug: string) {
     return this.brandService.findOneBySlug(slug);
   }
