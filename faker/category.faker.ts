@@ -10,15 +10,12 @@ import { CreateCategoryDto } from '@category/dto/create-category.dto';
 import { generateBaseEntity } from '@faker/base.faker';
 import { generateUser } from './user.faker';
 
-/* Utils */
-import { createSlug } from '../src/commons/utils/create-slug.util';
-
 export const createCategory = (): CreateCategoryDto => {
   const name =
     faker.commerce.productName() + faker.number.int({ min: 1000, max: 2000 });
   return {
     name,
-    slug: createSlug(name),
+    // NOTE: slug is NOT included - it is auto-generated from name
   };
 };
 

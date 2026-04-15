@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/unbound-method */
+
 import { Test, TestingModule } from '@nestjs/testing';
 
 /* Controller */
@@ -12,6 +13,8 @@ import { Category } from './entities/category.entity';
 
 /* DTO's */
 import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
+import { ResponseCategoryDto } from './dto/response-category.dto';
 
 /* Faker */
 import {
@@ -28,17 +31,54 @@ describe('CategoryController', () => {
   const mockCategories: Category[] = generateManyCategories(10);
   const mockNewCategory: CreateCategoryDto = createCategory();
 
+  const mockResponseCategory: ResponseCategoryDto = {
+    id: 1,
+    name: 'Test Category',
+    slug: 'test-category',
+    isDeleted: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    deletedAt: null,
+    deletedBy: null,
+  };
+
   const mockService = {
     countAll: jest.fn().mockResolvedValue(mockCategories.length),
-    count: jest.fn().mockResolvedValue(mockCategories.length),
-    findAll: jest.fn().mockResolvedValue(mockCategories),
-    findAllWithRelations: jest.fn().mockResolvedValue(mockCategories),
-    findOne: jest.fn().mockResolvedValue(mockCategory),
-    findOneByName: jest.fn().mockResolvedValue(mockCategory),
-    findOneBySlug: jest.fn().mockResolvedValue(mockCategory),
-    create: jest.fn().mockResolvedValue(mockNewCategory),
-    update: jest.fn().mockResolvedValue(1),
-    remove: jest.fn().mockResolvedValue(1),
+    count: jest
+      .fn()
+      .mockResolvedValue({ statusCode: 200, total: mockCategories.length }),
+    findAll: jest.fn().mockResolvedValue({
+      statusCode: 200,
+      data: [mockResponseCategory],
+      meta: { total: 1, page: 1, limit: 10 },
+    }),
+    findAllWithRelations: jest.fn().mockResolvedValue({
+      statusCode: 200,
+      data: [mockResponseCategory],
+      meta: { total: 1, page: 1, limit: 10 },
+    }),
+    findOne: jest
+      .fn()
+      .mockResolvedValue({ statusCode: 200, data: mockResponseCategory }),
+    findOneByName: jest
+      .fn()
+      .mockResolvedValue({ statusCode: 200, data: mockResponseCategory }),
+    findOneBySlug: jest
+      .fn()
+      .mockResolvedValue({ statusCode: 200, data: mockResponseCategory }),
+    create: jest.fn().mockResolvedValue({
+      statusCode: 201,
+      data: mockResponseCategory,
+      message: 'Created',
+    }),
+    update: jest.fn().mockResolvedValue({
+      statusCode: 200,
+      data: mockResponseCategory,
+      message: 'Updated',
+    }),
+    remove: jest
+      .fn()
+      .mockResolvedValue({ statusCode: 200, message: 'Deleted' }),
   };
 
   beforeEach(async () => {
@@ -47,7 +87,7 @@ describe('CategoryController', () => {
       providers: [
         {
           provide: CategoryService,
-          useValue: mockService,
+          useValue: mockService as unknown as CategoryService,
         },
       ],
     }).compile();
@@ -62,24 +102,32 @@ describe('CategoryController', () => {
 
   describe('Count category controllers', () => {
     it('should call count category service', async () => {
-      expect(await controller.count()).toBe(mockCategories.length);
+      const result = await controller.count();
+      expect(result).toEqual({ statusCode: 200, total: mockCategories.length });
       expect(service.count).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('Find categories controllers', () => {
     it('should call findAll category service', async () => {
-      expect(await controller.findAll()).toBe(mockCategories);
+      const result = await controller.findAll();
+      expect(result).toEqual({
+        statusCode: 200,
+        data: [mockResponseCategory],
+        meta: { total: 1, page: 1, limit: 10 },
+      });
       expect(service.findAll).toHaveBeenCalledTimes(1);
     });
 
     it('should call findOne category service', async () => {
-      expect(await controller.findOne(1)).toBe(mockCategory);
+      const result = await controller.findOne(1);
+      expect(result).toEqual({ statusCode: 200, data: mockResponseCategory });
       expect(service.findOne).toHaveBeenCalledTimes(1);
     });
 
     it('should return an category by slug', async () => {
-      expect(await controller.findOneBySlug(mockCategory.slug));
+      const result = await controller.findOneBySlug(mockCategory.slug);
+      expect(result).toEqual({ statusCode: 200, data: mockResponseCategory });
       expect(service.findOneBySlug).toHaveBeenCalledTimes(1);
     });
   });
@@ -87,17 +135,23 @@ describe('CategoryController', () => {
   describe('create category controller', () => {
     it('should call create category service', async () => {
       const userId = 1;
-      await controller.create(mockNewCategory, userId);
+      const result = await controller.create(mockNewCategory, userId);
+      expect(result).toEqual({
+        statusCode: 201,
+        data: mockResponseCategory,
+        message: 'Created',
+      });
       expect(service.create).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('update category controller', () => {
     it('should call update category service', async () => {
+      const id = 1;
       const userId = 1;
-      const changes = { name: 'newName' };
-      await controller.update(1, userId, changes);
-      expect(service.update).toHaveBeenCalledTimes(1);
+      const changes: UpdateCategoryDto = { name: 'newName' };
+      await controller.update(id, changes, userId);
+      expect(service.update).toHaveBeenCalledWith(id, userId, changes);
     });
   });
 

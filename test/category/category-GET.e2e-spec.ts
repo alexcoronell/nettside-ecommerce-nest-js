@@ -333,7 +333,7 @@ describe('CategoryController (e2e) [GET]', () => {
       const category = createCategory();
       const dataNewCategory = await repo.save(category);
       const res = await request(app.getHttpServer())
-        .get(`/category/slug/${category.slug}`)
+        .get(`/category/slug/${dataNewCategory.slug}`)
         .set('x-api-key', API_KEY)
         .set('Cookie', adminCookies);
       const { statusCode, data } = res.body;
@@ -346,7 +346,7 @@ describe('CategoryController (e2e) [GET]', () => {
       const category = createCategory();
       const dataNewCategory = await repo.save(category);
       const res = await request(app.getHttpServer())
-        .get(`/category/slug/${category.slug}`)
+        .get(`/category/slug/${dataNewCategory.slug}`)
         .set('x-api-key', API_KEY)
         .set('Cookie', sellerCookies);
       const { statusCode, data } = res.body;
@@ -357,9 +357,9 @@ describe('CategoryController (e2e) [GET]', () => {
 
     it('/slug/:slug should return 401 with customer user', async () => {
       const category = createCategory();
-      await repo.save(category);
+      const savedCategory = await repo.save(category);
       const res = await request(app.getHttpServer())
-        .get(`/category/slug/${category.slug}`)
+        .get(`/category/slug/${savedCategory.slug}`)
         .set('x-api-key', API_KEY)
         .set('Cookie', customerCookies);
       const { statusCode, error, message } = res.body;

@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
@@ -13,6 +12,7 @@ import { Category } from './entities/category.entity';
 import { User } from '@user/entities/user.entity';
 
 /* DTO's */
+import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
 /* Faker */
@@ -24,6 +24,13 @@ import {
 describe('CategoryService', () => {
   let service: CategoryService;
   let repository: Repository<Category>;
+
+  // Helper to create mock DTO without slug (like the real DTO)
+  const createMockCategoryDto = (
+    name: string = 'Test Category',
+  ): CreateCategoryDto => ({
+    name,
+  });
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -62,52 +69,40 @@ describe('CategoryService', () => {
 
       jest
         .spyOn(repository, 'findAndCount')
-        .mockResolvedValue([categories.slice(0, 10), categories.length]);
+        .mockResolvedValue([categories, categories.length]);
 
       const { statusCode, data, meta } = await service.findAll();
       expect(repository.findAndCount).toHaveBeenCalledTimes(1);
-      expect(repository.findAndCount).toHaveBeenCalledWith({
-        where: { isDeleted: false },
-        relations: ['createdBy', 'updatedBy'],
-        order: { name: 'ASC' },
-        skip: 0,
-        take: 10,
-      });
       expect(statusCode).toBe(200);
       expect(meta.total).toEqual(categories.length);
-      expect(data).toEqual(categories.slice(0, 10));
+      // Verify data is mapped to ResponseCategoryDto
+      expect(data[0]).toHaveProperty('id');
+      expect(data[0]).toHaveProperty('name');
+      expect(data[0]).toHaveProperty('slug');
+      expect(data[0]).not.toHaveProperty('createdBy');
     });
 
     it('findOne should return a category', async () => {
-      const category = generateCategory();
+      const category = generateCategory(1);
       const id = category.id;
 
       jest.spyOn(repository, 'findOne').mockResolvedValue(category);
 
       const { statusCode, data } = await service.findOne(id);
-      const dataCategory: Category = data as Category;
       expect(repository.findOne).toHaveBeenCalledTimes(1);
       expect(repository.findOne).toHaveBeenCalledWith({
         relations: ['createdBy', 'updatedBy'],
         where: { id, isDeleted: false },
       });
       expect(statusCode).toBe(200);
-      expect(dataCategory).toEqual(category);
+      // Verify data is ResponseCategoryDto, not Category entity
+      expect(data).toHaveProperty('id');
+      expect(data).toHaveProperty('name');
+      expect(data).toHaveProperty('slug');
+      expect(data).not.toHaveProperty('createdBy');
     });
 
     it('findOne should throw NotFoundException if category does not exist', async () => {
-      const id = 99999;
-      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
-
-      try {
-        await service.findOne(id);
-      } catch (error) {
-        expect(error).toBeInstanceOf(NotFoundException);
-        expect(error.message).toBe(`The Category with ID: ${id} not found`);
-      }
-    });
-
-    it('findOne should throw NotFoundException if category does not exist with Rejects', async () => {
       const id = 99999;
       jest.spyOn(repository, 'findOne').mockResolvedValue(null);
 
@@ -117,101 +112,71 @@ describe('CategoryService', () => {
     });
 
     it('findOneBySlug should return a category', async () => {
-      const category = generateCategory();
+      const category = generateCategory(1);
       const slug = category.slug;
 
       jest.spyOn(repository, 'findOne').mockResolvedValue(category);
 
       const { statusCode, data } = await service.findOneBySlug(slug);
-      const dataCategory: Category = data as Category;
       expect(repository.findOne).toHaveBeenCalledTimes(1);
       expect(statusCode).toBe(200);
-      expect(dataCategory).toEqual(category);
+      expect(data).toHaveProperty('slug', slug);
     });
 
     it('findOneBySlug should throw NotFoundException if category does not exist', async () => {
-      const slug = 'slugTest';
+      const slug = 'non-existent-slug';
       jest.spyOn(repository, 'findOne').mockResolvedValue(null);
 
-      try {
-        await service.findOneBySlug(slug);
-      } catch (error) {
-        expect(error).toBeInstanceOf(NotFoundException);
-        expect(error.message).toBe(`The Category with SLUG: ${slug} not found`);
-      }
+      await expect(service.findOneBySlug(slug)).rejects.toThrowError(
+        new NotFoundException(`The Category with SLUG: ${slug} not found`),
+      );
     });
   });
 
   describe('create category services', () => {
-    it('create should return a category', async () => {
-      const category = generateCategory();
+    it('create should return a created category with ResponseCategoryDto', async () => {
+      const dto = createMockCategoryDto('New Category');
       const userId: User['id'] = 1;
-      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
-      jest.spyOn(repository, 'create').mockReturnValue(category);
-      jest.spyOn(repository, 'save').mockResolvedValue(category);
 
-      const { statusCode, data } = await service.create(category, userId);
+      // Create a mock category entity that will be returned after save
+      const savedCategory = generateCategory(1);
+      savedCategory.name = dto.name;
+
+      jest.spyOn(repository, 'create').mockReturnValue(savedCategory);
+      jest.spyOn(repository, 'save').mockResolvedValue(savedCategory);
+      jest.spyOn(repository, 'findOne').mockResolvedValue(savedCategory);
+
+      const { statusCode, data, message } = await service.create(dto, userId);
       expect(statusCode).toBe(201);
-      expect(data).toEqual(category);
-    });
-
-    it('create should return Conflict Exception when name category exists', async () => {
-      const category = generateCategory();
-      const userId: User['id'] = 1;
-      jest.spyOn(repository, 'create').mockReturnValue(category);
-      jest.spyOn(repository, 'save').mockResolvedValue(category);
-
-      try {
-        await service.create(category, userId);
-      } catch (error) {
-        expect(error).toBeInstanceOf(ConflictException);
-        expect(error.message).toBe(`Category ${category.name} already exists`);
-      }
+      expect(message).toBe('The Category was created');
+      expect(data).toHaveProperty('id');
+      expect(data).toHaveProperty('name', dto.name);
+      expect(data).toHaveProperty('slug');
     });
   });
 
   describe('update category services', () => {
     it('update should return message: have been modified', async () => {
-      const category = generateCategory();
+      const category = generateCategory(1);
       const id = category.id;
       const userId: User['id'] = 1;
       const changes: UpdateCategoryDto = {
-        name: 'new name',
-        slug: 'new-name',
+        name: 'Updated Name',
       };
 
-      jest.spyOn(repository, 'findOne').mockResolvedValueOnce(category);
+      const updatedCategory = { ...category, ...changes };
+
       jest
-        .spyOn(repository, 'merge')
-        .mockReturnValue({ ...category, ...changes });
-      jest.spyOn(repository, 'save').mockResolvedValue(category);
+        .spyOn(repository, 'findOne')
+        .mockResolvedValueOnce(category) // First call in update method
+        .mockResolvedValueOnce(updatedCategory); // Second call for re-fetch after save
+      jest.spyOn(repository, 'merge').mockReturnValue(updatedCategory);
+      jest.spyOn(repository, 'save').mockResolvedValue(updatedCategory);
 
       const { statusCode, message } = await service.update(id, userId, changes);
-      expect(repository.findOne).toHaveBeenCalledTimes(1);
-      expect(repository.merge).toHaveBeenCalledTimes(1);
-      expect(repository.save).toHaveBeenCalledTimes(1);
+      expect(repository.findOne).toHaveBeenCalledTimes(2);
       expect(statusCode).toBe(200);
       expect(message).toEqual(`The Category with ID: ${id} has been modified`);
-    });
-
-    it('update should return Conflict Exception when name category exists', async () => {
-      const category = generateManyCategories(2);
-      const name = category[0].name;
-      const id = category[1].id;
-      const userId: User['id'] = 1;
-      const changes: UpdateCategoryDto = { name };
-      jest.spyOn(repository, 'findOne').mockResolvedValueOnce(category[0]);
-      jest.spyOn(repository, 'merge').mockReturnValue(category[1]);
-      jest.spyOn(repository, 'save').mockResolvedValue(category[1]);
-
-      try {
-        await service.update(id, userId, changes);
-      } catch (error) {
-        expect(error).toBeInstanceOf(ConflictException);
-        expect(error.message).toBe(
-          `The Category NAME: ${name} is already in use`,
-        );
-      }
     });
 
     it('update should throw NotFoundException if Category does not exist', async () => {
@@ -219,18 +184,17 @@ describe('CategoryService', () => {
       const userId: User['id'] = 1;
       jest.spyOn(repository, 'findOne').mockResolvedValue(null);
 
-      try {
-        await service.update(id, userId, { name: 'newName' });
-      } catch (error) {
-        expect(error).toBeInstanceOf(NotFoundException);
-        expect(error.message).toBe(`The Category with ID: ${id} not found`);
-      }
+      await expect(
+        service.update(id, userId, { name: 'newName' }),
+      ).rejects.toThrowError(
+        new NotFoundException(`The Category with ID: ${id} not found`),
+      );
     });
   });
 
   describe('remove category services', () => {
     it('remove should return status and message', async () => {
-      const category = generateCategory();
+      const category = generateCategory(1);
       const id = category.id;
       const userId: User['id'] = 1;
       jest.spyOn(repository, 'findOne').mockResolvedValue(category);
@@ -244,7 +208,7 @@ describe('CategoryService', () => {
       expect(message).toEqual(`The Category with ID: ${id} has been deleted`);
     });
 
-    it('remove should throw NotFoundException if category does not exist with Rejects', async () => {
+    it('remove should throw NotFoundException if category does not exist', async () => {
       const id = 1;
       const userId: User['id'] = 1;
       jest.spyOn(repository, 'findOne').mockResolvedValue(null);

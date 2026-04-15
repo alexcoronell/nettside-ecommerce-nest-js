@@ -185,10 +185,10 @@ describe('CategoryController (e2e) [POST]', () => {
 
     it('/ should return a  conflict exception with existing category slug', async () => {
       const newCategory = createCategory();
-      await repo.save(newCategory);
+      const savedCategory = await repo.save(newCategory);
+      // Create a new category that will generate the same slug
       const repeatedCategory = {
-        ...createCategory(),
-        name: newCategory.slug,
+        name: newCategory.name, // Same name = same slug
       };
       try {
         await request(app.getHttpServer())
@@ -199,7 +199,7 @@ describe('CategoryController (e2e) [POST]', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(ConflictException);
         expect(error.message).toBe(
-          `The Category SLUG: ${repeatedCategory.slug} is already in use`,
+          `The Category SLUG: ${savedCategory.slug} is already in use`,
         );
       }
     });

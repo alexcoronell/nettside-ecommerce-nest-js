@@ -135,7 +135,6 @@ describe('CategoryController (e2e) [PATCH]', () => {
       const id = dataNewCategories[0].id;
       const updatedData: UpdateCategoryDto = {
         name: 'Updated name',
-        slug: 'updated-name',
       };
       const res = await request(app.getHttpServer())
         .patch(`/category/${id}`)
@@ -210,8 +209,9 @@ describe('CategoryController (e2e) [PATCH]', () => {
       const category = newCategories[0];
       const id = newCategories[1].id;
 
+      // Try to update using the same name (which generates the same slug)
       const updatedData: UpdateCategoryDto = {
-        slug: category.slug,
+        name: category.name,
       };
       try {
         await request(app.getHttpServer())
@@ -222,7 +222,7 @@ describe('CategoryController (e2e) [PATCH]', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(ConflictException);
         expect(error.message).toBe(
-          `The Category SLUG ${updatedData.slug} is already in use`,
+          `The Category NAME: ${category.name} is already in use`,
         );
       }
     });
