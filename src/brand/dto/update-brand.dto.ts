@@ -16,11 +16,20 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 export class UpdateBrandDto {
   @IsString()
   @IsOptional()
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    example: 'Nike Updated',
+    description: 'Updated brand name (optional)',
+  })
   readonly name?: string;
 
   @IsString()
   @IsOptional()
-  @ApiPropertyOptional({ required: false, nullable: true })
+  @ApiPropertyOptional({
+    required: false,
+    nullable: true,
+    example: 'http://localhost:9000/brand-logos/nike-new.png',
+    description:
+      'Updated brand logo URL. Set to null to remove existing logo (optional)',
+  })
   readonly logo?: string | null;
 }
