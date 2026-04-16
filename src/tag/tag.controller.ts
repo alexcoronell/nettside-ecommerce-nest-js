@@ -21,12 +21,10 @@ import { UserId } from '@auth/decorators/user-id.decorator';
 /* Services */
 import { TagService } from './tag.service';
 
-/* Entities */
-import { Tag } from './entities/tag.entity';
-
 /* DTO's */
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
+import { ResponseTagDto } from './dto/response-tag.dto';
 import { PaginationDto } from '@commons/dtos/Pagination.dto';
 
 /* Guards */
@@ -36,7 +34,7 @@ import { JwtAuthGuard } from '@auth/guards/jwt-auth/jwt-auth.guard';
 
 @Controller('tag')
 export class TagController
-  implements IBaseController<Tag, CreateTagDto, UpdateTagDto>
+  implements IBaseController<ResponseTagDto, CreateTagDto, UpdateTagDto>
 {
   constructor(private readonly tagService: TagService) {}
 
@@ -50,7 +48,7 @@ export class TagController
    * Retrieves a list of all tags with optional pagination and search.
    *
    * @param paginationDto - Optional pagination and search parameters.
-   * @returns Array of Tag objects or paginated result.
+   * @returns Array of ResponseTagDto objects or paginated result.
    */
   @ApiTags('Tags')
   @ApiOperation({ summary: 'Get all tags with pagination' })

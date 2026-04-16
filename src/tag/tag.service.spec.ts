@@ -17,6 +17,12 @@ import { PaginationDto } from '@commons/dtos/Pagination.dto';
 import { generateTag, generateManyTags } from '@faker/tag.faker';
 import { User } from '@user/entities/user.entity';
 
+/* Mapper */
+import {
+  mapTagToResponseDto,
+  mapTagsToResponseDto,
+} from './mappers/tag.mapper';
+
 describe('TagService', () => {
   let service: TagService;
 
@@ -73,6 +79,8 @@ describe('TagService', () => {
 
   describe('findAll', () => {
     it('should return all non-deleted tags with default pagination', async () => {
+      const expectedMappedTags = mapTagsToResponseDto(mockTags);
+
       mockRepository.findAndCount.mockResolvedValue([
         mockTags,
         mockTags.length,
@@ -80,13 +88,13 @@ describe('TagService', () => {
       const result = await service.findAll();
       expect(mockRepository.findAndCount).toHaveBeenCalledWith({
         where: { isDeleted: false },
-        relations: ['createdBy', 'updatedBy'],
+        relations: ['createdBy', 'updatedBy', 'deletedBy'],
         order: { name: 'ASC' },
         skip: 0,
         take: 10,
       });
       expect(result.statusCode).toBe(200);
-      expect(result.data).toEqual(mockTags);
+      expect(result.data).toEqual(expectedMappedTags);
     });
 
     it('should apply custom pagination', async () => {
@@ -95,6 +103,9 @@ describe('TagService', () => {
       await service.findAll(paginationDto);
       expect(mockRepository.findAndCount).toHaveBeenCalledWith(
         expect.objectContaining({
+          where: { isDeleted: false },
+          relations: ['createdBy', 'updatedBy', 'deletedBy'],
+          order: { name: 'ASC' },
           skip: 5,
           take: 5,
         }),
@@ -129,14 +140,16 @@ describe('TagService', () => {
 
   describe('findOne', () => {
     it('should return tag by id', async () => {
+      const expectedMappedTag = mapTagToResponseDto(mockTag);
+
       mockRepository.findOne.mockResolvedValue(mockTag);
       const result = await service.findOne(1);
       expect(mockRepository.findOne).toHaveBeenCalledWith({
-        relations: ['createdBy', 'updatedBy'],
+        relations: ['createdBy', 'updatedBy', 'deletedBy'],
         where: { id: 1, isDeleted: false },
       });
       expect(result.statusCode).toBe(200);
-      expect(result.data).toEqual(mockTag);
+      expect(result.data).toEqual(expectedMappedTag);
     });
 
     it('should throw NotFoundException if tag not found', async () => {
@@ -161,8 +174,12 @@ describe('TagService', () => {
     it('should create a new tag with user relations', async () => {
       const dto: CreateTagDto = { name: 'New Tag' };
       const userId: User['id'] = 1;
+      const savedTag = { id: 1, ...dto };
+
       mockRepository.create.mockReturnValue({ ...dto });
-      mockRepository.save.mockResolvedValue({ id: 1, ...dto });
+      mockRepository.save.mockResolvedValue(savedTag);
+      mockRepository.findOne.mockResolvedValue(savedTag);
+
       const result = await service.create(dto, userId);
       expect(mockRepository.create).toHaveBeenCalledWith({
         ...dto,
@@ -174,16 +191,22 @@ describe('TagService', () => {
     });
 
     it('should return created tag with message', async () => {
-      mockRepository.create.mockReturnValue(mockTag);
-      mockRepository.save.mockResolvedValue(mockTag);
-      const result = await service.create(mockTag, 1);
+      const createdTag = { ...mockTag };
+
+      mockRepository.create.mockReturnValue(createdTag);
+      mockRepository.save.mockResolvedValue(createdTag);
+      mockRepository.findOne.mockResolvedValue(createdTag);
+
+      const result = await service.create({ name: 'Test Tag' }, 1);
       expect(result.message).toBe('The Tag was created');
     });
 
     it('should handle create errors', async () => {
       mockRepository.create.mockReturnValue(mockTag);
       mockRepository.save.mockRejectedValue(new Error('DB error'));
-      await expect(service.create(mockTag, 1)).rejects.toThrow('DB error');
+      await expect(service.create({ name: 'Test' }, 1)).rejects.toThrow(
+        'DB error',
+      );
     });
   });
 
@@ -191,9 +214,15 @@ describe('TagService', () => {
     it('should update tag and set updatedBy relation', async () => {
       const changes: UpdateTagDto = { name: 'Updated Name' };
       const userId: User['id'] = 1;
-      mockRepository.findOne.mockResolvedValue(mockTag);
-      mockRepository.merge.mockReturnValue({ ...mockTag, ...changes });
-      mockRepository.save.mockResolvedValue({ ...mockTag, ...changes });
+      const updatedTag = { ...mockTag, ...changes };
+
+      // First findOne call (findOneEntity to get the tag)
+      mockRepository.findOne.mockResolvedValueOnce(mockTag);
+      // Second findOne call (after save to fetch with relations)
+      mockRepository.findOne.mockResolvedValueOnce(updatedTag);
+      mockRepository.merge.mockReturnValue(updatedTag);
+      mockRepository.save.mockResolvedValue(updatedTag);
+
       const result = await service.update(1, userId, changes);
       expect(mockRepository.merge).toHaveBeenCalledWith(mockTag, {
         ...changes,
@@ -211,9 +240,13 @@ describe('TagService', () => {
     });
 
     it('should return message with tag id', async () => {
-      mockRepository.findOne.mockResolvedValue(mockTag);
-      mockRepository.merge.mockReturnValue(mockTag);
-      mockRepository.save.mockResolvedValue(mockTag);
+      const updatedTag = { ...mockTag, name: 'Updated' };
+
+      mockRepository.findOne.mockResolvedValueOnce(mockTag);
+      mockRepository.findOne.mockResolvedValueOnce(updatedTag);
+      mockRepository.merge.mockReturnValue(updatedTag);
+      mockRepository.save.mockResolvedValue(updatedTag);
+
       const result = await service.update(42, 1, { name: 'test' });
       expect(result.message).toBe('The Tag with ID: 42 has been modified');
     });
@@ -229,9 +262,11 @@ describe('TagService', () => {
   describe('remove', () => {
     it('should soft delete tag by setting isDeleted to true', async () => {
       const userId: User['id'] = 1;
+
       mockRepository.findOne.mockResolvedValue(mockTag);
       mockRepository.merge.mockReturnValue({ ...mockTag, isDeleted: true });
       mockRepository.save.mockResolvedValue({ ...mockTag, isDeleted: true });
+
       const result = await service.remove(1, userId);
       expect(mockRepository.merge).toHaveBeenCalledWith(mockTag, {
         isDeleted: true,
@@ -250,6 +285,7 @@ describe('TagService', () => {
       mockRepository.findOne.mockResolvedValue(mockTag);
       mockRepository.merge.mockReturnValue({ ...mockTag, isDeleted: true });
       mockRepository.save.mockResolvedValue({ ...mockTag, isDeleted: true });
+
       const result = await service.remove(42, 1);
       expect(result.message).toBe('The Tag with ID: 42 has been deleted');
     });

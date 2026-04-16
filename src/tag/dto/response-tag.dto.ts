@@ -9,7 +9,7 @@
  * @author Nettside E-commerce Team
  */
 
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class ResponseTagDto {
   @ApiProperty()
@@ -32,4 +32,10 @@ export class ResponseTagDto {
 
   @ApiProperty({ nullable: true })
   readonly deletedBy: number | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  readonly createdBy?: { id: number } | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  readonly updatedBy?: { id: number } | null;
 }
