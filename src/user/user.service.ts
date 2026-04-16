@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
@@ -16,8 +15,6 @@ import * as bcrypt from 'bcrypt';
 /* Interfaces */
 import { IBaseService } from '@commons/interfaces/i-base-service';
 
-/* Types */
-
 /* Entities */
 import { User } from '@user/entities/user.entity';
 
@@ -31,6 +28,12 @@ import { ResponseUserDto } from './dto/response-user.dto';
 import { CreateUserDto } from '@user/dto/create-user.dto';
 import { UpdateUserDto } from '@user/dto/update-user.dto';
 import { UpdatePasswordDto } from '@user/dto/update-password-user';
+
+/* Mappers */
+import {
+  mapUserToResponseDto,
+  mapUsersToResponseDto,
+} from './mappers/user.mapper';
 
 /* Enums */
 import { UserRoleEnum } from '@commons/enums/user-role.enum';
@@ -151,9 +154,9 @@ export class UserService
     }
 
     // Execute query
-    const [data, total] = await this.userRepo.findAndCount({
+    const [users, total] = await this.userRepo.findAndCount({
       where: finalWhere,
-      relations: ['createdBy', 'updatedBy'],
+      relations: ['createdBy', 'updatedBy', 'deletedBy'],
       order: {
         [sortBy]: sortOrder,
       },
@@ -161,15 +164,9 @@ export class UserService
       take: limit,
     });
 
-    // Remove password from results
-    const sanitizedData = data.map((user) => {
-      const { password, ...userWithoutPassword } = user;
-      return userWithoutPassword as ResponseUserDto;
-    });
-
-    // Return paginated result
+    // Return paginated result using mapper
     return PaginationHelper.createPaginatedResult(
-      sanitizedData,
+      mapUsersToResponseDto(users),
       total,
       page,
       limit,
@@ -177,28 +174,39 @@ export class UserService
   }
 
   /**
-   * Retrieves a single active user by ID, including related entities (`createdBy`, `updatedBy`).
+   * Finds a user entity by ID for internal use (update, delete, etc).
+   * Does NOT use mapper - returns the raw entity.
    *
    * @param id - The ID of the user to retrieve.
-   * @returns {Promise<Result<User>>} A standardized response containing:
-   * - `statusCode`: 200 OK — indicates successful retrieval.
-   * - `data`: a single user object with sensitive fields (e.g., `password`) omitted.
-   *
+   * @returns {Promise<User>} The raw user entity.
    * @throws {NotFoundException} if no active user with the given ID exists.
-   *
    */
-  async findOne(id: User['id']): Promise<Result<ResponseUserDto>> {
+  private async findOneEntity(id: User['id']): Promise<User> {
     const user = await this.userRepo.findOne({
-      relations: ['createdBy', 'updatedBy'],
+      relations: ['createdBy', 'updatedBy', 'deletedBy'],
       where: { id, isDeleted: false },
     });
     if (!user) {
       throw new NotFoundException(`The User with id: ${id} not found`);
     }
-    user.password = undefined;
+    return user;
+  }
+
+  /**
+   * Retrieves a single active user by ID, including related entities.
+   *
+   * @param id - The ID of the user to retrieve.
+   * @returns {Promise<Result<ResponseUserDto>>} A standardized response containing:
+   * - `statusCode`: 200 OK — indicates successful retrieval.
+   * - `data`: a ResponseUserDto with sensitive fields (e.g., `password`) omitted.
+   *
+   * @throws {NotFoundException} if no active user with the given ID exists.
+   */
+  async findOne(id: User['id']): Promise<Result<ResponseUserDto>> {
+    const user = await this.findOneEntity(id);
     return {
       statusCode: HttpStatus.OK,
-      data: user as ResponseUserDto,
+      data: mapUserToResponseDto(user),
     };
   }
 
@@ -269,9 +277,7 @@ export class UserService
    *
    * @throws {ConflictException} if a user with the provided email already exists.
    *
-   * ⚠️ Note: While `password` is explicitly set to `undefined` to exclude it from
-   * the response, for maximum safety and maintainability, consider returning a
-   * dedicated `UserResponseDto` instead of the raw entity.
+   * Uses mapper to ensure consistent response format.
    */
   async create(
     dto: CreateUserDto,
@@ -291,10 +297,16 @@ export class UserService
     const hashPassword = await bcrypt.hash(newUser.password, 10);
     newUser.password = hashPassword;
     const user = await this.userRepo.save(newUser);
-    user.password = undefined;
+
+    // Fetch with relations for proper mapping
+    const savedUser = await this.userRepo.findOne({
+      where: { id: user.id },
+      relations: ['createdBy', 'updatedBy', 'deletedBy'],
+    });
+
     return {
       statusCode: HttpStatus.CREATED,
-      data: user as ResponseUserDto,
+      data: mapUserToResponseDto(savedUser!),
       message: 'The user was created',
     };
   }
@@ -321,8 +333,10 @@ export class UserService
    * ⚠️ Security note: This endpoint must be rate-limited and protected against
    * automated abuse (e.g., bot registrations). Consider adding CAPTCHA or email verification
    * in production environments.
+   *
+   * Uses mapper to ensure consistent response format.
    */
-  async register(dto: CreateUserDto): Promise<Result<User>> {
+  async register(dto: CreateUserDto): Promise<Result<ResponseUserDto>> {
     const email = dto.email.toLowerCase();
     const existUserEmail = await this.userRepo.findOneBy({ email });
     if (existUserEmail) {
@@ -336,10 +350,16 @@ export class UserService
     savedUser.updatedBy = { id: savedUser.id } as User;
 
     const user = await this.userRepo.save(savedUser);
-    user.password = undefined;
+
+    // Fetch with relations for proper mapping
+    const savedUserWithRelations = await this.userRepo.findOne({
+      where: { id: user.id },
+      relations: ['createdBy', 'updatedBy', 'deletedBy'],
+    });
+
     return {
       statusCode: HttpStatus.CREATED,
-      data: user,
+      data: mapUserToResponseDto(savedUserWithRelations!),
       message: 'The user was created',
     };
   }
@@ -362,25 +382,29 @@ export class UserService
    * @throws {NotFoundException} if no active user with the given ID exists (via `findOne`).
    * @throws {ConflictException} if the new email is already assigned to another user.
    *
-   * ⚠️ Note: While `password` is safely excluded via `undefined`, for long-term
-   * maintainability and stronger contract guarantees, consider returning a
-   * `UserResponseDto` instead of the raw entity.
+   * Uses mapper to ensure consistent response format.
    */
   async update(
     id: number,
     userId: number,
     changes: UpdateUserDto,
   ): Promise<Result<ResponseUserDto>> {
-    const { data } = await this.findOne(id);
-    this.userRepo.merge(data as User, {
+    const user = await this.findOneEntity(id);
+    this.userRepo.merge(user, {
       ...changes,
       updatedBy: { id: userId },
     });
-    const rta = await this.userRepo.save(data as User);
-    rta.password = undefined;
+    const updatedUser = await this.userRepo.save(user);
+
+    // Fetch with relations for proper mapping
+    const savedUser = await this.userRepo.findOne({
+      where: { id: updatedUser.id },
+      relations: ['createdBy', 'updatedBy', 'deletedBy'],
+    });
+
     return {
       statusCode: HttpStatus.OK,
-      data: rta as ResponseUserDto,
+      data: mapUserToResponseDto(savedUser!),
       message: `The User with ID: ${id} has been modified`,
     };
   }
@@ -406,24 +430,29 @@ export class UserService
     id: number,
     changes: UpdatePasswordDto,
   ): Promise<Result<string>> {
-    const { data } = await this.findOne(id);
+    const user = await this.findOneEntity(id);
     const hashPassword = await bcrypt.hash(changes.password, 10);
     const newPasswordChanges = {
       password: hashPassword,
     };
-    this.userRepo.merge(data as User, newPasswordChanges);
-    const rta = await this.userRepo.save(data as User);
-    rta.password = undefined;
+    this.userRepo.merge(user, newPasswordChanges);
+    await this.userRepo.save(user);
     return {
       statusCode: HttpStatus.OK,
       message: 'Password updated successfully',
     };
   }
 
-  /* Remove */
+  /**
+   * Soft deletes a user by marking it as deleted.
+   *
+   * @param id - The ID of the user to delete.
+   * @param userId - The ID of the user performing the deletion.
+   * @returns A success message.
+   * @throws {NotFoundException} if no active user with the given ID exists.
+   */
   async remove(id: User['id'], userId: number) {
-    const { data } = await this.findOne(id);
-    const user = data as User;
+    const user = await this.findOneEntity(id);
 
     const changes = {
       deletedBy: { id: userId } as User,

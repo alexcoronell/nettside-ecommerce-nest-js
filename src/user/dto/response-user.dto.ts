@@ -60,4 +60,10 @@ export class ResponseUserDto {
 
   @ApiPropertyOptional({ nullable: true })
   readonly deletedBy: number | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  readonly createdBy?: { id: number } | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  readonly updatedBy?: { id: number } | null;
 }

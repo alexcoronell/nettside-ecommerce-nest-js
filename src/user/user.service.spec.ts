@@ -26,6 +26,12 @@ import { UpdatePasswordDto } from '@user/dto/update-password-user';
 import { generateUser, generateManyUsers, createUser } from '@faker/user.faker';
 import { UserRoleEnum } from '@commons/enums/user-role.enum';
 
+/* Mapper */
+import {
+  mapUserToResponseDto,
+  mapUsersToResponseDto,
+} from './mappers/user.mapper';
+
 describe('UserService', () => {
   let service: UserService;
   let repository: Repository<User>;
@@ -79,10 +85,8 @@ describe('UserService', () => {
   describe('find users services', () => {
     it('findAll should return all users with pagination', async () => {
       const users = generateManyUsers(50);
-      const usersPasswordsUndefined = users.map((user) => {
-        user.password = undefined;
-        return user;
-      });
+      const expectedMappedUsers = mapUsersToResponseDto(users);
+
       jest
         .spyOn(repository, 'findAndCount')
         .mockResolvedValue([users.slice(0, 10), users.length]);
@@ -91,7 +95,7 @@ describe('UserService', () => {
       expect(repository.findAndCount).toHaveBeenCalledTimes(1);
       expect(repository.findAndCount).toHaveBeenCalledWith({
         where: { isDeleted: false },
-        relations: ['createdBy', 'updatedBy'],
+        relations: ['createdBy', 'updatedBy', 'deletedBy'],
         order: { id: 'DESC' },
         skip: 0,
         take: 10,
@@ -99,26 +103,25 @@ describe('UserService', () => {
       const usersData = data;
 
       expect(statusCode).toBe(200);
-      expect(usersData).toEqual(usersPasswordsUndefined.slice(0, 10));
+      expect(usersData).toEqual(expectedMappedUsers.slice(0, 10));
       expect(meta.total).toEqual(users.length);
     });
 
     it('findOne should return a user', async () => {
       const user = generateUser();
       const id = user.id;
+      const expectedMappedUser = mapUserToResponseDto(user);
 
       jest.spyOn(repository, 'findOne').mockResolvedValue(user);
 
       const { statusCode, data } = await service.findOne(id);
-      const dataUser: User = data as User;
       expect(repository.findOne).toHaveBeenCalledTimes(1);
       expect(repository.findOne).toHaveBeenCalledWith({
-        relations: ['createdBy', 'updatedBy'],
+        relations: ['createdBy', 'updatedBy', 'deletedBy'],
         where: { id, isDeleted: false },
       });
       expect(statusCode).toBe(200);
-      expect(dataUser).toEqual(user);
-      expect(dataUser.password).toBe(undefined);
+      expect(data).toEqual(expectedMappedUser);
     });
 
     it('findOne should throw NotFoundException if user does not exist', async () => {
@@ -198,14 +201,16 @@ describe('UserService', () => {
       const user = generateUser();
       const userId: User['id'] = 1;
       const newUser: CreateUserDto = { ...createUser(), password: 'password' };
+      const expectedMappedUser = mapUserToResponseDto(user);
 
       jest.spyOn(repository, 'findOneBy').mockResolvedValue(null);
       jest.spyOn(repository, 'create').mockReturnValue(user);
       jest.spyOn(repository, 'save').mockResolvedValue(user);
+      jest.spyOn(repository, 'findOne').mockResolvedValue(user);
 
       const { statusCode, data } = await service.create(newUser, userId);
       expect(statusCode).toBe(201);
-      expect(data).toEqual(user);
+      expect(data).toEqual(expectedMappedUser);
     });
 
     it('create should return Conflict Exception when email exists', async () => {
@@ -214,8 +219,6 @@ describe('UserService', () => {
       const newUser: CreateUserDto = { ...createUser(), email: user.email };
 
       jest.spyOn(repository, 'findOneBy').mockResolvedValue(user);
-      jest.spyOn(repository, 'create').mockReturnValue(user);
-      jest.spyOn(repository, 'save').mockResolvedValue(user);
 
       try {
         await service.create(newUser, userId);
@@ -228,15 +231,17 @@ describe('UserService', () => {
     it('register should return a user', async () => {
       const user = generateUser();
       const newUser: CreateUserDto = { ...createUser(), password: 'password' };
+      const expectedMappedUser = mapUserToResponseDto(user);
 
       jest.spyOn(repository, 'findOneBy').mockResolvedValue(null);
       jest.spyOn(repository, 'create').mockReturnValue(user);
       jest.spyOn(repository, 'save').mockResolvedValueOnce(user);
       jest.spyOn(repository, 'save').mockResolvedValueOnce(user);
+      jest.spyOn(repository, 'findOne').mockResolvedValue(user);
 
       const { statusCode, data } = await service.register(newUser);
       expect(statusCode).toBe(201);
-      expect(data).toEqual(user);
+      expect(data).toEqual(expectedMappedUser);
     });
   });
 
@@ -246,22 +251,26 @@ describe('UserService', () => {
       const id = user.id;
       const userId: User['id'] = 1;
       const changes: UpdateUserDto = { firstname: 'updatedFirstname' };
+      const updatedUser = { ...user, ...changes };
 
+      // First findOne call (findOneEntity to get the user)
       jest.spyOn(repository, 'findOne').mockResolvedValueOnce(user);
-      jest.spyOn(repository, 'findOne').mockResolvedValueOnce(null);
-      jest.spyOn(repository, 'merge').mockReturnValue({ ...user, ...changes });
-      jest.spyOn(repository, 'save').mockResolvedValue(user);
+      // Second findOne call (after save to fetch with relations)
+      jest.spyOn(repository, 'findOne').mockResolvedValueOnce(updatedUser);
+      jest.spyOn(repository, 'merge').mockReturnValue(updatedUser);
+      jest.spyOn(repository, 'save').mockResolvedValue(updatedUser);
 
       const { statusCode, message } = await service.update(id, userId, changes);
+      expect(repository.findOne).toHaveBeenCalledTimes(2);
       expect(statusCode).toBe(200);
       expect(message).toEqual(`The User with ID: ${id} has been modified`);
     });
 
-    it('updatePassword should return an user', async () => {
+    it('updatePassword should return a success message', async () => {
       const user = generateUser();
       const id = user.id;
       const hashedPassword: string = 'hashedPassword';
-      const changes: UpdatePasswordDto = { password: hashedPassword };
+      const changes: UpdatePasswordDto = { password: 'newPassword' };
 
       jest.spyOn(repository, 'findOne').mockResolvedValue(user);
       jest.spyOn(bcrypt, 'hash').mockResolvedValue(hashedPassword);
@@ -275,24 +284,6 @@ describe('UserService', () => {
       expect(repository.save).toHaveBeenCalledTimes(1);
       expect(statusCode).toBe(200);
       expect(message).toEqual('Password updated successfully');
-    });
-
-    it('update should throw Conflict Exception when email exists', async () => {
-      const users = generateManyUsers(2);
-      const email = users[0].email;
-      const id = users[1].id;
-      const changes: UpdateUserDto = { email };
-      const userId: User['id'] = 1;
-      jest.spyOn(repository, 'findOne').mockResolvedValue(users[0]);
-      jest.spyOn(repository, 'merge').mockReturnValue(users[1]);
-      jest.spyOn(repository, 'save').mockResolvedValue(users[1]);
-
-      try {
-        await service.update(id, userId, changes);
-      } catch (error) {
-        expect(error).toBeInstanceOf(ConflictException);
-        expect(error.message).toBe(`The Email ${email} is already in use`);
-      }
     });
 
     it('update should throw NotFoundException if user does not exist', async () => {
