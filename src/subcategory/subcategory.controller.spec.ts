@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
+import { HttpStatus } from '@nestjs/common';
 
 /* Controller */
 import { SubcategoryController } from './subcategory.controller';
@@ -7,16 +8,14 @@ import { SubcategoryController } from './subcategory.controller';
 /* Services */
 import { SubcategoryService } from './subcategory.service';
 
-/* Entities */
-import { Subcategory } from './entities/subcategory.entity';
-
 /* DTO's */
 import { CreateSubcategoryDto } from './dto/create-subcategory.dto';
+import { UpdateSubcategoryDto } from './dto/update-subcategory.dto';
+import { ResponseSubcategoryDto } from './dto/response-subcategory.dto';
 
 /* Faker */
 import {
   createSubcategory,
-  generateSubcategory,
   generateManySubcategories,
 } from '@faker/subcategory.faker';
 
@@ -24,27 +23,76 @@ describe('SubcategoryController', () => {
   let controller: SubcategoryController;
   let service: SubcategoryService;
 
-  const mockSubcategory: Subcategory = generateSubcategory();
-  const mockSubcategories: Subcategory[] = generateManySubcategories(10);
+  const mockResponseSubcategory: ResponseSubcategoryDto = {
+    id: 1,
+    name: 'Electronics',
+    slug: 'electronics',
+    category: 1,
+    isDeleted: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    deletedAt: null,
+    deletedBy: null,
+  };
+
+  const mockSubcategories = generateManySubcategories(10);
   const mockNewSubcategory: CreateSubcategoryDto = createSubcategory();
 
-  const mockService = {
-    count: jest.fn().mockResolvedValue(mockSubcategories.length),
-    findAll: jest.fn().mockResolvedValue(mockSubcategories),
-    findAllByCategory: jest.fn().mockResolvedValue(mockSubcategories),
-    findOne: jest.fn().mockResolvedValue(mockSubcategory),
-    findOneBySlug: jest.fn().mockResolvedValue(mockSubcategory),
-    create: jest.fn().mockResolvedValue(mockNewSubcategory),
-    update: jest.fn().mockResolvedValue(1),
-    remove: jest.fn().mockResolvedValue(1),
+  const countResponse = {
+    statusCode: HttpStatus.OK,
+    total: mockSubcategories.length,
   };
+  const findAllResponse = {
+    statusCode: HttpStatus.OK,
+    data: [mockResponseSubcategory],
+    meta: { total: 1, page: 1, limit: 10 },
+  };
+  const findAllByCategoryResponse = {
+    statusCode: HttpStatus.OK,
+    data: [mockResponseSubcategory],
+    total: 1,
+  };
+  const findOneResponse = {
+    statusCode: HttpStatus.OK,
+    data: mockResponseSubcategory,
+  };
+  const findOneBySlugResponse = {
+    statusCode: HttpStatus.OK,
+    data: mockResponseSubcategory,
+  };
+  const createResponse = {
+    statusCode: HttpStatus.CREATED,
+    data: mockResponseSubcategory,
+    message: 'The Subcategory was created',
+  };
+  const updateResponse = {
+    statusCode: HttpStatus.OK,
+    data: mockResponseSubcategory,
+    message: 'The Subcategory with ID: 1 has been modified',
+  };
+  const removeResponse = {
+    statusCode: HttpStatus.OK,
+    message: 'The Subcategory with ID: 1 has been deleted',
+  };
+
+  const mockService = {
+    count: jest.fn().mockResolvedValue(countResponse),
+    findAll: jest.fn().mockResolvedValue(findAllResponse),
+    findAllByCategory: jest.fn().mockResolvedValue(findAllByCategoryResponse),
+    findOne: jest.fn().mockResolvedValue(findOneResponse),
+    findOneBySlug: jest.fn().mockResolvedValue(findOneBySlugResponse),
+    create: jest.fn().mockResolvedValue(createResponse),
+    update: jest.fn().mockResolvedValue(updateResponse),
+    remove: jest.fn().mockResolvedValue(removeResponse),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [SubcategoryController],
       providers: [
         {
           provide: SubcategoryService,
-          useValue: mockService,
+          useValue: mockService as unknown as SubcategoryService,
         },
       ],
     }).compile();
@@ -59,57 +107,71 @@ describe('SubcategoryController', () => {
 
   describe('Count subcategory controllers', () => {
     it('should call count subcategory service', async () => {
-      expect(await controller.count()).toBe(mockSubcategories.length);
+      const result = await controller.count();
+      expect(result).toEqual(countResponse);
       expect(service.count).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('Find subcategories controllers', () => {
     it('should call findAll subcategory service', async () => {
-      expect(await controller.findAll()).toBe(mockSubcategories);
+      const result = await controller.findAll();
+      expect(result).toEqual(findAllResponse);
       expect(service.findAll).toHaveBeenCalledTimes(1);
     });
 
     it('should call findAllByCategory subcategory service', async () => {
-      expect(await controller.findAllByCategory(mockSubcategory.id)).toBe(
-        mockSubcategories,
-      );
-      expect(service.findAll).toHaveBeenCalledTimes(1);
+      const result = await controller.findAllByCategory(1);
+      expect(result).toEqual(findAllByCategoryResponse);
+      expect(service.findAllByCategory).toHaveBeenCalledTimes(1);
+      expect(service.findAllByCategory).toHaveBeenCalledWith(1);
     });
 
     it('should call findOne subcategory service', async () => {
-      expect(await controller.findOne(1)).toBe(mockSubcategory);
+      const result = await controller.findOne(1);
+      expect(result).toEqual(findOneResponse);
       expect(service.findOne).toHaveBeenCalledTimes(1);
+      expect(service.findOne).toHaveBeenCalledWith(1);
     });
 
-    it('should return an subcategory by slug', async () => {
-      expect(await controller.findOneBySlug(mockSubcategory.slug));
+    it('should call findOneBySlug subcategory service', async () => {
+      const result = await controller.findOneBySlug('electronics');
+      expect(result).toEqual(findOneBySlugResponse);
       expect(service.findOneBySlug).toHaveBeenCalledTimes(1);
+      expect(service.findOneBySlug).toHaveBeenCalledWith('electronics');
     });
   });
 
   describe('create subcategory controller', () => {
     it('should call create subcategory service', async () => {
       const userId = 1;
-      await controller.create(mockNewSubcategory, userId);
+      const result = await controller.create(mockNewSubcategory, userId);
+      expect(result).toEqual(createResponse);
       expect(service.create).toHaveBeenCalledTimes(1);
+      expect(service.create).toHaveBeenCalledWith(mockNewSubcategory, userId);
     });
   });
 
   describe('update subcategory controller', () => {
     it('should call update subcategory service', async () => {
-      const changes = { name: 'newName' };
+      const id = 1;
       const userId = 1;
-      await controller.update(1, userId, changes);
+      const changes: UpdateSubcategoryDto = { name: 'newName' };
+      const result = await controller.update(id, changes, userId);
+      expect(result).toEqual(updateResponse);
       expect(service.update).toHaveBeenCalledTimes(1);
+      expect(service.update).toHaveBeenCalledWith(id, userId, changes);
     });
   });
 
   describe('remove subcategory controller', () => {
-    it('shoudl call remove subcategory service', async () => {
+    it('should call remove subcategory service', async () => {
+      const id = 1;
       const userId = 1;
-      await controller.remove(1, userId);
+      const result = await controller.remove(id, userId);
+      expect(result).toEqual(removeResponse);
       expect(service.remove).toHaveBeenCalledTimes(1);
+      expect(service.remove).toHaveBeenCalledWith(id, userId);
     });
   });
 });

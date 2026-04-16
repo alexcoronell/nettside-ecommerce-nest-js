@@ -18,18 +18,18 @@ export class UpdateSubcategoryDto {
   @Trim()
   @IsString()
   @IsOptional()
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    example: 'New Subcategory Name',
+    description: 'Subcategory name (unique within category)',
+  })
   readonly name?: string;
-
-  @Trim()
-  @IsString()
-  @IsOptional()
-  @ApiPropertyOptional()
-  readonly slug?: string;
 
   @IsNumber()
   @Min(1)
   @IsOptional()
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Category ID to which this subcategory belongs',
+  })
   readonly category?: number;
 }

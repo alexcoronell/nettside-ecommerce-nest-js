@@ -22,21 +22,46 @@ export const createSubcategory = (
   const category = categoryId || faker.number.int({ min: 1, max: 100 });
   const fakeNumber = faker.number.int({ min: 1, max: 100 });
   const tempName = `${faker.lorem.words(3)}-${fakeNumber}`;
-  const slug = createSlug(name || tempName);
   return {
     name: name || tempName,
-    slug: slug,
     category,
+  };
+};
+
+/**
+ * Creates a subcategory with slug for e2e tests and seeders.
+ * This is needed because the database requires slug but CreateSubcategoryDto doesn't include it.
+ */
+export const createSubcategoryWithSlug = (
+  categoryId: number = 1,
+  name: string | null = null,
+): Partial<Subcategory> => {
+  const category = categoryId || faker.number.int({ min: 1, max: 100 });
+  const fakeNumber = faker.number.int({ min: 1, max: 100 });
+  const tempName = name || `${faker.lorem.words(3)}-${fakeNumber}`;
+  return {
+    name: tempName,
+    slug: createSlug(tempName),
+    category: generateCategory(),
   };
 };
 
 export const generateNewSubcategories = (
   size: number = 1,
   category = 1,
-): CreateSubcategoryDto[] => {
-  const newSubcategories: CreateSubcategoryDto[] = [];
+): Partial<Subcategory>[] => {
+  const newSubcategories: Partial<Subcategory>[] = [];
   for (let i = 0; i < size; i++) {
-    newSubcategories.push(createSubcategory(category));
+    const categoryEntity = generateCategory();
+    const fakeNumber = faker.number.int({ min: 1, max: 100 });
+    const tempName = `${faker.lorem.words(3)}-${fakeNumber}`;
+    newSubcategories.push({
+      name: tempName,
+      slug: createSlug(tempName),
+      category: categoryEntity,
+      createdBy: generateUser(),
+      updatedBy: generateUser(),
+    });
   }
   return newSubcategories;
 };

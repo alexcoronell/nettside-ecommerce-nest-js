@@ -9,32 +9,26 @@
  * @author Nettside E-commerce Team
  */
 
-import {
-  IsString,
-  IsNotEmpty,
-  IsNumber,
-  Min,
-  IsOptional,
-} from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsNotEmpty, IsNumber, Min } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 import { Trim } from '@commons/decorators/trim.decorator';
 
 export class CreateSubcategoryDto {
   @Trim()
   @IsString()
   @IsNotEmpty()
-  @ApiProperty()
+  @ApiProperty({
+    example: 'Electronics',
+    description: 'Subcategory name (unique within category)',
+  })
   readonly name: string;
-
-  @Trim()
-  @IsString()
-  @IsOptional()
-  @ApiPropertyOptional()
-  readonly slug?: string;
 
   @IsNumber()
   @Min(1)
   @IsNotEmpty()
-  @ApiProperty()
+  @ApiProperty({
+    example: 1,
+    description: 'Category ID to which this subcategory belongs',
+  })
   readonly category: number;
 }

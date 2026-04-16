@@ -116,7 +116,6 @@ describe('SubcategoryController (e2e) [GET]', () => {
       const newSubcategory = createSubcategory();
       const dto = {
         name: newSubcategory.name,
-        slug: newSubcategory.slug,
         categoryId: category.id,
       };
       const res = await request(app.getHttpServer())
@@ -180,9 +179,7 @@ describe('SubcategoryController (e2e) [GET]', () => {
     it('/ should return conflict if subcategory name already exists with the same category', async () => {
       const existingSubcategory = subcategories[0];
 
-      const newSubcategory = createSubcategory();
       const dto = {
-        ...newSubcategory,
         name: existingSubcategory.name,
         categoryId: category.id,
       };

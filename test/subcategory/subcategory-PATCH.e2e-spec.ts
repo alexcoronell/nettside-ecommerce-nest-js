@@ -222,9 +222,8 @@ describe('SubcategoryController (e2e) [GET]', () => {
 
       const id = subcategories[1].id;
       const repeatedNameSubcategory = {
-        ...subcategories[1],
         name: existingSubcategory.name,
-        categoryId: category.id,
+        category: category.id,
       };
       const res = await request(app.getHttpServer())
         .patch(`${PATH}/${id}`)
