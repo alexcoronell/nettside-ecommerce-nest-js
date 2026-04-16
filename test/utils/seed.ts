@@ -72,11 +72,42 @@ export const cleanDB = async () => {
     throw new Error('DataSource not initialized. Call initDataSource() first.');
   }
 
-  // Get table names from entity metadata
-  const entities = dataSource.entityMetadatas;
-  const tableNames = entities
-    .map((entity) => `"${entity.tableName}"`)
-    .join(', ');
+  // Order tables by dependency: child tables first, parent tables last
+  // This ensures FK constraints don't block the truncate
+  const orderedTables = [
+    // Junction tables first (no FK from other tables to these)
+    'products_tags',
+    'product_images',
+    'product_discounts',
+    'wishlist',
+
+    // Detail tables (depend on master tables)
+    'product_suppliers',
+    'purchase_details',
+    'sale_detail',
+
+    // Transaction tables (depend on detail tables and users)
+    'purchases',
+    'sales',
+    'shipments',
+
+    // Master tables
+    'brands',
+    'categories',
+    'discounts',
+    'payment_methods',
+    'products',
+    'shipping_companies',
+    'store_details',
+    'subcategories',
+    'suppliers',
+    'tags',
+
+    // User table last (other tables depend on it)
+    'users',
+  ];
+
+  const tableNames = orderedTables.map((t) => `"${t}"`).join(', ');
 
   // Truncate all tables, reset sequences, and ignore foreign key constraints
   await dataSource.query(`TRUNCATE ${tableNames} RESTART IDENTITY CASCADE;`);

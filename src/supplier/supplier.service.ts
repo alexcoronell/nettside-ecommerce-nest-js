@@ -1,3 +1,14 @@
+/**
+ * @fileoverview SupplierService - Service for supplier business logic
+ *
+ * Handles all business operations for supplier management including
+ * CRUD operations, pagination, and search.
+ *
+ * @module SupplierService
+ * @version 1.0.0
+ * @author Nettside E-commerce Team
+ */
+
 import { Injectable, NotFoundException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, ILike, Repository } from 'typeorm';
@@ -11,51 +22,38 @@ import { Supplier } from '@supplier/entities/supplier.entity';
 /* DTO's */
 import { CreateSupplierDto } from '@supplier/dto/create-supplier.dto';
 import { UpdateSupplierDto } from '@supplier/dto/update-supplier.dto';
+import { ResponseSupplierDto } from '@supplier/dto/response-supplier.dto';
 import {
   PaginationDto,
   PaginatedResult,
   PaginationHelper,
 } from '@commons/dtos/Pagination.dto';
 
+/* Mappers */
+import {
+  mapSupplierToResponseDto,
+  mapSuppliersToResponseDto,
+} from './mappers/supplier.mapper';
+
 /* Types */
 import { Result } from '@commons/types/result.type';
 
 @Injectable()
-/**
- * Service class for managing Supplier entities.
- * Provides methods for CRUD operations, soft deletion, and querying suppliers.
- *
- * @implements {IBaseService<Supplier, CreateSupplierDto, UpdateSupplierDto>}
- */
 export class SupplierService
-  implements IBaseService<Supplier, CreateSupplierDto, UpdateSupplierDto>
+  implements
+    IBaseService<ResponseSupplierDto, CreateSupplierDto, UpdateSupplierDto>
 {
-  /**
-   * Constructs a new SupplierService.
-   *
-   * @param repo - The TypeORM repository for Supplier entities.
-   */
   constructor(
     @InjectRepository(Supplier)
     private readonly repo: Repository<Supplier>,
   ) {}
 
   /**
-   * Counts all Supplier entities in the database, including deleted ones.
+   * Counts all active (non-deleted) suppliers in the system.
    *
-   * @returns An object containing the HTTP status code and the total count of suppliers.
+   * @returns Promise resolving to an object with statusCode and total count
    */
-  async countAll() {
-    const total = await this.repo.count();
-    return { statusCode: HttpStatus.OK, total };
-  }
-
-  /**
-   * Counts all Supplier entities that are not marked as deleted.
-   *
-   * @returns An object containing the HTTP status code and the total count of non-deleted suppliers.
-   */
-  async count() {
+  async count(): Promise<Result<number>> {
     const total = await this.repo.count({
       where: {
         isDeleted: false,
@@ -65,17 +63,14 @@ export class SupplierService
   }
 
   /**
-   * Retrieves a list of all active (non-deleted) suppliers, sorted by name.
+   * Retrieves a paginated list of active suppliers with optional search and sorting.
    *
-   * Supports optional pagination and search via PaginationDto.
-   * When no pagination options are provided, all suppliers are returned.
-   *
-   * @param paginationDto - Optional pagination and search parameters.
-   * @returns {Promise<PaginatedResult<Supplier>>} A standardized paginated response.
+   * @param paginationDto - Optional pagination parameters (page, limit, search, sortBy, sortOrder)
+   * @returns Promise resolving to a paginated result containing an array of ResponseSupplierDto
    */
   async findAll(
     paginationDto?: PaginationDto,
-  ): Promise<PaginatedResult<Supplier>> {
+  ): Promise<PaginatedResult<ResponseSupplierDto>> {
     const { page, limit, skip } = PaginationHelper.normalizePagination(
       paginationDto?.page,
       paginationDto?.limit,
@@ -103,9 +98,9 @@ export class SupplierService
     const sortOrder = paginationDto?.sortOrder || 'ASC';
 
     // Execute query
-    const [data, total] = await this.repo.findAndCount({
+    const [suppliers, total] = await this.repo.findAndCount({
       where: searchConditions.length > 0 ? searchConditions : where,
-      relations: ['createdBy', 'updatedBy'],
+      relations: ['createdBy', 'updatedBy', 'deletedBy'],
       order: {
         [sortBy]: sortOrder,
       },
@@ -113,109 +108,129 @@ export class SupplierService
       take: limit,
     });
 
-    // Return paginated result
-    return PaginationHelper.createPaginatedResult(data, total, page, limit);
+    // Return paginated result using mapper
+    return PaginationHelper.createPaginatedResult(
+      mapSuppliersToResponseDto(suppliers),
+      total,
+      page,
+      limit,
+    );
   }
 
   /**
-   * Finds a Supplier by its ID, including related createdBy and updatedBy entities.
+   * Finds a supplier entity by ID for internal use (update, remove, etc).
+   * Does NOT use mapper - returns the raw entity.
    *
-   * @param id - The ID of the Supplier to find.
-   * @returns A Result object containing the HTTP status code and the found Supplier.
-   * @throws NotFoundException if the Supplier is not found.
+   * @param id - The ID of the supplier to retrieve.
+   * @returns Promise resolving to the raw Supplier entity.
+   * @throws NotFoundException if supplier is not found or is deleted
    */
-  async findOne(id: Supplier['id']): Promise<Result<Supplier>> {
+  private async findOneEntity(id: Supplier['id']): Promise<Supplier> {
     const supplier = await this.repo.findOne({
-      relations: ['createdBy', 'updatedBy'],
+      relations: ['createdBy', 'updatedBy', 'deletedBy'],
       where: { id, isDeleted: false },
     });
     if (!supplier) {
       throw new NotFoundException(`The Supplier with ID: ${id} not found`);
     }
+    return supplier;
+  }
+
+  /**
+   * Retrieves a single supplier by its ID.
+   *
+   * @param id - The unique identifier of the supplier
+   * @returns Promise resolving to a Result containing the ResponseSupplierDto
+   * @throws NotFoundException if supplier is not found
+   */
+  async findOne(id: Supplier['id']): Promise<Result<ResponseSupplierDto>> {
+    const supplier = await this.findOneEntity(id);
     return {
       statusCode: HttpStatus.OK,
-      data: supplier,
+      data: mapSupplierToResponseDto(supplier),
     };
   }
 
   /**
-   * Finds a Supplier by its name, including related createdBy and updatedBy entities.
+   * Creates a new supplier.
    *
-   * @param name - The name of the Supplier to find.
-   * @returns A Result object containing the HTTP status code and the found Supplier.
-   * @throws NotFoundException if the Supplier is not found.
+   * @param dto - CreateSupplierDto containing the supplier data
+   * @param userId - ID of the user creating the supplier
+   * @returns Promise resolving to a Result containing the created ResponseSupplierDto
    */
-  async findOneByName(name: string): Promise<Result<Supplier>> {
-    const supplier = await this.repo.findOne({
-      relations: ['createdBy', 'updatedBy'],
-      where: { name, isDeleted: false },
-    });
-    if (!supplier) {
-      throw new NotFoundException(`The Supplier with NAME: ${name} not found`);
-    }
-    return {
-      statusCode: HttpStatus.OK,
-      data: supplier,
-    };
-  }
-
-  /**
-   * Creates a new Supplier entity.
-   *
-   * @param dto - The data transfer object containing the Supplier data to create.
-   * @returns An object containing the HTTP status code, the created Supplier, and a success message.
-   */
-  async create(dto: CreateSupplierDto, userId: number) {
+  async create(
+    dto: CreateSupplierDto,
+    userId: number,
+  ): Promise<Result<ResponseSupplierDto>> {
     const newSupplier = this.repo.create({
       ...dto,
       createdBy: { id: userId },
       updatedBy: { id: userId },
     });
     const supplier = await this.repo.save(newSupplier);
+
+    // Fetch with relations for proper mapping
+    const savedSupplier = await this.repo.findOne({
+      where: { id: supplier.id },
+      relations: ['createdBy', 'updatedBy', 'deletedBy'],
+    });
+
     return {
       statusCode: HttpStatus.CREATED,
-      data: supplier,
+      data: mapSupplierToResponseDto(savedSupplier!),
       message: 'The Supplier was created',
     };
   }
+
   /**
-   * Updates an existing Supplier entity by its ID.
+   * Updates an existing supplier.
    *
-   * @param id - The ID of the Supplier to update.
-   * @param changes - The data transfer object containing the changes to apply.
-   * @returns An object containing the HTTP status code, the updated Supplier, and a success message.
-   * @throws NotFoundException if the Supplier is not found.
+   * @param id - ID of the supplier to update
+   * @param userId - ID of the user performing the update
+   * @param changes - UpdateSupplierDto containing the fields to update
+   * @returns Promise resolving to a Result containing the updated ResponseSupplierDto
+   * @throws NotFoundException if supplier is not found
    */
-  async update(id: number, userId: number, changes: UpdateSupplierDto) {
-    const { data } = await this.findOne(id);
-    this.repo.merge(data as Supplier, {
-      ...changes,
-      updatedBy: { id: userId },
+  async update(
+    id: number,
+    userId: number,
+    changes: UpdateSupplierDto,
+  ): Promise<Result<ResponseSupplierDto>> {
+    const supplier = await this.findOneEntity(id);
+    this.repo.merge(supplier, { ...changes, updatedBy: { id: userId } });
+    const updatedSupplier = await this.repo.save(supplier);
+
+    // Fetch with relations for proper mapping
+    const savedSupplier = await this.repo.findOne({
+      where: { id: updatedSupplier.id },
+      relations: ['createdBy', 'updatedBy', 'deletedBy'],
     });
-    const rta = await this.repo.save(data as Supplier);
+
     return {
       statusCode: HttpStatus.OK,
-      data: rta,
+      data: mapSupplierToResponseDto(savedSupplier!),
       message: `The Supplier with ID: ${id} has been modified`,
     };
   }
 
   /**
-   * Soft deletes a Supplier entity by its ID by setting its isDeleted flag to true.
+   * Soft deletes a supplier by marking it as deleted.
    *
-   * @param id - The ID of the Supplier to delete.
-   * @returns An object containing the HTTP status code and a success message.
-   * @throws NotFoundException if the Supplier is not found.
+   * @param id - ID of the supplier to delete
+   * @param userId - ID of the user performing the deletion
+   * @returns Promise resolving to an object with statusCode and message
+   * @throws NotFoundException if supplier is not found
    */
   async remove(id: Supplier['id'], userId: number) {
-    const { data } = await this.findOne(id);
+    const supplier = await this.findOneEntity(id);
 
-    const changes = { isDeleted: true };
-    this.repo.merge(data as Supplier, {
-      ...changes,
+    const changes = {
       deletedBy: { id: userId },
-    });
-    await this.repo.save(data as Supplier);
+      isDeleted: true,
+    };
+
+    this.repo.merge(supplier, changes);
+    await this.repo.save(supplier);
     return {
       statusCode: HttpStatus.OK,
       message: `The Supplier with ID: ${id} has been deleted`,

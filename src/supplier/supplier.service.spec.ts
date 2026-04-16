@@ -1,9 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 
 /* Services */
 import { SupplierService } from './supplier.service';
@@ -13,48 +10,62 @@ import { Supplier } from './entities/supplier.entity';
 import { User } from '@user/entities/user.entity';
 
 /* DTO's */
+import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
 
 /* Faker */
 import { generateSupplier, generateManySuppliers } from '@faker/supplier.faker';
 
+/* Mapper */
+import {
+  mapSupplierToResponseDto,
+  mapSuppliersToResponseDto,
+} from './mappers/supplier.mapper';
+
 describe('SupplierService', () => {
   let service: SupplierService;
-  let repository: Repository<Supplier>;
+
+  const mockSupplier: Supplier = generateSupplier();
+  const mockSuppliers: Supplier[] = generateManySuppliers(10);
+
+  const createMockRepo = () => ({
+    count: jest.fn(),
+    findAndCount: jest.fn(),
+    findOne: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+    merge: jest.fn(),
+  });
+
+  let mockRepository: ReturnType<typeof createMockRepo>;
 
   beforeEach(async () => {
+    mockRepository = createMockRepo();
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SupplierService,
         {
           provide: getRepositoryToken(Supplier),
-          useClass: Repository,
+          useValue: mockRepository,
         },
       ],
     }).compile();
+
     service = module.get<SupplierService>(SupplierService);
-    repository = module.get<Repository<Supplier>>(getRepositoryToken(Supplier));
+    jest.clearAllMocks();
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
 
-  describe('count suppliers services', () => {
-    it('should return total all suppliers', async () => {
-      jest.spyOn(repository, 'count').mockResolvedValue(100);
-
-      const { statusCode, total } = await service.countAll();
-      expect(repository.count).toHaveBeenCalledTimes(1);
-      expect(statusCode).toBe(200);
-      expect(total).toEqual(100);
-    });
-
+  describe('count', () => {
     it('should return total suppliers not removed', async () => {
-      jest.spyOn(repository, 'count').mockResolvedValue(100);
+      mockRepository.count.mockResolvedValue(100);
       const { statusCode, total } = await service.count();
-      expect(repository.count).toHaveBeenCalledTimes(1);
-      expect(repository.count).toHaveBeenCalledWith({
+      expect(mockRepository.count).toHaveBeenCalledTimes(1);
+      expect(mockRepository.count).toHaveBeenCalledWith({
         where: { isDeleted: false },
       });
       expect(statusCode).toBe(200);
@@ -62,182 +73,205 @@ describe('SupplierService', () => {
     });
   });
 
-  describe('find suppliers services', () => {
-    it('findAll should return all suppliers with pagination', async () => {
-      const suppliers = generateManySuppliers(50);
+  describe('findAll', () => {
+    it('should return all suppliers with default pagination', async () => {
+      const expectedMappedSuppliers = mapSuppliersToResponseDto(mockSuppliers);
 
-      jest
-        .spyOn(repository, 'findAndCount')
-        .mockResolvedValue([suppliers.slice(0, 10), suppliers.length]);
+      mockRepository.findAndCount.mockResolvedValue([
+        mockSuppliers,
+        mockSuppliers.length,
+      ]);
 
       const { statusCode, data, meta } = await service.findAll();
-      expect(repository.findAndCount).toHaveBeenCalledTimes(1);
-      expect(repository.findAndCount).toHaveBeenCalledWith({
+      expect(mockRepository.findAndCount).toHaveBeenCalledWith({
         where: { isDeleted: false },
+        relations: ['createdBy', 'updatedBy', 'deletedBy'],
         order: { name: 'ASC' },
-        relations: ['createdBy', 'updatedBy'],
         skip: 0,
         take: 10,
       });
       expect(statusCode).toBe(200);
-      expect(meta.total).toEqual(suppliers.length);
-      expect(data).toEqual(suppliers.slice(0, 10));
+      expect(data).toEqual(expectedMappedSuppliers);
+      expect(meta.total).toEqual(mockSuppliers.length);
     });
 
-    it('findOne should return a supplier', async () => {
-      const supplier: Supplier = generateSupplier();
-      const id = supplier.id;
+    it('should apply custom pagination', async () => {
+      const { page, limit } = { page: 2, limit: 5 };
+      mockRepository.findAndCount.mockResolvedValue([
+        mockSuppliers.slice(0, 5),
+        5,
+      ]);
 
-      jest.spyOn(repository, 'findOne').mockResolvedValue(supplier);
+      const result = await service.findAll({ page, limit });
+      expect(mockRepository.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({
+          skip: 5,
+          take: 5,
+        }),
+      );
+      expect(result.statusCode).toBe(200);
+    });
 
-      const { statusCode, data } = await service.findOne(id);
-      const dataSupplier: Supplier = data as Supplier;
-      expect(repository.findOne).toHaveBeenCalledTimes(1);
-      expect(repository.findOne).toHaveBeenCalledWith({
-        relations: ['createdBy', 'updatedBy'],
-        where: { id, isDeleted: false },
+    it('should handle findAndCount errors', async () => {
+      mockRepository.findAndCount.mockRejectedValue(new Error('DB error'));
+      await expect(service.findAll()).rejects.toThrow('DB error');
+    });
+  });
+
+  describe('findOne', () => {
+    it('should return a supplier', async () => {
+      const expectedMappedSupplier = mapSupplierToResponseDto(mockSupplier);
+
+      mockRepository.findOne.mockResolvedValue(mockSupplier);
+
+      const { statusCode, data } = await service.findOne(1);
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        relations: ['createdBy', 'updatedBy', 'deletedBy'],
+        where: { id: 1, isDeleted: false },
       });
       expect(statusCode).toBe(200);
-      expect(dataSupplier).toEqual(supplier);
+      expect(data).toEqual(expectedMappedSupplier);
     });
 
-    it('findOne should throw NotFoundException if Supplier does not exist', async () => {
-      const id = 1;
-      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
+    it('should throw NotFoundException if Supplier does not exist', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
 
-      try {
-        await service.findOne(id);
-      } catch (error) {
-        expect(error).toBeInstanceOf(NotFoundException);
-        expect(error.message).toBe(`The Supplier with ID: ${id} not found`);
-      }
+      await expect(service.findOne(999)).rejects.toThrow(NotFoundException);
     });
 
-    it('findOne should throw NotFoundException if supplier does not exist with Rejects', async () => {
-      const id = 1;
-      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
+    it('should throw NotFoundException with correct message', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.findOne(id)).rejects.toThrowError(
-        new NotFoundException(`The Supplier with ID: ${id} not found`),
+      await expect(service.findOne(42)).rejects.toThrow(
+        'The Supplier with ID: 42 not found',
       );
     });
 
-    it('findOneByName should return a brand', async () => {
-      const supplier = generateSupplier();
-      const name = supplier.name;
-
-      jest.spyOn(repository, 'findOne').mockResolvedValue(supplier);
-
-      const { statusCode, data } = await service.findOneByName(name);
-      const dataSupplier: Supplier = data as Supplier;
-      expect(repository.findOne).toHaveBeenCalledTimes(1);
-      expect(statusCode).toBe(200);
-      expect(dataSupplier).toEqual(supplier);
-    });
-
-    it('findOneByName should throw NotFoundException if supplier does not exist', async () => {
-      const name = 'nameTest';
-      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
-
-      try {
-        await service.findOneByName(name);
-      } catch (error) {
-        expect(error).toBeInstanceOf(NotFoundException);
-        expect(error.message).toBe(`The Supplier with NAME: ${name} not found`);
-      }
+    it('should handle findOne errors', async () => {
+      mockRepository.findOne.mockRejectedValue(new Error('DB error'));
+      await expect(service.findOne(1)).rejects.toThrow('DB error');
     });
   });
 
-  describe('create supplier services', () => {
-    it('create should return a supplier', async () => {
-      const supplier = generateSupplier();
+  describe('create', () => {
+    it('should create a supplier', async () => {
+      const dto: CreateSupplierDto = {
+        name: 'Test Supplier',
+        contactName: 'John Doe',
+        phoneNumber: '+1234567890',
+        email: 'test@example.com',
+      };
       const userId: User['id'] = 1;
+      const savedSupplier = { id: 1, ...dto, isDeleted: false };
 
-      jest.spyOn(repository, 'create').mockReturnValue(supplier);
-      jest.spyOn(repository, 'save').mockResolvedValue(supplier);
+      mockRepository.create.mockReturnValue({ ...dto });
+      mockRepository.save.mockResolvedValue(savedSupplier);
+      mockRepository.findOne.mockResolvedValue(savedSupplier);
 
-      const { statusCode, data } = await service.create(supplier, userId);
+      const { statusCode, message } = await service.create(dto, userId);
+      expect(mockRepository.create).toHaveBeenCalledWith({
+        ...dto,
+        createdBy: { id: userId },
+        updatedBy: { id: userId },
+      });
+      expect(mockRepository.save).toHaveBeenCalled();
+      expect(mockRepository.findOne).toHaveBeenCalled(); // For fetching with relations
       expect(statusCode).toBe(201);
-      expect(data).toEqual(supplier);
+      expect(message).toBe('The Supplier was created');
     });
 
-    it('create should return Conflict Exception when name supplier exists', async () => {
-      const supplier = generateSupplier();
-      const userId: User['id'] = 1;
+    it('should handle create errors', async () => {
+      mockRepository.create.mockReturnValue(mockSupplier);
+      mockRepository.save.mockRejectedValue(new Error('DB error'));
 
-      jest.spyOn(repository, 'create').mockReturnValue(supplier);
-      jest.spyOn(repository, 'save').mockResolvedValue(supplier);
-
-      try {
-        await service.create(supplier, userId);
-      } catch (error) {
-        expect(error).toBeInstanceOf(ConflictException);
-        expect(error.message).toBe(`Supplier ${supplier.name} already exists`);
-      }
-    });
-  });
-
-  describe('update supplier services', () => {
-    it('update should return message: have been modified', async () => {
-      const supplier = generateSupplier();
-      const id = supplier.id;
-      const userId: User['id'] = 1;
-
-      const changes: UpdateSupplierDto = { name: 'newName' };
-
-      jest.spyOn(repository, 'findOne').mockResolvedValue(supplier);
-      jest
-        .spyOn(repository, 'merge')
-        .mockReturnValue({ ...supplier, ...changes });
-      jest.spyOn(repository, 'save').mockResolvedValue(supplier);
-
-      const { statusCode, message } = await service.update(id, userId, changes);
-      expect(repository.findOne).toHaveBeenCalledTimes(1);
-      expect(repository.merge).toHaveBeenCalledTimes(1);
-      expect(repository.save).toHaveBeenCalledTimes(1);
-      expect(statusCode).toBe(200);
-      expect(message).toEqual(`The Supplier with ID: ${id} has been modified`);
-    });
-
-    it('update should throw NotFoundException if Supplier does not exist', async () => {
-      const id = 1;
-      const userId: User['id'] = 1;
-      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
-
-      try {
-        await service.update(id, userId, { name: 'newName' });
-      } catch (error) {
-        expect(error).toBeInstanceOf(NotFoundException);
-        expect(error.message).toBe(`The Supplier with ID: ${id} not found`);
-      }
+      await expect(
+        service.create(
+          {
+            name: 'Test',
+            contactName: 'John',
+            phoneNumber: '+123',
+            email: 'test@test.com',
+          },
+          1,
+        ),
+      ).rejects.toThrow('DB error');
     });
   });
 
-  describe('remove supplier services', () => {
-    it('remove should return status and message', async () => {
-      const supplier = generateSupplier();
-      const id = supplier.id;
+  describe('update', () => {
+    it('should update a supplier', async () => {
+      const changes: UpdateSupplierDto = { name: 'Updated Name' };
       const userId: User['id'] = 1;
+      const updatedSupplier = { ...mockSupplier, ...changes };
 
-      jest.spyOn(repository, 'findOne').mockResolvedValue(supplier);
-      jest
-        .spyOn(repository, 'merge')
-        .mockReturnValue({ ...supplier, isDeleted: true });
-      jest.spyOn(repository, 'save').mockResolvedValue(supplier);
+      // First findOne call (findOneEntity to get the supplier)
+      mockRepository.findOne.mockResolvedValueOnce(mockSupplier);
+      // Second findOne call (after save to fetch with relations)
+      mockRepository.findOne.mockResolvedValueOnce(updatedSupplier);
+      mockRepository.merge.mockReturnValue(updatedSupplier);
+      mockRepository.save.mockResolvedValue(updatedSupplier);
 
-      const { statusCode, message } = await service.remove(id, userId);
+      const { statusCode, message } = await service.update(1, userId, changes);
+      expect(mockRepository.merge).toHaveBeenCalledWith(mockSupplier, {
+        ...changes,
+        updatedBy: { id: userId },
+      });
+      expect(mockRepository.save).toHaveBeenCalled();
       expect(statusCode).toBe(200);
-      expect(message).toEqual(`The Supplier with ID: ${id} has been deleted`);
+      expect(message).toBe('The Supplier with ID: 1 has been modified');
     });
 
-    it('remove should throw NotFoundException if supplier does not exist with Rejects', async () => {
-      const id = 1;
-      const userId: User['id'] = 1;
-      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
+    it('should throw NotFoundException if supplier does not exist', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.remove(id, userId)).rejects.toThrowError(
-        new NotFoundException(`The Supplier with ID: ${id} not found`),
+      await expect(service.update(999, 1, { name: 'test' })).rejects.toThrow(
+        NotFoundException,
       );
+    });
+
+    it('should handle update errors', async () => {
+      mockRepository.findOne.mockRejectedValue(new Error('DB error'));
+
+      await expect(service.update(1, 1, { name: 'test' })).rejects.toThrow(
+        'DB error',
+      );
+    });
+  });
+
+  describe('remove', () => {
+    it('should soft delete a supplier', async () => {
+      const userId: User['id'] = 1;
+
+      mockRepository.findOne.mockResolvedValue(mockSupplier);
+      mockRepository.merge.mockReturnValue({
+        ...mockSupplier,
+        isDeleted: true,
+      });
+      mockRepository.save.mockResolvedValue({
+        ...mockSupplier,
+        isDeleted: true,
+      });
+
+      const { statusCode, message } = await service.remove(1, userId);
+      expect(mockRepository.merge).toHaveBeenCalledWith(mockSupplier, {
+        isDeleted: true,
+        deletedBy: { id: userId },
+      });
+      expect(mockRepository.save).toHaveBeenCalled();
+      expect(statusCode).toBe(200);
+      expect(message).toBe('The Supplier with ID: 1 has been deleted');
+    });
+
+    it('should throw NotFoundException if supplier does not exist', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.remove(999, 1)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should handle remove errors', async () => {
+      mockRepository.findOne.mockRejectedValue(new Error('DB error'));
+
+      await expect(service.remove(1, 1)).rejects.toThrow('DB error');
     });
   });
 });

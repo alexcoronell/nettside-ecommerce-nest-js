@@ -4,6 +4,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import * as cookieParser from 'cookie-parser';
 import { App } from 'supertest/types';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -38,9 +39,9 @@ describe('supplierController (e2e) [GET]', () => {
   let app: INestApplication<App>;
   let repo: any = undefined;
   let repoUser: any = undefined;
-  let adminAccessToken: string;
-  let sellerAccessToken: string;
-  let customerAccessToken: string;
+  let adminCookies: string[];
+  let sellerCookies: string[];
+  let customerCookies: string[];
 
   beforeAll(async () => {
     // Initialize database connection once for the entire test suite
@@ -71,11 +72,10 @@ describe('supplierController (e2e) [GET]', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.use(cookieParser());
     await app.init();
     repo = app.get('SupplierRepository');
     repoUser = app.get('UserRepository');
-    const suppliers = generateNewSuppliers(10);
-    await repo.save(suppliers);
   });
 
   beforeEach(async () => {
@@ -84,97 +84,45 @@ describe('supplierController (e2e) [GET]', () => {
 
     /* Login Users */
     const resLoginAdmin = await loginAdmin(app, repoUser);
-    adminAccessToken = resLoginAdmin.access_token;
+    adminCookies = resLoginAdmin.cookies;
+
     const resLoginSeller = await loginSeller(app, repoUser);
-    sellerAccessToken = resLoginSeller.access_token;
+    sellerCookies = resLoginSeller.cookies;
+
     const resLoginCustomer = await loginCustomer(app, repoUser);
-    customerAccessToken = resLoginCustomer.access_token;
-  });
-
-  describe('GET supplier - Count-All', () => {
-    it('/count-all should return 200 with admin access token', async () => {
-      const suppliers = generateNewSuppliers(10);
-      await repo.save(suppliers);
-      const res = await request(app.getHttpServer())
-        .get('/supplier/count-all')
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
-      const { statusCode, total } = res.body;
-      expect(statusCode).toBe(200);
-      expect(total).toEqual(suppliers.length);
-    });
-
-    it('/count-all should return 401 with seller access token', async () => {
-      const suppliers = generateNewSuppliers(10);
-      await repo.save(suppliers);
-      const res = await request(app.getHttpServer())
-        .get('/supplier/count-all')
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
-      const { statusCode, message } = res.body;
-      expect(statusCode).toBe(401);
-      expect(message).toBe('Unauthorized: Admin access required');
-    });
-
-    it('/count-all should return 401 with customer access token', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/supplier/count-all')
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
-      const { statusCode, message } = res.body;
-      expect(statusCode).toBe(401);
-      expect(message).toBe('Unauthorized: Admin access required');
-    });
-
-    it('/count-all should return 401 if api key is missing', async () => {
-      const data: any = await request(app.getHttpServer()).get(
-        '/supplier/count-all',
-      );
-      const { body, statusCode } = data;
-      expect(statusCode).toBe(401);
-      expect(body).toHaveProperty('message', 'Invalid API key');
-    });
-
-    it('/count-all should return 401 if api key is invalid', async () => {
-      const data: any = await request(app.getHttpServer())
-        .get('/supplier/count-all')
-        .set('x-api-key', 'invalid-api-key');
-      const { body, statusCode } = data;
-      expect(statusCode).toBe(401);
-      expect(body).toHaveProperty('message', 'Invalid API key');
-    });
+    customerCookies = resLoginCustomer.cookies;
   });
 
   describe('GET supplier - Count', () => {
-    it('/count should return 200 with admin access token', async () => {
+    it('/count should return 200 with admin cookies', async () => {
       const suppliers = generateNewSuppliers(10);
       await repo.save(suppliers);
       const res = await request(app.getHttpServer())
         .get('/supplier/count')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, total } = res.body;
       expect(statusCode).toBe(200);
       expect(total).toEqual(suppliers.length);
     });
 
-    it('/count should return 401 with seller access token', async () => {
+    it('/count should return 401 with seller cookies', async () => {
       const suppliers = generateNewSuppliers(10);
       await repo.save(suppliers);
       const res = await request(app.getHttpServer())
         .get('/supplier/count')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
+        .set('Cookie', sellerCookies);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);
       expect(message).toBe('Unauthorized: Admin access required');
     });
 
-    it('/count should return 401 with customer access token', async () => {
+    it('/count should return 401 with customer cookies', async () => {
       const res = await request(app.getHttpServer())
         .get('/supplier/count')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
+        .set('Cookie', customerCookies);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);
       expect(message).toBe('Unauthorized: Admin access required');
@@ -217,7 +165,7 @@ describe('supplierController (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .get('/supplier')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
       expect(data.length).toEqual(suppliers.length);
@@ -237,7 +185,7 @@ describe('supplierController (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .get('/supplier')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
+        .set('Cookie', sellerCookies);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);
       expect(message).toBe('Unauthorized: Admin access required');
@@ -249,7 +197,7 @@ describe('supplierController (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .get('/supplier')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
+        .set('Cookie', customerCookies);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);
       expect(message).toBe('Unauthorized: Admin access required');
@@ -279,101 +227,35 @@ describe('supplierController (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .get(`/supplier/${dataNewSupplier.id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
       expect(data.id).toEqual(dataNewSupplier.id);
       expect(data.name).toEqual(dataNewSupplier.name);
     });
 
-    it('/:id should return 401 by id with seller access token', async () => {
+    it('/:id should return 401 by id with seller cookies', async () => {
       const supplier = createSupplier();
       const dataNewSupplier = await repo.save(supplier);
       const res = await request(app.getHttpServer())
         .get(`/supplier/${dataNewSupplier.id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
+        .set('Cookie', sellerCookies);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);
       expect(message).toBe('Unauthorized: Admin access required');
     });
 
-    it('/:id should return 401 by id with customer access token', async () => {
+    it('/:id should return 401 by id with customer cookies', async () => {
       const supplier = createSupplier();
       const dataNewSupplier = await repo.save(supplier);
       const res = await request(app.getHttpServer())
         .get(`/supplier/${dataNewSupplier.id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
+        .set('Cookie', customerCookies);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);
       expect(message).toBe('Unauthorized: Admin access required');
-    });
-
-    it('/name/:name should return 404 by id if supplier does not exist', async () => {
-      const supplier = createSupplier();
-      await repo.save(supplier);
-      const res = await request(app.getHttpServer())
-        .get(`/supplier/9999999`)
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
-      const { statusCode, error, message } = res.body;
-      expect(statusCode).toBe(404);
-      expect(error).toBe('Not Found');
-      expect(message).toBe('The Supplier with ID: 9999999 not found');
-    });
-
-    it('/name/:name should return an supplier by name with admin user', async () => {
-      const supplier = createSupplier();
-      const dataNewSupplier = await repo.save(supplier);
-      const res = await request(app.getHttpServer())
-        .get(`/supplier/name/${supplier.name}`)
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
-      const { statusCode, data } = res.body;
-      expect(statusCode).toBe(200);
-      expect(data.id).toEqual(dataNewSupplier.id);
-      expect(data.name).toEqual(dataNewSupplier.name);
-    });
-
-    it('/name/:name should return an supplier by name with seller user', async () => {
-      const supplier = createSupplier();
-      await repo.save(supplier);
-      const res = await request(app.getHttpServer())
-        .get(`/supplier/name/${supplier.name}`)
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
-      const { statusCode, message } = res.body;
-      expect(statusCode).toBe(401);
-      expect(message).toBe('Unauthorized: Admin access required');
-    });
-
-    it('/name/:name should return 401 with customer user', async () => {
-      const supplier = createSupplier();
-      await repo.save(supplier);
-      const res = await request(app.getHttpServer())
-        .get(`/supplier/name/${supplier.name}`)
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
-      const { statusCode, error, message } = res.body;
-      expect(statusCode).toBe(401);
-      expect(error).toBe('Unauthorized');
-      expect(message).toBe('Unauthorized: Admin access required');
-    });
-
-    it('/name/:name should return 404 by name if supplier does not exist', async () => {
-      const supplier = createSupplier();
-      await repo.save(supplier);
-      const res = await request(app.getHttpServer())
-        .get(`/supplier/name/not-existing-name`)
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
-      const { statusCode, error, message } = res.body;
-      expect(statusCode).toBe(404);
-      expect(error).toBe('Not Found');
-      expect(message).toBe(
-        'The Supplier with NAME: not-existing-name not found',
-      );
     });
   });
 

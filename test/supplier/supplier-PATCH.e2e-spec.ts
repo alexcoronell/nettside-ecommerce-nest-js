@@ -4,6 +4,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import * as cookieParser from 'cookie-parser';
 import { App } from 'supertest/types';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -37,13 +38,13 @@ import { loginCustomer } from '../utils/login-customer';
 /* ApiKey */
 const API_KEY = process.env.API_KEY || 'api-e2e-key';
 
-describe('supplierController (e2e) [GET]', () => {
+describe('supplierController (e2e) [PATCH]', () => {
   let app: INestApplication<App>;
   let repo: any = undefined;
   let repoUser: any = undefined;
-  let adminAccessToken: string;
-  let sellerAccessToken: string;
-  let customerAccessToken: string;
+  let adminCookies: string[];
+  let sellerCookies: string[];
+  let customerCookies: string[];
 
   beforeAll(async () => {
     // Initialize database connection once for the entire test suite
@@ -74,11 +75,10 @@ describe('supplierController (e2e) [GET]', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.use(cookieParser());
     await app.init();
     repo = app.get('SupplierRepository');
     repoUser = app.get('UserRepository');
-    const suppliers = generateNewSuppliers(10);
-    await repo.save(suppliers);
   });
 
   beforeEach(async () => {
@@ -87,11 +87,13 @@ describe('supplierController (e2e) [GET]', () => {
 
     /* Login Users */
     const resLoginAdmin = await loginAdmin(app, repoUser);
-    adminAccessToken = resLoginAdmin.access_token;
+    adminCookies = resLoginAdmin.cookies;
+
     const resLoginSeller = await loginSeller(app, repoUser);
-    sellerAccessToken = resLoginSeller.access_token;
+    sellerCookies = resLoginSeller.cookies;
+
     const resLoginCustomer = await loginCustomer(app, repoUser);
-    customerAccessToken = resLoginCustomer.access_token;
+    customerCookies = resLoginCustomer.cookies;
   });
 
   describe('PATCH supplier', () => {
@@ -105,7 +107,7 @@ describe('supplierController (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .patch(`/supplier/${id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .set('Cookie', adminCookies)
         .send(updatedData);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
@@ -122,7 +124,7 @@ describe('supplierController (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .patch(`/supplier/${id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`)
+        .set('Cookie', sellerCookies)
         .send(updatedData);
       const { statusCode, error } = res.body;
       expect(statusCode).toBe(401);
@@ -139,7 +141,7 @@ describe('supplierController (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .patch(`/supplier/${id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`)
+        .set('Cookie', customerCookies)
         .send(updatedData);
       const { statusCode, error } = res.body;
       expect(statusCode).toBe(401);
@@ -157,7 +159,9 @@ describe('supplierController (e2e) [GET]', () => {
       };
       try {
         await request(app.getHttpServer())
-          .post(`/supplier/${id}`)
+          .patch(`/supplier/${id}`)
+          .set('x-api-key', API_KEY)
+          .set('Cookie', adminCookies)
           .send(updatedData);
       } catch (error) {
         expect(error).toBeInstanceOf(ConflictException);
@@ -175,7 +179,7 @@ describe('supplierController (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .patch(`/supplier/${id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .set('Cookie', adminCookies)
         .send(updatedData);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(404);
@@ -191,7 +195,7 @@ describe('supplierController (e2e) [GET]', () => {
       };
       const res = await request(app.getHttpServer())
         .patch(`/supplier/${id}`)
-        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .set('Cookie', adminCookies)
         .send(updatedData);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);
@@ -208,7 +212,7 @@ describe('supplierController (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .patch(`/supplier/${id}`)
         .set('x-api-key', 'invalid-api-key')
-        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .set('Cookie', adminCookies)
         .send(updatedData);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);

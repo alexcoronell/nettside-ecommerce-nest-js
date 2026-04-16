@@ -21,12 +21,10 @@ import { UserId } from '@auth/decorators/user-id.decorator';
 /* Services */
 import { SupplierService } from './supplier.service';
 
-/* Entities */
-import { Supplier } from './entities/supplier.entity';
-
 /* DTO's */
 import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
+import { ResponseSupplierDto } from './dto/response-supplier.dto';
 import { PaginationDto } from '@commons/dtos/Pagination.dto';
 
 /* Guards */
@@ -44,23 +42,14 @@ import { JwtAuthGuard } from '@auth/guards/jwt-auth/jwt-auth.guard';
  * as well as additional endpoints for counting and searching suppliers by name.
  */
 export class SupplierController
-  implements IBaseController<Supplier, CreateSupplierDto, UpdateSupplierDto>
+  implements
+    IBaseController<ResponseSupplierDto, CreateSupplierDto, UpdateSupplierDto>
 {
   /**
    * Creates an instance of SupplierController.
    * @param supplierService - The service used to manage supplier operations.
    */
   constructor(private readonly supplierService: SupplierService) {}
-
-  /**
-   * Returns the total count of all suppliers, including those that may be soft-deleted or inactive.
-   * @returns The total number of suppliers.
-   */
-  //@UseGuards(JwtAuthGuard, AdminGuard)
-  @Get('count-all')
-  countAll() {
-    return this.supplierService.countAll();
-  }
 
   /**
    * Returns the count of active suppliers.
@@ -96,16 +85,6 @@ export class SupplierController
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.supplierService.findOne(+id);
-  }
-
-  /**
-   * Retrieves a supplier by its name.
-   * @param name - The name of the supplier.
-   * @returns The supplier entity if found.
-   */
-  @Get('name/:name')
-  findOneByname(@Param('name') name: string) {
-    return this.supplierService.findOneByName(name);
   }
 
   /**

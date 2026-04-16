@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
+
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException, INestApplication } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import * as cookieParser from 'cookie-parser';
 import { App } from 'supertest/types';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -24,7 +25,7 @@ import { initDataSource, cleanDB, closeDataSource } from '../utils/seed';
 import { dataSource } from '../utils/seed';
 
 /* Faker */
-import { createSupplier, generateNewSuppliers } from '@faker/supplier.faker';
+import { createSupplier } from '@faker/supplier.faker';
 
 /* Login Users */
 import { loginAdmin } from '../utils/login-admin';
@@ -34,13 +35,12 @@ import { loginCustomer } from '../utils/login-customer';
 /* ApiKey */
 const API_KEY = process.env.API_KEY || 'api-e2e-key';
 
-describe('supplierController (e2e) [GET]', () => {
+describe('supplierController (e2e) [POST]', () => {
   let app: INestApplication<App>;
-  let repo: any = undefined;
   let repoUser: any = undefined;
-  let adminAccessToken: string;
-  let sellerAccessToken: string;
-  let customerAccessToken: string;
+  let adminCookies: string[];
+  let sellerCookies: string[];
+  let customerCookies: string[];
 
   beforeAll(async () => {
     // Initialize database connection once for the entire test suite
@@ -71,11 +71,9 @@ describe('supplierController (e2e) [GET]', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.use(cookieParser());
     await app.init();
-    repo = app.get('SupplierRepository');
     repoUser = app.get('UserRepository');
-    const suppliers = generateNewSuppliers(10);
-    await repo.save(suppliers);
   });
 
   beforeEach(async () => {
@@ -84,11 +82,13 @@ describe('supplierController (e2e) [GET]', () => {
 
     /* Login Users */
     const resLoginAdmin = await loginAdmin(app, repoUser);
-    adminAccessToken = resLoginAdmin.access_token;
+    adminCookies = resLoginAdmin.cookies;
+
     const resLoginSeller = await loginSeller(app, repoUser);
-    sellerAccessToken = resLoginSeller.access_token;
+    sellerCookies = resLoginSeller.cookies;
+
     const resLoginCustomer = await loginCustomer(app, repoUser);
-    customerAccessToken = resLoginCustomer.access_token;
+    customerCookies = resLoginCustomer.cookies;
   });
 
   describe('POST Supplier', () => {
@@ -97,7 +97,7 @@ describe('supplierController (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .post('/supplier')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .set('Cookie', adminCookies)
         .send(newSupplier);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(201);
@@ -109,49 +109,42 @@ describe('supplierController (e2e) [GET]', () => {
       const res = await request(app.getHttpServer())
         .post('/supplier')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`)
+        .set('Cookie', sellerCookies)
         .send(newSupplier);
       const { statusCode, error } = res.body;
       expect(statusCode).toBe(401);
       expect(error).toBe('Unauthorized');
     });
 
-    it('/ should create a supplier, return 401 if user is custonmer', async () => {
+    it('/ should create a supplier, return 401 if user is customer', async () => {
       const newSupplier = createSupplier();
       const res = await request(app.getHttpServer())
         .post('/supplier')
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`)
+        .set('Cookie', customerCookies)
         .send(newSupplier);
       const { statusCode, error } = res.body;
       expect(statusCode).toBe(401);
       expect(error).toBe('Unauthorized');
     });
 
-    it('/ should return a  conflict exception with existing supplier name', async () => {
-      const newSupplier = createSupplier();
-      await repo.save(newSupplier);
-      const repeatedSupplier = {
-        ...createSupplier(),
-        name: newSupplier.name,
-      };
-      try {
-        await request(app.getHttpServer())
-          .post('/supplier')
-          .send(repeatedSupplier);
-      } catch (error) {
-        expect(error).toBeInstanceOf(ConflictException);
-        expect(error.message).toBe(
-          `The Supplier NAME ${repeatedSupplier.name} is already in use`,
-        );
-      }
-    });
-
-    it('/ should create a supplier, return 401 if api key is missing', async () => {
+    it('/ should return 401 if api key is missing', async () => {
       const newSupplier = createSupplier();
       const res = await request(app.getHttpServer())
         .post('/supplier')
-        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .set('Cookie', adminCookies)
+        .send(newSupplier);
+      const { statusCode, message } = res.body;
+      expect(statusCode).toBe(401);
+      expect(message).toBe('Invalid API key');
+    });
+
+    it('/ should return 401 if api key is invalid', async () => {
+      const newSupplier = createSupplier();
+      const res = await request(app.getHttpServer())
+        .post('/supplier')
+        .set('x-api-key', 'invalid-api-key')
+        .set('Cookie', adminCookies)
         .send(newSupplier);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(401);
