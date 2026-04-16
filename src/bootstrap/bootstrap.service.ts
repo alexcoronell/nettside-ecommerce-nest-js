@@ -1,13 +1,14 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { UserSeeder } from '../database/seeders/user.seeder';
 import {
   FakeBrandsSeeder,
   FakeCategoriesSeeder,
   FakeDiscountsSeeder,
   FakePaymentMethodsSeeder,
+  FakeProductsSeeder,
   FakeSubcategoriesSeeder,
   FakeTagsSeeder,
   FakeUsersSeeder,
+  UserSeeder,
 } from '../database/seeders/';
 
 @Injectable()
@@ -20,6 +21,7 @@ export class BootstrapService implements OnModuleInit {
     private readonly fakeCategoriesSeeder: FakeCategoriesSeeder,
     private readonly fakeDiscountsSeeder: FakeDiscountsSeeder,
     private readonly fakePaymentMethodsSeeder: FakePaymentMethodsSeeder,
+    private readonly fakeProductsSeeder: FakeProductsSeeder,
     private readonly fakeSubcategoriesSeeder: FakeSubcategoriesSeeder,
     private readonly fakeTagsSeeder: FakeTagsSeeder,
     private readonly fakeUsersSeeder: FakeUsersSeeder,
@@ -44,6 +46,7 @@ export class BootstrapService implements OnModuleInit {
       await this.fakePaymentMethodsSeeder.seed();
       await this.fakeSubcategoriesSeeder.seed();
       await this.fakeTagsSeeder.seed();
+      await this.fakeProductsSeeder.seed();
       this.logger.log('✅ Seeds completed');
     }
   }
