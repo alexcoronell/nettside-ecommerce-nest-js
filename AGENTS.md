@@ -125,7 +125,11 @@ All SOLID principles are now implemented!
 - [x] user
 - [x] wishlist
 
-**Priority**: Start with modules that have most complex DTOs (user, product, brand)
+**Status**: ISP refactor completado en 17 de 19 módulos
+
+**Remaining**: purchase, sale
+
+**Priority**: purchase y sale (últimos sin refactorizar)
 
 ## Implemented Modules (DTO Interface Segregation)
 
@@ -146,3 +150,39 @@ All SOLID principles are now implemented!
 - [x] tag - completed in current branch
 - [x] user - completed in current branch
 - [x] wishlist - completed in current branch
+
+---
+
+## Seeders Configuration
+
+### Database Seeders (Bootstrap)
+
+| Seeder                        | Type    | Description                         |
+| ----------------------------- | ------- | ----------------------------------- |
+| `UserSeeder`                  | Default | Creates default admin user          |
+| `DefaultStoreDetailsSeeder`   | Default | Creates default store detail (id=1) |
+| `FakeUsersSeeder`             | Fake    | Creates 100 fake users              |
+| `FakeShippingCompaniesSeeder` | Fake    | Creates 10 fake shipping companies  |
+| `FakeStoreDetailsSeeder`      | Fake    | Updates store with fake data        |
+| `FakeBrandsSeeder`            | Fake    | Creates 100 fake brands             |
+| `FakeCategoriesSeeder`        | Fake    | Creates fake categories             |
+| `FakeDiscountsSeeder`         | Fake    | Creates fake discounts              |
+| `FakePaymentMethodsSeeder`    | Fake    | Creates fake payment methods        |
+| `FakeSubcategoriesSeeder`     | Fake    | Creates fake subcategories          |
+| `FakeSuppliersSeeder`         | Fake    | Creates fake suppliers              |
+| `FakeTagsSeeder`              | Fake    | Creates fake tags                   |
+| `FakeProductsSeeder`          | Fake    | Creates fake products               |
+
+### Seed Order (BootstrapService)
+
+1. **Default Seeds** (Production mode): UserSeeder → DefaultStoreDetailsSeeder
+2. **Fake Seeds**: FakeUsersSeeder → FakeShippingCompaniesSeeder → FakeStoreDetailsSeeder → FakeBrandsSeeder → FakeCategoriesSeeder → FakeDiscountsSeeder → FakePaymentMethodsSeeder → FakeSubcategoriesSeeder → FakeSuppliersSeeder → FakeTagsSeeder → FakeProductsSeeder
+
+---
+
+## Current Branch Status
+
+- **Branch**: `dev`
+- **Commits ahead of origin/dev**: 5 commits
+- **Last refactored module**: shipping-company
+- **Pending modules**: purchase, sale (ISP refactor)
