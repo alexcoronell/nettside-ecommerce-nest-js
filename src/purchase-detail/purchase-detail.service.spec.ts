@@ -71,6 +71,9 @@ describe('PurchaseDetailService', () => {
 
       const result = await service.findAll();
       expect(repository.findAndCount).toHaveBeenCalledTimes(1);
+      expect(repository.findAndCount).toHaveBeenCalledWith({
+        where: { isDeleted: false },
+      });
       expect(result.statusCode).toBe(200);
       expect(result.data).toEqual(mocks);
       expect(result.total).toBe(5);
@@ -103,6 +106,30 @@ describe('PurchaseDetailService', () => {
           `The Purchase Detail with ID ${id} not found`,
         );
       }
+    });
+
+    it('should return purchase details by purchase id', async () => {
+      const purchaseId = 1;
+      const mocks = generateManyPurchaseDetails(3);
+      jest.spyOn(repository, 'find').mockResolvedValue(mocks);
+
+      const { statusCode, data } = await service.findByPurchaseId(purchaseId);
+      expect(repository.find).toHaveBeenCalledTimes(1);
+      expect(repository.find).toHaveBeenCalledWith({
+        where: { purchase: { id: purchaseId }, isDeleted: false },
+      });
+      expect(statusCode).toBe(200);
+      expect(data).toEqual(mocks);
+    });
+
+    it('should return empty array when no purchase details found for purchase id', async () => {
+      const purchaseId = 999;
+      jest.spyOn(repository, 'find').mockResolvedValue([]);
+
+      const { statusCode, data } = await service.findByPurchaseId(purchaseId);
+      expect(repository.find).toHaveBeenCalledTimes(1);
+      expect(statusCode).toBe(200);
+      expect(data).toEqual([]);
     });
   });
 
