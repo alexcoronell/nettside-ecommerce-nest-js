@@ -43,17 +43,14 @@ export class ResponseStoreDetailDto {
   readonly legalInformation: string | null;
 
   @ApiProperty()
-  readonly isDeleted: boolean;
-
-  @ApiProperty()
   readonly createdAt: Date;
 
   @ApiPropertyOptional()
   readonly updatedAt: Date;
 
   @ApiPropertyOptional({ nullable: true })
-  readonly deletedAt: Date | null;
+  readonly createdBy: number | null;
 
   @ApiPropertyOptional({ nullable: true })
-  readonly deletedBy: number | null;
+  readonly updatedBy: number | null;
 }

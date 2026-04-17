@@ -40,7 +40,7 @@ import { loginCustomer } from '../utils/login-customer';
 /* ApiKey */
 const API_KEY = process.env.API_KEY || 'api-e2e-key';
 
-describe('StoreDetailController (e2e) [GET]', () => {
+describe('StoreDetailController (e2e) [PATCH]', () => {
   let app: INestApplication<App>;
   let repo: any = undefined;
   let repoUser: any = undefined;

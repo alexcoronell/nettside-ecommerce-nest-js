@@ -7,6 +7,7 @@ import { StoreDetail } from './entities/store-detail.entity';
 
 /* DTO's */
 import { UpdateStoreDetailDto } from './dto/update-store-detail.dto';
+import { ResponseStoreDetailDto } from './dto/response-store-detail.dto';
 
 /* Types */
 import { Result } from '@commons/types/result.type';
@@ -18,7 +19,31 @@ export class StoreDetailService {
     private readonly repo: Repository<StoreDetail>,
   ) {}
 
-  async findOne(id: StoreDetail['id']): Promise<Result<StoreDetail>> {
+  /**
+   * Maps a StoreDetail entity to ResponseStoreDetailDto.
+   */
+  mapEntityToResponse(entity: StoreDetail): ResponseStoreDetailDto {
+    return {
+      id: entity.id,
+      name: entity.name,
+      country: entity.country,
+      state: entity.state,
+      city: entity.city,
+      neighborhood: entity.neighborhood,
+      address: entity.address,
+      phone: entity.phone,
+      email: entity.email,
+      legalInformation: entity.legalInformation,
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
+      createdBy: entity.createdBy?.id ?? null,
+      updatedBy: entity.updatedBy?.id ?? null,
+    };
+  }
+
+  async findOne(
+    id: StoreDetail['id'],
+  ): Promise<Result<ResponseStoreDetailDto>> {
     const data = await this.repo.findOne({
       relations: ['createdBy', 'updatedBy'],
       where: { id },
@@ -28,20 +53,30 @@ export class StoreDetailService {
     }
     return {
       statusCode: HttpStatus.OK,
-      data,
+      data: this.mapEntityToResponse(data),
     };
   }
 
-  async update(id: number, userId: number, changes: UpdateStoreDetailDto) {
-    const { data } = await this.findOne(id);
-    this.repo.merge(data as StoreDetail, {
+  async update(
+    id: number,
+    userId: number,
+    changes: UpdateStoreDetailDto,
+  ): Promise<Result<ResponseStoreDetailDto>> {
+    const data = await this.repo.findOne({
+      relations: ['createdBy', 'updatedBy'],
+      where: { id },
+    });
+    if (!data) {
+      throw new NotFoundException(`Store Details not found`);
+    }
+    this.repo.merge(data, {
       ...changes,
       updatedBy: { id: userId },
     });
-    const rta = await this.repo.save(data as StoreDetail);
+    const saved = await this.repo.save(data);
     return {
       statusCode: HttpStatus.OK,
-      data: rta,
+      data: this.mapEntityToResponse(saved),
       message: `Store Details has been modified`,
     };
   }

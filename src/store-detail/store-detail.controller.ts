@@ -11,14 +11,12 @@ import {
 /* Services */
 import { StoreDetailService } from './store-detail.service';
 
-/* Entities */
-import { StoreDetail } from './entities/store-detail.entity';
-
 /* Decorators */
 import { UserId } from '@auth/decorators/user-id.decorator';
 
 /* DTO's */
 import { UpdateStoreDetailDto } from './dto/update-store-detail.dto';
+import { ResponseStoreDetailDto } from './dto/response-store-detail.dto';
 
 import { Result } from '@commons/types/result.type';
 
@@ -32,8 +30,10 @@ export class StoreDetailController {
 
   @UseGuards(JwtAuthGuard, AdminGuard)
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number): Promise<Result<StoreDetail>> {
-    return this.storeDetailService.findOne(+id);
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<Result<ResponseStoreDetailDto>> {
+    return this.storeDetailService.findOne(id);
   }
 
   @UseGuards(JwtAuthGuard, AdminGuard)
@@ -42,7 +42,7 @@ export class StoreDetailController {
     @Param('id', ParseIntPipe) id: number,
     @UserId() userId: number,
     @Body() updateStoreDetailDto: UpdateStoreDetailDto,
-  ): Promise<Result<StoreDetail>> {
-    return this.storeDetailService.update(+id, userId, updateStoreDetailDto);
+  ): Promise<Result<ResponseStoreDetailDto>> {
+    return this.storeDetailService.update(id, userId, updateStoreDetailDto);
   }
 }

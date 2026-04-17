@@ -42,12 +42,78 @@ describe('StoreDetailService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('find Store Details services', () => {
-    it('findOne should return a brand', async () => {
-      const mock = generateStoreDetail();
-      const id = mock.id;
+  describe('mapEntityToResponse', () => {
+    it('should map entity to response DTO', () => {
+      const entity: StoreDetail = {
+        id: 1,
+        name: 'Test Store',
+        country: 'Colombia',
+        state: 'Antioquia',
+        city: 'Medellín',
+        neighborhood: 'El Poblado',
+        address: 'Calle 10 # 20-30',
+        phone: '+573001234567',
+        email: 'test@store.com',
+        legalInformation: 'Some legal info',
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
+        createdBy: { id: 1 } as User,
+        updatedBy: { id: 2 } as User,
+      };
 
-      jest.spyOn(repository, 'findOne').mockResolvedValue(mock);
+      const response = service.mapEntityToResponse(entity);
+
+      expect(response).toEqual({
+        id: 1,
+        name: 'Test Store',
+        country: 'Colombia',
+        state: 'Antioquia',
+        city: 'Medellín',
+        neighborhood: 'El Poblado',
+        address: 'Calle 10 # 20-30',
+        phone: '+573001234567',
+        email: 'test@store.com',
+        legalInformation: 'Some legal info',
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
+        createdBy: 1,
+        updatedBy: 2,
+      });
+    });
+
+    it('should handle null relations', () => {
+      const entity: StoreDetail = {
+        id: 1,
+        name: null,
+        country: null,
+        state: null,
+        city: null,
+        neighborhood: null,
+        address: null,
+        phone: null,
+        email: null,
+        legalInformation: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        createdBy: null,
+        updatedBy: null,
+      } as StoreDetail;
+
+      const response = service.mapEntityToResponse(entity);
+
+      expect(response.createdBy).toBeNull();
+      expect(response.updatedBy).toBeNull();
+    });
+  });
+
+  describe('find Store Details services', () => {
+    it('findOne should return ResponseStoreDetailDto', async () => {
+      const mockEntity = generateStoreDetail();
+      mockEntity.createdBy = { id: 1 } as User;
+      mockEntity.updatedBy = { id: 2 } as User;
+      const id = mockEntity.id;
+
+      jest.spyOn(repository, 'findOne').mockResolvedValue(mockEntity);
 
       const { statusCode, data } = await service.findOne(id);
       expect(repository.findOne).toHaveBeenCalledTimes(1);
@@ -56,7 +122,12 @@ describe('StoreDetailService', () => {
         where: { id },
       });
       expect(statusCode).toBe(200);
-      expect(data).toEqual(mock);
+      expect(data).toEqual(
+        expect.objectContaining({
+          id: mockEntity.id,
+          name: mockEntity.name,
+        }),
+      );
     });
 
     it('findOne should throw NotFoundException if Store Detail does not exist', async () => {
@@ -82,22 +153,33 @@ describe('StoreDetailService', () => {
   });
 
   describe('update Store Details services', () => {
-    it('update should return message: have been modified', async () => {
-      const mock = generateStoreDetail();
-      const id = mock.id;
+    it('update should return ResponseStoreDetailDto with message', async () => {
+      const mockEntity = generateStoreDetail();
+      mockEntity.createdBy = { id: 1 } as User;
+      mockEntity.updatedBy = { id: 2 } as User;
+      const id = mockEntity.id;
       const userId: User['id'] = 1;
       const changes: UpdateStoreDetailDto = { name: 'newName' };
 
-      jest.spyOn(repository, 'findOne').mockResolvedValue(mock);
-      jest.spyOn(repository, 'merge').mockReturnValue({ ...mock, ...changes });
-      jest.spyOn(repository, 'save').mockResolvedValue(mock);
+      jest.spyOn(repository, 'findOne').mockResolvedValue(mockEntity);
+      jest.spyOn(repository, 'merge').mockReturnValue(mockEntity);
+      jest.spyOn(repository, 'save').mockResolvedValue(mockEntity);
 
-      const { statusCode, message } = await service.update(id, userId, changes);
+      const { statusCode, message, data } = await service.update(
+        id,
+        userId,
+        changes,
+      );
       expect(repository.findOne).toHaveBeenCalledTimes(1);
       expect(repository.merge).toHaveBeenCalledTimes(1);
       expect(repository.save).toHaveBeenCalledTimes(1);
       expect(statusCode).toBe(200);
       expect(message).toEqual(`Store Details has been modified`);
+      expect(data).toEqual(
+        expect.objectContaining({
+          id: mockEntity.id,
+        }),
+      );
     });
 
     it('update should throw NotFoundException if Store Details does not exist', async () => {
