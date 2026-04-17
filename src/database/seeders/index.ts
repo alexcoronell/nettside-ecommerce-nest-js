@@ -1,3 +1,5 @@
+export * from './default-store-detail.seeder';
+export * from './fake-store-detail.seeder';
 export * from './fake-brands.seeder';
 export * from './fake-categories.seeder';
 export * from './fake-discounts.seeder';
