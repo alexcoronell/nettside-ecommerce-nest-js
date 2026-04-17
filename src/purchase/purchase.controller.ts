@@ -21,12 +21,10 @@ import { UserId } from '@auth/decorators/user-id.decorator';
 /* Services */
 import { PurchaseService } from './purchase.service';
 
-/* Entities */
-import { Purchase } from './entities/purchase.entity';
-
 /* DTO's */
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
 import { UpdatePurchaseDto } from './dto/update-purchase.dto';
+import { ResponsePurchaseDto } from './dto/response-purchase.dto';
 import { PaginationDto } from '@commons/dtos/Pagination.dto';
 
 /* Guards */
@@ -36,14 +34,10 @@ import { AdminGuard } from '@auth/guards/admin-auth/admin-auth.guard';
 @Controller('purchase')
 @UseGuards(JwtAuthGuard, AdminGuard)
 export class PurchaseController
-  implements IBaseController<Purchase, CreatePurchaseDto, UpdatePurchaseDto>
+  implements
+    IBaseController<ResponsePurchaseDto, CreatePurchaseDto, UpdatePurchaseDto>
 {
   constructor(private readonly purchaseService: PurchaseService) {}
-
-  @Get('count-all')
-  countAll() {
-    return this.purchaseService.countAll();
-  }
 
   @Get('count')
   count() {
@@ -70,11 +64,6 @@ export class PurchaseController
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.purchaseService.findOne(+id);
-  }
-
-  @Get('supplier/:id')
-  findOneBySupplierId(@Param('id', ParseIntPipe) id: number) {
-    return this.purchaseService.findBySupplierId(id);
   }
 
   @Post()

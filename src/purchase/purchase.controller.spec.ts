@@ -29,11 +29,9 @@ describe('PurchaseController', () => {
   const mockNewPurchase: CreatePurchaseDto = createPurchase();
 
   const mockService = {
-    countAll: jest.fn().mockResolvedValue(mockPurchases.length),
     count: jest.fn().mockResolvedValue(mockPurchases.length),
     findAll: jest.fn().mockResolvedValue(mockPurchases),
     findOne: jest.fn().mockResolvedValue(mockPurchase),
-    findBySupplierId: jest.fn().mockResolvedValue(mockPurchase),
     create: jest.fn().mockResolvedValue(mockNewPurchase),
     update: jest.fn().mockResolvedValue(1),
     remove: jest.fn().mockResolvedValue(1),
@@ -59,11 +57,6 @@ describe('PurchaseController', () => {
   });
 
   describe('Count purchases controllers', () => {
-    it('should call countAll purchase service', async () => {
-      expect(await controller.countAll()).toBe(mockPurchases.length);
-      expect(service.countAll).toHaveBeenCalledTimes(1);
-    });
-
     it('should call count purchase service', async () => {
       expect(await controller.count()).toBe(mockPurchases.length);
       expect(service.count).toHaveBeenCalledTimes(1);
@@ -79,11 +72,6 @@ describe('PurchaseController', () => {
     it('should call findOne purchase service', async () => {
       expect(await controller.findOne(1)).toBe(mockPurchase);
       expect(service.findOne).toHaveBeenCalledTimes(1);
-    });
-
-    it('should return a purchase by supplier id', async () => {
-      expect(await controller.findOneBySupplierId(mockPurchase.supplier.id));
-      expect(service.findBySupplierId).toHaveBeenCalledTimes(1);
     });
   });
 

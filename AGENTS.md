@@ -124,12 +124,13 @@ All SOLID principles are now implemented!
 - [x] tag
 - [x] user
 - [x] wishlist
+- [x] purchase
 
-**Status**: ISP refactor completado en 17 de 19 módulos
+**Status**: ISP refactor completado en 18 de 19 módulos
 
-**Remaining**: purchase, sale
+**Remaining**: sale
 
-**Priority**: purchase y sale (últimos sin refactorizar)
+**Priority**: sale (último sin refactorizar)
 
 ## Implemented Modules (DTO Interface Segregation)
 
@@ -150,6 +151,7 @@ All SOLID principles are now implemented!
 - [x] tag - completed in current branch
 - [x] user - completed in current branch
 - [x] wishlist - completed in current branch
+- [x] purchase - completed in current branch
 
 ---
 

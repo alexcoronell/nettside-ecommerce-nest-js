@@ -8,10 +8,12 @@ import { IBaseService } from '@commons/interfaces/i-base-service';
 /* Entities */
 import { Purchase } from './entities/purchase.entity';
 import { Supplier } from '@supplier/entities/supplier.entity';
+import { User } from '@user/entities/user.entity';
 
 /* DTO's */
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
 import { UpdatePurchaseDto } from './dto/update-purchase.dto';
+import { ResponsePurchaseDto } from './dto/response-purchase.dto';
 import {
   PaginationDto,
   PaginatedResult,
@@ -21,19 +23,21 @@ import {
 /* Types */
 import { Result } from '@commons/types/result.type';
 
+/* Mappers */
+import {
+  mapPurchaseToResponseDto,
+  mapPurchasesToResponseDto,
+} from './mappers/purchase.mapper';
+
 @Injectable()
 export class PurchaseService
-  implements IBaseService<Purchase, CreatePurchaseDto, UpdatePurchaseDto>
+  implements
+    IBaseService<ResponsePurchaseDto, CreatePurchaseDto, UpdatePurchaseDto>
 {
   constructor(
     @InjectRepository(Purchase)
     private readonly repo: Repository<Purchase>,
   ) {}
-
-  async countAll() {
-    const total = await this.repo.count();
-    return { statusCode: HttpStatus.OK, total };
-  }
 
   async count() {
     const total = await this.repo.count({
@@ -51,11 +55,11 @@ export class PurchaseService
    * When no pagination options are provided, all purchases are returned.
    *
    * @param paginationDto - Optional pagination parameters.
-   * @returns {Promise<PaginatedResult<Purchase>>} A standardized paginated response.
+   * @returns {Promise<PaginatedResult<ResponsePurchaseDto>>} A standardized paginated response.
    */
   async findAll(
     paginationDto?: PaginationDto,
-  ): Promise<PaginatedResult<Purchase>> {
+  ): Promise<PaginatedResult<ResponsePurchaseDto>> {
     const { page, limit, skip } = PaginationHelper.normalizePagination(
       paginationDto?.page,
       paginationDto?.limit,
@@ -78,39 +82,41 @@ export class PurchaseService
       take: limit,
     });
 
-    // Return paginated result
-    return PaginationHelper.createPaginatedResult(data, total, page, limit);
+    // Map to DTO and return paginated result
+    const mappedData = mapPurchasesToResponseDto(data);
+    return PaginationHelper.createPaginatedResult(
+      mappedData,
+      total,
+      page,
+      limit,
+    );
   }
 
-  async findOne(id: number) {
+  async findOne(id: number): Promise<Result<ResponsePurchaseDto>> {
     const purchase = await this.repo.findOne({
       where: { id, isDeleted: false },
-      relations: ['createdBy'],
+      relations: [
+        'createdBy',
+        'updatedBy',
+        'purchaseDetails',
+        'purchaseDetails.product',
+      ],
     });
 
     if (!purchase) {
       throw new NotFoundException(`The Purchase with ID ${id} not found`);
     }
-    return {
-      statusCode: HttpStatus.OK,
-      data: purchase,
-    };
-  }
-
-  async findBySupplierId(supplierId: number): Promise<Result<Purchase[]>> {
-    const [purchases, total] = await this.repo.findAndCount({
-      where: { supplier: { id: supplierId }, isDeleted: false },
-      relations: ['createdBy'],
-    });
 
     return {
       statusCode: HttpStatus.OK,
-      data: purchases,
-      total,
+      data: mapPurchaseToResponseDto(purchase, true),
     };
   }
 
-  async create(dto: CreatePurchaseDto, userId: number) {
+  async create(
+    dto: CreatePurchaseDto,
+    userId: number,
+  ): Promise<Result<ResponsePurchaseDto>> {
     const suppliedId = dto.supplier;
     const newPurchase = this.repo.create({
       ...dto,
@@ -119,39 +125,87 @@ export class PurchaseService
       updatedBy: { id: userId },
     });
     const purchase = await this.repo.save(newPurchase);
+
+    // Fetch with relations for proper mapping
+    const savedPurchase = await this.repo.findOne({
+      relations: ['supplier', 'createdBy', 'updatedBy'],
+      where: { id: purchase.id },
+    });
+
     return {
       statusCode: HttpStatus.CREATED,
-      data: purchase,
+      data: mapPurchaseToResponseDto(savedPurchase!),
       message: 'The Purchase was created',
     };
   }
 
-  async update(id: number, userId: number, changes: UpdatePurchaseDto) {
-    const { data } = await this.findOne(id);
-    const supplierId = changes.supplier;
-    this.repo.merge(data, {
-      ...changes,
-      supplier: { id: supplierId },
-      updatedBy: { id: userId },
+  async update(
+    id: number,
+    userId: number,
+    changes: UpdatePurchaseDto,
+  ): Promise<Result<ResponsePurchaseDto>> {
+    const purchaseEntity = await this.repo.findOne({
+      where: { id, isDeleted: false },
     });
-    const rta = await this.repo.save(data);
+
+    if (!purchaseEntity) {
+      throw new NotFoundException(`The Purchase with ID ${id} not found`);
+    }
+
+    // Build update data - handle supplier separately to avoid type conflict
+    const { supplier: _supplier, ...restChanges } = changes as {
+      supplier?: number;
+      purchaseDate?: Date;
+      totalAmount?: number;
+    };
+
+    void _supplier;
+
+    const updateData: Partial<Purchase> = {
+      ...restChanges,
+      updatedBy: { id: userId } as User,
+    };
+
+    if (changes.supplier !== undefined) {
+      updateData.supplier = { id: changes.supplier } as Supplier;
+    }
+
+    this.repo.merge(purchaseEntity, updateData);
+    const savedPurchase = await this.repo.save(purchaseEntity);
+
+    // Fetch with relations for proper mapping
+    const updatedPurchase = await this.repo.findOne({
+      relations: ['supplier', 'createdBy', 'updatedBy'],
+      where: { id: savedPurchase.id },
+    });
+
     return {
       statusCode: HttpStatus.OK,
-      data: rta,
+      data: mapPurchaseToResponseDto(updatedPurchase!),
       message: `The Purchase with id: ${id} has been modified`,
     };
   }
 
-  async remove(id: Purchase['id'], userId: number) {
-    const { data } = await this.findOne(id);
+  async remove(
+    id: Purchase['id'],
+    userId: number,
+  ): Promise<{ statusCode: number; message: string }> {
+    const purchaseEntity = await this.repo.findOne({
+      where: { id, isDeleted: false },
+    });
+
+    if (!purchaseEntity) {
+      throw new NotFoundException(`The Purchase with ID ${id} not found`);
+    }
 
     const changes = {
       isDeleted: true,
       deletedBy: { id: userId },
       deletedAt: new Date(),
     };
-    this.repo.merge(data, changes);
-    await this.repo.save(data);
+    this.repo.merge(purchaseEntity, changes);
+    await this.repo.save(purchaseEntity);
+
     return {
       statusCode: HttpStatus.OK,
       message: `The Purchase with id: ${id} has been deleted`,

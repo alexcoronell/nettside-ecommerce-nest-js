@@ -46,9 +46,7 @@ import { loginCustomer } from '../utils/login-customer';
 const API_KEY = process.env.API_KEY || 'api-e2e-key';
 
 const PATH = '/purchase';
-const COUNT_ALL = `${PATH}/count-all`;
 const COUNT = `${PATH}/count`;
-const FIND_BY_SUPPLIER = `${PATH}/supplier`;
 const ID = 1;
 
 describe('PurchaseController (e2e) [GET]', () => {
@@ -114,67 +112,6 @@ describe('PurchaseController (e2e) [GET]', () => {
       purchase.supplier = supplier;
     }
     purchases = await repo.save(newPurchases);
-  });
-
-  describe('GET Purchase - Count-All', () => {
-    it('/count-all should return 401 if api key is missing', async () => {
-      const res: any = await request(app.getHttpServer()).get(COUNT_ALL);
-      const { statusCode, message } = res.body;
-      expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
-      expect(message).toBe(ERROR_MESSAGES.INVALID_API_KEY);
-    });
-
-    it('/count-all should return 401 if api key is invalid', async () => {
-      const res: any = await request(app.getHttpServer())
-        .get(COUNT_ALL)
-        .set('x-api-key', 'invalid-api-key');
-      const { statusCode, message } = res.body;
-      expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
-      expect(message).toBe(ERROR_MESSAGES.INVALID_API_KEY);
-    });
-
-    it('/count-all should return 200 with admin access token', async () => {
-      const res = await request(app.getHttpServer())
-        .get(COUNT_ALL)
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
-      const { statusCode, total } = res.body;
-      expect(statusCode).toBe(HTTP_STATUS.OK);
-      expect(total).toEqual(purchases.length);
-    });
-
-    it('/count-all should return 401 with seller access token', async () => {
-      const res = await request(app.getHttpServer())
-        .get(COUNT_ALL)
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
-      const { statusCode, message, error, total } = res.body;
-      expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
-      expect(message).toBe(ERROR_MESSAGES.ADMIN_REQUIRED);
-      expect(error).toBe(ERRORS.UNAUTHORIZED);
-      expect(total).toBeUndefined();
-    });
-
-    it('/count-all should return 401 with customer access token', async () => {
-      const res = await request(app.getHttpServer())
-        .get(COUNT_ALL)
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
-      const { statusCode, message, error, total } = res.body;
-      expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
-      expect(message).toBe(ERROR_MESSAGES.ADMIN_REQUIRED);
-      expect(error).toBe(ERRORS.UNAUTHORIZED);
-      expect(total).toBeUndefined();
-    });
-
-    it('/count-all should return 401 without access token', async () => {
-      const res = await request(app.getHttpServer())
-        .get(COUNT_ALL)
-        .set('x-api-key', API_KEY);
-      const { statusCode, total } = res.body;
-      expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
-      expect(total).toBeUndefined();
-    });
   });
 
   describe('GET Purchase - Count', () => {
@@ -260,10 +197,10 @@ describe('PurchaseController (e2e) [GET]', () => {
         .get(`${PATH}`)
         .set('x-api-key', API_KEY)
         .set('Authorization', `Bearer ${adminAccessToken}`);
-      const { statusCode, data, total } = res.body;
+      const { statusCode, data, meta } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.OK);
       expect(data.length).toEqual(purchases.length);
-      expect(total).toEqual(purchases.length);
+      expect(meta.total).toEqual(purchases.length);
     });
 
     it('/ should return 401 with seller user', async () => {
@@ -375,85 +312,6 @@ describe('PurchaseController (e2e) [GET]', () => {
       expect(data).toBeUndefined();
       expect(error).toBe(ERRORS.NOT_FOUND);
       expect(message).toBe(`The Purchase with ID ${nonExistentId} not found`);
-    });
-  });
-
-  describe('GET Purchase - Find By Supplier', () => {
-    it('/supplier/:id should return 401 if api key is missing', async () => {
-      const res: any = await request(app.getHttpServer()).get(
-        `${FIND_BY_SUPPLIER}/${supplier.id}`,
-      );
-      const { statusCode, message } = res.body;
-      expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
-      expect(message).toBe(ERROR_MESSAGES.INVALID_API_KEY);
-    });
-
-    it('/supplier/:id should return 401 if api key is invalid', async () => {
-      const res: any = await request(app.getHttpServer())
-        .get(`${FIND_BY_SUPPLIER}/${supplier.id}`)
-        .set('x-api-key', 'invalid-api-key');
-      const { statusCode, message } = res.body;
-      expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
-      expect(message).toBe(ERROR_MESSAGES.INVALID_API_KEY);
-    });
-
-    it('/supplier/:id should return purchases by supplier with admin user', async () => {
-      const res = await request(app.getHttpServer())
-        .get(`${FIND_BY_SUPPLIER}/${supplier.id}`)
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
-      const { statusCode, data, total } = res.body;
-      expect(statusCode).toBe(HTTP_STATUS.OK);
-      expect(data.length).toBeGreaterThan(0);
-      expect(total).toBeGreaterThan(0);
-    });
-
-    it('/supplier/:id should return 401 with seller user', async () => {
-      const res = await request(app.getHttpServer())
-        .get(`${FIND_BY_SUPPLIER}/${supplier.id}`)
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
-      const { statusCode, message, error, data, total } = res.body;
-      expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
-      expect(message).toBe(ERROR_MESSAGES.ADMIN_REQUIRED);
-      expect(error).toBe(ERRORS.UNAUTHORIZED);
-      expect(data).toBeUndefined();
-      expect(total).toBeUndefined();
-    });
-
-    it('/supplier/:id should return 401 with customer user', async () => {
-      const res = await request(app.getHttpServer())
-        .get(`${FIND_BY_SUPPLIER}/${supplier.id}`)
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
-      const { statusCode, message, error, data, total } = res.body;
-      expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
-      expect(message).toBe(ERROR_MESSAGES.ADMIN_REQUIRED);
-      expect(error).toBe(ERRORS.UNAUTHORIZED);
-      expect(data).toBeUndefined();
-      expect(total).toBeUndefined();
-    });
-
-    it('/supplier/:id should return 401 without access token', async () => {
-      const res = await request(app.getHttpServer())
-        .get(`${FIND_BY_SUPPLIER}/${supplier.id}`)
-        .set('x-api-key', API_KEY);
-      const { statusCode, data, total } = res.body;
-      expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
-      expect(data).toBeUndefined();
-      expect(total).toBeUndefined();
-    });
-
-    it('/supplier/:id should return empty array for non-existing supplier', async () => {
-      const nonExistentSupplierId = 9999;
-      const res = await request(app.getHttpServer())
-        .get(`${FIND_BY_SUPPLIER}/${nonExistentSupplierId}`)
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
-      const { statusCode, data, total } = res.body;
-      expect(statusCode).toBe(HTTP_STATUS.OK);
-      expect(data).toEqual([]);
-      expect(total).toEqual(0);
     });
   });
 
