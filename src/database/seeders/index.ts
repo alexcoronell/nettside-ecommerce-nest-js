@@ -4,6 +4,7 @@ export * from './fake-categories.seeder';
 export * from './fake-discounts.seeder';
 export * from './fake-payment-methods.seeder';
 export * from './fake-products.seeder';
+export * from './fake-purchases.seeder';
 export * from './fake-shipping-companies.seeder';
 export * from './fake-store-detail.seeder';
 export * from './fake-subcategories.seeder';

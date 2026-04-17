@@ -17,6 +17,14 @@ export const createPurchase = (): CreatePurchaseDto => ({
   supplier: faker.number.int({ min: 1, max: 100 }),
 });
 
+export const generateNewPurchases = (size: number = 1): CreatePurchaseDto[] => {
+  const newPurchases: CreatePurchaseDto[] = [];
+  for (let i = 0; i < size; i++) {
+    newPurchases.push(createPurchase());
+  }
+  return newPurchases;
+};
+
 export const generatePurchase = (id: number = 1): Purchase => ({
   ...generateBaseEntity(id),
   ...createPurchase(),
