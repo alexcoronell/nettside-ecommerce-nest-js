@@ -9,6 +9,7 @@ import { Discount } from '@discount/entities/discount.entity';
 import { PaymentMethod } from '@payment_method/entities/payment-method.entity';
 import { Product } from '@product/entities/product.entity';
 import { Purchase } from '@purchase/entities/purchase.entity';
+import { PurchaseDetail } from '@purchase_detail/entities/purchase-detail.entity';
 import { ShippingCompany } from '@shipping_company/entities/shipping-company.entity';
 import { Subcategory } from '@subcategory/entities/subcategory.entity';
 import { StoreDetail } from '@store_detail/entities/store-detail.entity';
@@ -43,6 +44,7 @@ import {
       PaymentMethod,
       Product,
       Purchase,
+      PurchaseDetail,
       ShippingCompany,
       Subcategory,
       StoreDetail,
