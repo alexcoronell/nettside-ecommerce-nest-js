@@ -9,6 +9,7 @@ import { Discount } from '@discount/entities/discount.entity';
 import { PaymentMethod } from '@payment_method/entities/payment-method.entity';
 import { Product } from '@product/entities/product.entity';
 import { Subcategory } from '@subcategory/entities/subcategory.entity';
+import { Supplier } from '@supplier/entities/supplier.entity';
 import { Tag } from '@tag/entities/tag.entity';
 import { User } from '@user/entities/user.entity';
 
@@ -20,6 +21,7 @@ import {
   FakePaymentMethodsSeeder,
   FakeProductsSeeder,
   FakeSubcategoriesSeeder,
+  FakeSuppliersSeeder,
   FakeTagsSeeder,
   FakeUsersSeeder,
   UserSeeder,
@@ -34,6 +36,7 @@ import {
       PaymentMethod,
       Product,
       Subcategory,
+      Supplier,
       Tag,
       User,
     ]),
@@ -47,6 +50,7 @@ import {
     FakePaymentMethodsSeeder,
     FakeProductsSeeder,
     FakeSubcategoriesSeeder,
+    FakeSuppliersSeeder,
     FakeTagsSeeder,
     FakeUsersSeeder,
   ],

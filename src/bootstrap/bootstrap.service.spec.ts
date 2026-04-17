@@ -7,6 +7,7 @@ import {
   FakePaymentMethodsSeeder,
   FakeProductsSeeder,
   FakeSubcategoriesSeeder,
+  FakeSuppliersSeeder,
   FakeTagsSeeder,
   UserSeeder,
   FakeUsersSeeder,
@@ -20,8 +21,11 @@ describe('BootstrapService', () => {
   let fakeCategoriesSeeder: { seed: jest.Mock };
   let fakeDiscountsSeeder: { seed: jest.Mock };
   let fakePaymentMethodsSeeder: { seed: jest.Mock };
-  let fakeProductsSeeder: { seed: jest.Mock };
+  let fakeSuppliersSeeder: {
+    seed: jest.Mock;
+  };
   let fakeSubcategoriesSeeder: { seed: jest.Mock };
+  let fakeProductsSeeder: { seed: jest.Mock };
   let fakeTagsSeeder: { seed: jest.Mock };
 
   const originalEnv = { ...process.env };
@@ -55,6 +59,10 @@ describe('BootstrapService', () => {
     };
 
     fakeSubcategoriesSeeder = {
+      seed: jest.fn().mockResolvedValue(undefined),
+    };
+
+    fakeSuppliersSeeder = {
       seed: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -98,6 +106,10 @@ describe('BootstrapService', () => {
           useValue: fakeSubcategoriesSeeder,
         },
         {
+          provide: FakeSuppliersSeeder,
+          useValue: fakeSuppliersSeeder,
+        },
+        {
           provide: FakeTagsSeeder,
           useValue: fakeTagsSeeder,
         },
@@ -135,6 +147,7 @@ describe('BootstrapService', () => {
       expect(fakePaymentMethodsSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeProductsSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeSubcategoriesSeeder.seed).toHaveBeenCalledTimes(1);
+      expect(fakeSuppliersSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeTagsSeeder.seed).toHaveBeenCalledTimes(1);
     });
 
@@ -153,6 +166,7 @@ describe('BootstrapService', () => {
       expect(fakePaymentMethodsSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeProductsSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeSubcategoriesSeeder.seed).toHaveBeenCalledTimes(1);
+      expect(fakeSuppliersSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeTagsSeeder.seed).toHaveBeenCalledTimes(1);
     });
 
@@ -171,6 +185,7 @@ describe('BootstrapService', () => {
       expect(fakePaymentMethodsSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeProductsSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeSubcategoriesSeeder.seed).toHaveBeenCalledTimes(1);
+      expect(fakeSuppliersSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeTagsSeeder.seed).toHaveBeenCalledTimes(1);
     });
 
@@ -218,6 +233,7 @@ describe('BootstrapService', () => {
       expect(fakePaymentMethodsSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeProductsSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeSubcategoriesSeeder.seed).toHaveBeenCalledTimes(1);
+      expect(fakeSuppliersSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeTagsSeeder.seed).toHaveBeenCalledTimes(1);
     });
 
@@ -235,6 +251,7 @@ describe('BootstrapService', () => {
       expect(fakePaymentMethodsSeeder.seed).not.toHaveBeenCalled();
       expect(fakeProductsSeeder.seed).not.toHaveBeenCalled();
       expect(fakeSubcategoriesSeeder.seed).not.toHaveBeenCalled();
+      expect(fakeSuppliersSeeder.seed).not.toHaveBeenCalled();
       expect(fakeTagsSeeder.seed).not.toHaveBeenCalled();
     });
 
@@ -252,6 +269,7 @@ describe('BootstrapService', () => {
       expect(fakePaymentMethodsSeeder.seed).not.toHaveBeenCalled();
       expect(fakeProductsSeeder.seed).not.toHaveBeenCalled();
       expect(fakeSubcategoriesSeeder.seed).not.toHaveBeenCalled();
+      expect(fakeSuppliersSeeder.seed).not.toHaveBeenCalled();
       expect(fakeTagsSeeder.seed).not.toHaveBeenCalled();
     });
 
@@ -269,6 +287,7 @@ describe('BootstrapService', () => {
       expect(fakePaymentMethodsSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeProductsSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeSubcategoriesSeeder.seed).toHaveBeenCalledTimes(1);
+      expect(fakeSuppliersSeeder.seed).toHaveBeenCalledTimes(1);
       expect(fakeTagsSeeder.seed).toHaveBeenCalledTimes(1);
     });
 
