@@ -7,8 +7,10 @@ import { IBaseService } from '@commons/interfaces/i-base-service';
 
 /* Entities */
 import { Purchase } from './entities/purchase.entity';
+import { PurchaseDetail } from '@purchase_detail/entities/purchase-detail.entity';
 import { Supplier } from '@supplier/entities/supplier.entity';
 import { User } from '@user/entities/user.entity';
+import { Product } from '@product/entities/product.entity';
 
 /* DTO's */
 import { CreatePurchaseDto } from './dto/create-purchase.dto';
@@ -37,6 +39,8 @@ export class PurchaseService
   constructor(
     @InjectRepository(Purchase)
     private readonly repo: Repository<Purchase>,
+    @InjectRepository(PurchaseDetail)
+    private readonly detailRepo: Repository<PurchaseDetail>,
   ) {}
 
   async count() {
@@ -118,23 +122,47 @@ export class PurchaseService
     userId: number,
   ): Promise<Result<ResponsePurchaseDto>> {
     const suppliedId = dto.supplier;
+
+    // Create the purchase
     const newPurchase = this.repo.create({
-      ...dto,
+      purchaseDate: dto.purchaseDate,
+      totalAmount: dto.totalAmount,
       supplier: { id: suppliedId } as Supplier,
       createdBy: { id: userId },
       updatedBy: { id: userId },
     });
     const purchase = await this.repo.save(newPurchase);
 
+    // Create purchase details if provided
+    if (dto.details && dto.details.length > 0) {
+      const details = dto.details.map((item) => {
+        const subtotal = item.subtotal ?? item.quantity * item.unitPrice;
+        return this.detailRepo.create({
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          subtotal,
+          purchase: { id: purchase.id } as Purchase,
+          product: { id: item.product } as Product,
+        });
+      });
+      await this.detailRepo.save(details);
+    }
+
     // Fetch with relations for proper mapping
     const savedPurchase = await this.repo.findOne({
-      relations: ['supplier', 'createdBy', 'updatedBy'],
+      relations: [
+        'supplier',
+        'createdBy',
+        'updatedBy',
+        'purchaseDetails',
+        'purchaseDetails.product',
+      ],
       where: { id: purchase.id },
     });
 
     return {
       statusCode: HttpStatus.CREATED,
-      data: mapPurchaseToResponseDto(savedPurchase!),
+      data: mapPurchaseToResponseDto(savedPurchase!, true),
       message: 'The Purchase was created',
     };
   }

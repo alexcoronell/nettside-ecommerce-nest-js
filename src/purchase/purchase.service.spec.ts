@@ -11,6 +11,7 @@ import { PurchaseService } from './purchase.service';
 
 /* Entity */
 import { Purchase } from './entities/purchase.entity';
+import { PurchaseDetail } from '@purchase_detail/entities/purchase-detail.entity';
 import { User } from '@user/entities/user.entity';
 
 /* DTOs */
@@ -24,6 +25,8 @@ describe('PurchaseService', () => {
   let service: PurchaseService;
   let repository: Repository<Purchase>;
 
+  let detailRepository: Repository<PurchaseDetail>;
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -32,10 +35,17 @@ describe('PurchaseService', () => {
           provide: getRepositoryToken(Purchase),
           useClass: Repository,
         },
+        {
+          provide: getRepositoryToken(PurchaseDetail),
+          useClass: Repository,
+        },
       ],
     }).compile();
     service = module.get<PurchaseService>(PurchaseService);
     repository = module.get<Repository<Purchase>>(getRepositoryToken(Purchase));
+    detailRepository = module.get<Repository<PurchaseDetail>>(
+      getRepositoryToken(PurchaseDetail),
+    );
   });
 
   it('should be defined', () => {
@@ -106,6 +116,8 @@ describe('PurchaseService', () => {
       jest.spyOn(repository, 'create').mockReturnValue(mock as any);
       jest.spyOn(repository, 'save').mockResolvedValue(mock as any);
       jest.spyOn(repository, 'findOne').mockResolvedValue(mock as any);
+      jest.spyOn(detailRepository, 'create').mockReturnValue([] as any);
+      jest.spyOn(detailRepository, 'save').mockResolvedValue([] as any);
 
       const dto: CreatePurchaseDto = {
         purchaseDate: mock.purchaseDate,
