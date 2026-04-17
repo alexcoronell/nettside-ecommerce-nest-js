@@ -11,6 +11,7 @@ import { ShippingCompany } from './entities/shipping-company.entity';
 /* DTO's */
 import { CreateShippingCompanyDto } from './dto/create-shipping-company.dto';
 import { UpdateShippingCompanyDto } from './dto/update-shipping-company.dto';
+import { ResponseShippingCompanyDto } from './dto/response-shipping-company.dto';
 import {
   PaginationDto,
   PaginatedResult,
@@ -24,7 +25,7 @@ import { Result } from '@commons/types/result.type';
 export class ShippingCompanyService
   implements
     IBaseService<
-      ShippingCompany,
+      ResponseShippingCompanyDto,
       CreateShippingCompanyDto,
       UpdateShippingCompanyDto
     >
@@ -34,9 +35,23 @@ export class ShippingCompanyService
     private readonly repo: Repository<ShippingCompany>,
   ) {}
 
-  async countAll() {
-    const total = await this.repo.count();
-    return { statusCode: HttpStatus.OK, total };
+  /**
+   * Maps a ShippingCompany entity to ResponseShippingCompanyDto.
+   */
+  mapEntityToResponse(entity: ShippingCompany): ResponseShippingCompanyDto {
+    return {
+      id: entity.id,
+      name: entity.name,
+      contactName: entity.contactName,
+      phoneNumber: entity.phoneNumber,
+      email: entity.email,
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
+      deletedAt: entity.deletedAt ?? null,
+      deletedBy: entity.deletedBy?.id ?? null,
+      createdBy: entity.createdBy?.id ?? null,
+      updatedBy: entity.updatedBy?.id ?? null,
+    };
   }
 
   async count() {
@@ -59,7 +74,7 @@ export class ShippingCompanyService
    */
   async findAll(
     paginationDto?: PaginationDto,
-  ): Promise<PaginatedResult<ShippingCompany>> {
+  ): Promise<PaginatedResult<ResponseShippingCompanyDto>> {
     const { page, limit, skip } = PaginationHelper.normalizePagination(
       paginationDto?.page,
       paginationDto?.limit,
@@ -89,7 +104,7 @@ export class ShippingCompanyService
     // Execute query
     const [data, total] = await this.repo.findAndCount({
       where: searchConditions.length > 0 ? searchConditions : where,
-      relations: ['createdBy', 'updatedBy'],
+      relations: ['createdBy', 'updatedBy', 'deletedBy'],
       order: {
         [sortBy]: sortOrder,
       },
@@ -97,13 +112,23 @@ export class ShippingCompanyService
       take: limit,
     });
 
+    // Map to response DTO
+    const mappedData = data.map((entity) => this.mapEntityToResponse(entity));
+
     // Return paginated result
-    return PaginationHelper.createPaginatedResult(data, total, page, limit);
+    return PaginationHelper.createPaginatedResult(
+      mappedData,
+      total,
+      page,
+      limit,
+    );
   }
 
-  async findOne(id: ShippingCompany['id']): Promise<Result<ShippingCompany>> {
+  async findOne(
+    id: ShippingCompany['id'],
+  ): Promise<Result<ResponseShippingCompanyDto>> {
     const data = await this.repo.findOne({
-      relations: ['createdBy', 'updatedBy'],
+      relations: ['createdBy', 'updatedBy', 'deletedBy'],
       where: { id, isDeleted: false },
     });
     if (!data) {
@@ -113,64 +138,77 @@ export class ShippingCompanyService
     }
     return {
       statusCode: HttpStatus.OK,
-      data: data,
+      data: this.mapEntityToResponse(data),
     };
   }
 
-  async findOneByName(name: string): Promise<Result<ShippingCompany>> {
-    const data = await this.repo.findOne({
-      relations: ['createdBy', 'updatedBy'],
-      where: { name, isDeleted: false },
-    });
-    if (!data) {
-      throw new NotFoundException(
-        `The Shipping Company with NAME: ${name} not found`,
-      );
-    }
-    return {
-      statusCode: HttpStatus.OK,
-      data: data,
-    };
-  }
-
-  async create(dto: CreateShippingCompanyDto, userId: number) {
+  async create(
+    dto: CreateShippingCompanyDto,
+    userId: number,
+  ): Promise<Result<ResponseShippingCompanyDto>> {
     const newItem = this.repo.create({
       ...dto,
       createdBy: { id: userId },
       updatedBy: { id: userId },
     });
-    const data = await this.repo.save(newItem);
+    const saved = await this.repo.save(newItem);
+    // Fetch with relations for mapping
+    const data = await this.repo.findOne({
+      relations: ['createdBy', 'updatedBy'],
+      where: { id: saved.id },
+    });
     return {
       statusCode: HttpStatus.CREATED,
-      data,
+      data: this.mapEntityToResponse(data!),
       message: 'The Shipping Company was created',
     };
   }
 
-  async update(id: number, userId: number, changes: UpdateShippingCompanyDto) {
-    const { data } = await this.findOne(id);
-    this.repo.merge(data as ShippingCompany, {
+  async update(
+    id: number,
+    userId: number,
+    changes: UpdateShippingCompanyDto,
+  ): Promise<Result<ResponseShippingCompanyDto>> {
+    const data = await this.repo.findOne({
+      relations: ['createdBy', 'updatedBy'],
+      where: { id, isDeleted: false },
+    });
+    if (!data) {
+      throw new NotFoundException(
+        `The Shipping Company with ID: ${id} not found`,
+      );
+    }
+    this.repo.merge(data, {
       ...changes,
       updatedBy: { id: userId },
     });
-    const rta = await this.repo.save(data as ShippingCompany);
+    const saved = await this.repo.save(data);
     return {
       statusCode: HttpStatus.OK,
-      data: rta,
+      data: this.mapEntityToResponse(saved),
       message: `The Shipping Company with ID: ${id} has been modified`,
     };
   }
 
-  async remove(id: ShippingCompany['id'], userId: number) {
-    const { data } = await this.findOne(id);
-
-    const changes = { isDeleted: true };
-    this.repo.merge(data as ShippingCompany, {
-      ...changes,
+  async remove(
+    id: ShippingCompany['id'],
+    userId: number,
+  ): Promise<{ statusCode: number; message: string }> {
+    const data = await this.repo.findOne({
+      relations: ['createdBy', 'updatedBy'],
+      where: { id, isDeleted: false },
+    });
+    if (!data) {
+      throw new NotFoundException(
+        `The Shipping Company with ID: ${id} not found`,
+      );
+    }
+    this.repo.merge(data, {
+      isDeleted: true,
       deletedBy: { id: userId },
       deletedAt: new Date(),
     });
-    await this.repo.save(data as ShippingCompany);
+    await this.repo.save(data);
     return {
       statusCode: HttpStatus.OK,
       message: `The Shipping Company with ID: ${id} has been deleted`,

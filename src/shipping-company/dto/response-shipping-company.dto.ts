@@ -9,7 +9,7 @@
  * @author Nettside E-commerce Team
  */
 
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class ResponseShippingCompanyDto {
   @ApiProperty()
@@ -28,17 +28,20 @@ export class ResponseShippingCompanyDto {
   readonly email: string;
 
   @ApiProperty()
-  readonly isDeleted: boolean;
-
-  @ApiProperty()
   readonly createdAt: Date;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   readonly updatedAt: Date;
 
-  @ApiProperty({ nullable: true })
+  @ApiPropertyOptional({ nullable: true })
   readonly deletedAt: Date | null;
 
-  @ApiProperty({ nullable: true })
+  @ApiPropertyOptional({ nullable: true })
   readonly deletedBy: number | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  readonly createdBy: number | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  readonly updatedBy: number | null;
 }

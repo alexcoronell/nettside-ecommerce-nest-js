@@ -99,56 +99,6 @@ describe('ShippingCompanyController (e2e) [GET]', () => {
     await repo.save(shippingCompanies);
   });
 
-  describe('GET Shipping Company - Count-All', () => {
-    it('/count-all should return 200 with admin access token', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/shipping-company/count-all')
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
-      const { statusCode, total } = res.body;
-      expect(statusCode).toBe(200);
-      expect(total).toEqual(shippingCompanies.length);
-    });
-
-    it('/count-all should return 200 with seller access token', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/shipping-company/count-all')
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
-      const { statusCode, total } = res.body;
-      expect(statusCode).toBe(200);
-      expect(total).toEqual(shippingCompanies.length);
-    });
-
-    it('/count-all should return 401 with customer access token', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/shipping-company/count-all')
-        .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
-      const { statusCode, message } = res.body;
-      expect(statusCode).toBe(401);
-      expect(message).toBe('Unauthorized: Customer access denied');
-    });
-
-    it('/count-all should return 401 if api key is missing', async () => {
-      const data: any = await request(app.getHttpServer()).get(
-        '/shipping-company/count-all',
-      );
-      const { body, statusCode } = data;
-      expect(statusCode).toBe(401);
-      expect(body).toHaveProperty('message', 'Invalid API key');
-    });
-
-    it('/count-all should return 401 if api key is invalid', async () => {
-      const data: any = await request(app.getHttpServer())
-        .get('/shipping-company/count-all')
-        .set('x-api-key', 'invalid-api-key');
-      const { body, statusCode } = data;
-      expect(statusCode).toBe(401);
-      expect(body).toHaveProperty('message', 'Invalid API key');
-    });
-  });
-
   describe('GET Shipping Company - Count', () => {
     it('/count should return 200 with admin access token', async () => {
       const res = await request(app.getHttpServer())

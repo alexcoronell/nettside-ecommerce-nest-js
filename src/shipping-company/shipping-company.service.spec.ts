@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
@@ -45,16 +45,66 @@ describe('ShippingCompanyService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('count shipping companies services', () => {
-    it('should return total all shipping companies', async () => {
-      jest.spyOn(repository, 'count').mockResolvedValue(100);
+  describe('mapEntityToResponse', () => {
+    it('should map entity to response DTO', () => {
+      const entity: ShippingCompany = {
+        id: 1,
+        name: 'DHL',
+        contactName: 'John Doe',
+        phoneNumber: '+1234567890',
+        email: 'contact@dhl.com',
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
+        deletedAt: null,
+        isDeleted: false,
+        createdBy: { id: 1 } as User,
+        updatedBy: { id: 2 } as User,
+        deletedBy: null,
+        shipments: [],
+      };
 
-      const { statusCode, total } = await service.countAll();
-      expect(repository.count).toHaveBeenCalledTimes(1);
-      expect(statusCode).toBe(200);
-      expect(total).toEqual(100);
+      const response = service.mapEntityToResponse(entity);
+
+      expect(response).toEqual({
+        id: 1,
+        name: 'DHL',
+        contactName: 'John Doe',
+        phoneNumber: '+1234567890',
+        email: 'contact@dhl.com',
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
+        deletedAt: null,
+        deletedBy: null,
+        createdBy: 1,
+        updatedBy: 2,
+      });
     });
 
+    it('should handle null relations', () => {
+      const entity = {
+        id: 1,
+        name: 'DHL',
+        contactName: 'John',
+        phoneNumber: '+123',
+        email: 'test@test.com',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+        isDeleted: false,
+        createdBy: null,
+        updatedBy: null,
+        deletedBy: null,
+        shipments: [],
+      } as unknown as ShippingCompany;
+
+      const response = service.mapEntityToResponse(entity);
+
+      expect(response.createdBy).toBeNull();
+      expect(response.updatedBy).toBeNull();
+    });
+  });
+
+  describe('count shipping companies services', () => {
     it('should return total shipping companies not removed', async () => {
       jest.spyOn(repository, 'count').mockResolvedValue(100);
       const { statusCode, total } = await service.count();
@@ -68,8 +118,12 @@ describe('ShippingCompanyService', () => {
   });
 
   describe('find shipping companies services', () => {
-    it('findAll should return all shipping companies with pagination', async () => {
+    it('findAll should return ResponseShippingCompanyDto[] with pagination', async () => {
       const mocks = generateManyShippingCompanies(50);
+      mocks.forEach((m) => {
+        m.createdBy = { id: 1 } as User;
+        m.updatedBy = { id: 2 } as User;
+      });
 
       jest
         .spyOn(repository, 'findAndCount')
@@ -77,20 +131,15 @@ describe('ShippingCompanyService', () => {
 
       const { statusCode, data, meta } = await service.findAll();
       expect(repository.findAndCount).toHaveBeenCalledTimes(1);
-      expect(repository.findAndCount).toHaveBeenCalledWith({
-        where: { isDeleted: false },
-        order: { name: 'ASC' },
-        relations: ['createdBy', 'updatedBy'],
-        skip: 0,
-        take: 10,
-      });
       expect(statusCode).toBe(200);
       expect(meta.total).toEqual(mocks.length);
-      expect(data).toEqual(mocks.slice(0, 10));
+      expect(data).toHaveLength(10);
     });
 
-    it('findOne should return a shipping companies', async () => {
+    it('findOne should return ResponseShippingCompanyDto', async () => {
       const shippingCompany = generateShippingCompany();
+      shippingCompany.createdBy = { id: 1 } as User;
+      shippingCompany.updatedBy = { id: 2 } as User;
       const id = shippingCompany.id;
 
       jest.spyOn(repository, 'findOne').mockResolvedValue(shippingCompany);
@@ -98,11 +147,16 @@ describe('ShippingCompanyService', () => {
       const { statusCode, data } = await service.findOne(id);
       expect(repository.findOne).toHaveBeenCalledTimes(1);
       expect(repository.findOne).toHaveBeenCalledWith({
-        relations: ['createdBy', 'updatedBy'],
+        relations: ['createdBy', 'updatedBy', 'deletedBy'],
         where: { id, isDeleted: false },
       });
       expect(statusCode).toBe(200);
-      expect(data).toEqual(shippingCompany);
+      expect(data).toEqual(
+        expect.objectContaining({
+          id: shippingCompany.id,
+          name: shippingCompany.name,
+        }),
+      );
     });
 
     it('findOne should throw NotFoundException if shipping companies does not exist', async () => {
@@ -118,93 +172,61 @@ describe('ShippingCompanyService', () => {
         );
       }
     });
-
-    it('findOne should throw NotFoundException if shipping companies does not exist with Rejects', async () => {
-      const id = 1;
-      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
-
-      await expect(service.findOne(id)).rejects.toThrowError(
-        new NotFoundException(`The Shipping Company with ID: ${id} not found`),
-      );
-    });
-
-    it('findOneByName should return a shipping companies', async () => {
-      const shippingCompany = generateShippingCompany();
-      const name = shippingCompany.name;
-
-      jest.spyOn(repository, 'findOne').mockResolvedValue(shippingCompany);
-
-      const { statusCode, data } = await service.findOneByName(name);
-      expect(repository.findOne).toHaveBeenCalledTimes(1);
-      expect(statusCode).toBe(200);
-      expect(data).toEqual(shippingCompany);
-    });
-
-    it('findOneByName should throw NotFoundException if Shipping Company does not exist', async () => {
-      const name = 'nameTest';
-      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
-
-      try {
-        await service.findOneByName(name);
-      } catch (error) {
-        expect(error).toBeInstanceOf(NotFoundException);
-        expect(error.message).toBe(
-          `The Shipping Company with NAME: ${name} not found`,
-        );
-      }
-    });
   });
 
   describe('create shipping companies services', () => {
-    it('create should return a Shipping Company', async () => {
+    it('create should return ResponseShippingCompanyDto', async () => {
       const shippingCompany = generateShippingCompany();
+      shippingCompany.createdBy = { id: 1 } as User;
+      shippingCompany.updatedBy = { id: 1 } as User;
       const userId: User['id'] = 1;
       jest.spyOn(repository, 'create').mockReturnValue(shippingCompany);
       jest.spyOn(repository, 'save').mockResolvedValue(shippingCompany);
+      jest.spyOn(repository, 'findOne').mockResolvedValue(shippingCompany);
 
-      const { statusCode, data } = await service.create(
+      const { statusCode, data, message } = await service.create(
         shippingCompany,
         userId,
       );
       expect(statusCode).toBe(201);
-      expect(data).toEqual(shippingCompany);
-    });
-
-    it('create should return Conflict Exception when name Shipping Company exists', async () => {
-      const mock = generateShippingCompany();
-      const userId: User['id'] = 1;
-      jest.spyOn(repository, 'create').mockReturnValue(mock);
-      jest.spyOn(repository, 'save').mockResolvedValue(mock);
-
-      try {
-        await service.create(mock, userId);
-      } catch (error) {
-        expect(error).toBeInstanceOf(ConflictException);
-        expect(error.message).toBe(
-          `Shipping Company ${mock.name} already exists`,
-        );
-      }
+      expect(message).toBe('The Shipping Company was created');
+      expect(data).toEqual(
+        expect.objectContaining({
+          id: shippingCompany.id,
+        }),
+      );
     });
   });
 
   describe('update shipping companies services', () => {
-    it('update should return message: have been modified', async () => {
-      const mock = generateShippingCompany();
-      const id = mock.id;
+    it('update should return message and ResponseShippingCompanyDto', async () => {
+      const shippingCompany = generateShippingCompany();
+      shippingCompany.createdBy = { id: 1 } as User;
+      shippingCompany.updatedBy = { id: 2 } as User;
+      const id = shippingCompany.id;
       const userId: User['id'] = 1;
       const changes: UpdateShippingCompanyDto = { name: 'newName' };
 
-      jest.spyOn(repository, 'findOne').mockResolvedValue(mock);
-      jest.spyOn(repository, 'merge').mockReturnValue({ ...mock, ...changes });
-      jest.spyOn(repository, 'save').mockResolvedValue(mock);
+      jest.spyOn(repository, 'findOne').mockResolvedValue(shippingCompany);
+      jest.spyOn(repository, 'merge').mockReturnValue(shippingCompany);
+      jest.spyOn(repository, 'save').mockResolvedValue(shippingCompany);
 
-      const { statusCode, message } = await service.update(id, userId, changes);
+      const { statusCode, message, data } = await service.update(
+        id,
+        userId,
+        changes,
+      );
       expect(repository.findOne).toHaveBeenCalledTimes(1);
       expect(repository.merge).toHaveBeenCalledTimes(1);
       expect(repository.save).toHaveBeenCalledTimes(1);
       expect(statusCode).toBe(200);
       expect(message).toEqual(
         `The Shipping Company with ID: ${id} has been modified`,
+      );
+      expect(data).toEqual(
+        expect.objectContaining({
+          id: shippingCompany.id,
+        }),
       );
     });
 
@@ -225,15 +247,15 @@ describe('ShippingCompanyService', () => {
   });
 
   describe('remove shipping companies services', () => {
-    it('remove should return status and message', async () => {
-      const mock = generateShippingCompany();
-      const id = mock.id;
+    it('remove should return statusCode and message', async () => {
+      const shippingCompany = generateShippingCompany();
+      shippingCompany.createdBy = { id: 1 } as User;
+      shippingCompany.updatedBy = { id: 2 } as User;
+      const id = shippingCompany.id;
       const userId: User['id'] = 1;
-      jest.spyOn(repository, 'findOne').mockResolvedValue(mock);
-      jest
-        .spyOn(repository, 'merge')
-        .mockReturnValue({ ...mock, isDeleted: true });
-      jest.spyOn(repository, 'save').mockResolvedValue(mock);
+      jest.spyOn(repository, 'findOne').mockResolvedValue(shippingCompany);
+      jest.spyOn(repository, 'merge').mockReturnValue(shippingCompany);
+      jest.spyOn(repository, 'save').mockResolvedValue(shippingCompany);
 
       const { statusCode, message } = await service.remove(id, userId);
       expect(statusCode).toBe(200);

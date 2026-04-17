@@ -31,11 +31,9 @@ describe('ShippingCompanyController', () => {
     createShippingCompany();
 
   const mockService = {
-    countAll: jest.fn().mockResolvedValue(mockShippingCompanies.length),
     count: jest.fn().mockResolvedValue(mockShippingCompanies.length),
     findAll: jest.fn().mockResolvedValue(mockShippingCompanies),
     findOne: jest.fn().mockResolvedValue(mockShippingCompany),
-    findOneByName: jest.fn().mockResolvedValue(mockShippingCompany),
     create: jest.fn().mockResolvedValue(mockNewShippingCompany),
     update: jest.fn().mockResolvedValue(1),
     remove: jest.fn().mockResolvedValue(1),
@@ -63,11 +61,6 @@ describe('ShippingCompanyController', () => {
   });
 
   describe('Count shipping companies controllers', () => {
-    it('should call countAll shipping company service', async () => {
-      expect(await controller.countAll()).toBe(mockShippingCompanies.length);
-      expect(service.countAll).toHaveBeenCalledTimes(1);
-    });
-
     it('should call count shipping company service', async () => {
       expect(await controller.count()).toBe(mockShippingCompanies.length);
       expect(service.count).toHaveBeenCalledTimes(1);
@@ -83,11 +76,6 @@ describe('ShippingCompanyController', () => {
     it('should call findOne shipping company service', async () => {
       expect(await controller.findOne(1)).toBe(mockShippingCompany);
       expect(service.findOne).toHaveBeenCalledTimes(1);
-    });
-
-    it('should return an shipping company by name', async () => {
-      expect(await controller.findOneByname(mockShippingCompany.name));
-      expect(service.findOneByName).toHaveBeenCalledTimes(1);
     });
   });
 

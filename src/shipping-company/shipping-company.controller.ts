@@ -21,13 +21,14 @@ import { UserId } from '@auth/decorators/user-id.decorator';
 /* Services */
 import { ShippingCompanyService } from './shipping-company.service';
 
-/* Entities */
-import { ShippingCompany } from './entities/shipping-company.entity';
-
 /* DTO's */
 import { CreateShippingCompanyDto } from './dto/create-shipping-company.dto';
 import { UpdateShippingCompanyDto } from './dto/update-shipping-company.dto';
+import { ResponseShippingCompanyDto } from './dto/response-shipping-company.dto';
 import { PaginationDto } from '@commons/dtos/Pagination.dto';
+
+/* Types */
+import { Result } from '@commons/types/result.type';
 
 /* Guards */
 import { AdminGuard } from '@auth/guards/admin-auth/admin-auth.guard';
@@ -39,7 +40,7 @@ import { IsNotCustomerGuard } from '@auth/guards/is-not-customer/is-not-customer
 export class ShippingCompanyController
   implements
     IBaseController<
-      ShippingCompany,
+      ResponseShippingCompanyDto,
       CreateShippingCompanyDto,
       UpdateShippingCompanyDto
     >
@@ -48,11 +49,6 @@ export class ShippingCompanyController
     private readonly shippingCompanyService: ShippingCompanyService,
   ) {}
 
-  @Get('count-all')
-  countAll() {
-    return this.shippingCompanyService.countAll();
-  }
-
   @Get('count')
   count() {
     return this.shippingCompanyService.count();
@@ -60,9 +56,6 @@ export class ShippingCompanyController
 
   /**
    * Retrieves a list of all shipping companies with optional pagination and search.
-   *
-   * @param paginationDto - Optional pagination and search parameters.
-   * @returns Array of ShippingCompany objects or paginated result.
    */
   @ApiTags('Shipping Companies')
   @ApiOperation({ summary: 'Get all shipping companies with pagination' })
@@ -71,23 +64,25 @@ export class ShippingCompanyController
     description: 'Returns paginated list of shipping companies',
   })
   @Get()
-  findAll(@Query() paginationDto?: PaginationDto) {
+  findAll(
+    @Query() paginationDto?: PaginationDto,
+  ): Promise<Result<ResponseShippingCompanyDto[]>> {
     return this.shippingCompanyService.findAll(paginationDto);
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.shippingCompanyService.findOne(+id);
-  }
-
-  @Get('name/:name')
-  findOneByname(@Param('name') name: string) {
-    return this.shippingCompanyService.findOneByName(name);
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<Result<ResponseShippingCompanyDto>> {
+    return this.shippingCompanyService.findOne(id);
   }
 
   @UseGuards(AdminGuard)
   @Post()
-  create(@Body() payload: CreateShippingCompanyDto, @UserId() userId: number) {
+  create(
+    @Body() payload: CreateShippingCompanyDto,
+    @UserId() userId: number,
+  ): Promise<Result<ResponseShippingCompanyDto>> {
     return this.shippingCompanyService.create(payload, userId);
   }
 
@@ -97,13 +92,16 @@ export class ShippingCompanyController
     @Param('id', ParseIntPipe) id: number,
     @UserId() userId: number,
     @Body() updateCategoryDto: UpdateShippingCompanyDto,
-  ) {
-    return this.shippingCompanyService.update(+id, userId, updateCategoryDto);
+  ): Promise<Result<ResponseShippingCompanyDto>> {
+    return this.shippingCompanyService.update(id, userId, updateCategoryDto);
   }
 
   @UseGuards(AdminGuard)
   @Delete(':id')
-  remove(@Param('id', ParseIntPipe) id: number, @UserId() userId: number) {
-    return this.shippingCompanyService.remove(+id, userId);
+  remove(
+    @Param('id', ParseIntPipe) id: number,
+    @UserId() userId: number,
+  ): Promise<Result<ResponseShippingCompanyDto>> {
+    return this.shippingCompanyService.remove(id, userId);
   }
 }
