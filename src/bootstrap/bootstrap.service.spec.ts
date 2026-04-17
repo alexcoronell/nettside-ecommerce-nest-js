@@ -7,6 +7,7 @@ import {
   FakeDiscountsSeeder,
   FakePaymentMethodsSeeder,
   FakeProductsSeeder,
+  FakeShippingCompaniesSeeder,
   FakeStoreDetailsSeeder,
   FakeSubcategoriesSeeder,
   FakeSuppliersSeeder,
@@ -24,6 +25,7 @@ describe('BootstrapService', () => {
   let fakeCategoriesSeeder: { seed: jest.Mock };
   let fakeDiscountsSeeder: { seed: jest.Mock };
   let fakePaymentMethodsSeeder: { seed: jest.Mock };
+  let fakeShippingCompaniesSeeder: { seed: jest.Mock };
   let fakeStoreDetailsSeeder: { seed: jest.Mock };
   let fakeSuppliersSeeder: {
     seed: jest.Mock;
@@ -63,6 +65,10 @@ describe('BootstrapService', () => {
     };
 
     fakePaymentMethodsSeeder = {
+      seed: jest.fn().mockResolvedValue(undefined),
+    };
+
+    fakeShippingCompaniesSeeder = {
       seed: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -116,6 +122,10 @@ describe('BootstrapService', () => {
         {
           provide: FakePaymentMethodsSeeder,
           useValue: fakePaymentMethodsSeeder,
+        },
+        {
+          provide: FakeShippingCompaniesSeeder,
+          useValue: fakeShippingCompaniesSeeder,
         },
         {
           provide: FakeStoreDetailsSeeder,

@@ -6,6 +6,7 @@ import {
   FakeDiscountsSeeder,
   FakePaymentMethodsSeeder,
   FakeProductsSeeder,
+  FakeShippingCompaniesSeeder,
   FakeSubcategoriesSeeder,
   FakeSuppliersSeeder,
   FakeStoreDetailsSeeder,
@@ -26,6 +27,7 @@ export class BootstrapService implements OnModuleInit {
     private readonly fakeDiscountsSeeder: FakeDiscountsSeeder,
     private readonly fakePaymentMethodsSeeder: FakePaymentMethodsSeeder,
     private readonly fakeProductsSeeder: FakeProductsSeeder,
+    private readonly fakeShippingCompaniesSeeder: FakeShippingCompaniesSeeder,
     private readonly fakeSubcategoriesSeeder: FakeSubcategoriesSeeder,
     private readonly fakeSuppliersSeeder: FakeSuppliersSeeder,
     private readonly fakeStoreDetailsSeeder: FakeStoreDetailsSeeder,
@@ -52,6 +54,7 @@ export class BootstrapService implements OnModuleInit {
       await this.fakeCategoriesSeeder.seed();
       await this.fakeDiscountsSeeder.seed();
       await this.fakePaymentMethodsSeeder.seed();
+      await this.fakeShippingCompaniesSeeder.seed();
       await this.fakeSubcategoriesSeeder.seed();
       await this.fakeSuppliersSeeder.seed();
       await this.fakeTagsSeeder.seed();
