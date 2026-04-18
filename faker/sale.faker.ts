@@ -13,29 +13,42 @@ import { SaleStatusEnum } from '@commons/enums/sale-status.enum';
 import { generatePaymentMethod } from './paymentMethod.faker';
 import { generateUser } from './user.faker';
 
+/**
+ * Creates a new sale DTO for creation.
+ * Note: status is NOT included - it's set internally by the service.
+ */
 export const createSale = (): CreateSaleDto => ({
   totalAmount: faker.number.float({ min: 10, max: 1000, fractionDigits: 2 }),
   shippingAddress: faker.location.streetAddress(),
-  status: faker.helpers.arrayElement(
-    Object.values(SaleStatusEnum),
-  ) as SaleStatusEnum,
   paymentMethod: faker.number.int({ min: 1, max: 10 }),
 });
 
-export const generateSale = (id: number = 1): Sale => ({
-  ...createSale(),
-  ...generateRelations(),
-  id,
-  user: generateUser(),
-  paymentMethod: generatePaymentMethod(),
-  saleDate: faker.date.recent(),
-  status: faker.helpers.arrayElement(
+/**
+ * Generates a Sale entity with all fields for testing.
+ */
+export const generateSale = (id: number = 1): Sale => {
+  const sale = new Sale();
+  sale.id = id;
+  sale.totalAmount = faker.number.float({
+    min: 10,
+    max: 1000,
+    fractionDigits: 2,
+  });
+  sale.shippingAddress = faker.location.streetAddress();
+  sale.status = faker.helpers.arrayElement(
     Object.values(SaleStatusEnum),
-  ) as SaleStatusEnum,
-  cancelledAt: null,
-  cancelledBy: null,
-  isCancelled: false,
-});
+  ) as SaleStatusEnum;
+  sale.isCancelled = false;
+  sale.cancelledAt = null;
+  sale.user = generateUser();
+  sale.paymentMethod = generatePaymentMethod();
+  sale.saleDate = faker.date.recent();
+  sale.createdAt = faker.date.recent();
+  sale.updatedAt = faker.date.recent();
+  sale.deletedAt = null;
+  sale.isDeleted = false;
+  return sale;
+};
 
 export const generateNewSales = (size: number): CreateSaleDto[] => {
   const newSales: CreateSaleDto[] = [];
@@ -52,8 +65,3 @@ export const generateManySales = (size: number): Sale[] => {
   }
   return sales;
 };
-
-const generateRelations = () => ({
-  details: [],
-  shipments: [],
-});

@@ -4,6 +4,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import * as cookieParser from 'cookie-parser';
 import { App } from 'supertest/types';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -30,7 +31,6 @@ import { initDataSource, cleanDB, closeDataSource } from '../utils/seed';
 import { dataSource } from '../utils/seed';
 
 /* Faker */
-import { createSale } from '@faker/sale.faker';
 import { generateNewPaymentMethods } from '@faker/paymentMethod.faker';
 
 /* Login Users */
@@ -48,13 +48,12 @@ describe('SaleController (e2e) [POST]', () => {
   let app: INestApplication<App>;
   let repoPaymentMethod: any = undefined;
   let repoUser: any = undefined;
-  let adminAccessToken: string;
-  let sellerAccessToken: string;
-  let customerAccessToken: string;
+  let adminCookies: string[];
+  let sellerCookies: string[];
+  let customerCookies: string[];
   let paymentMethod: PaymentMethod;
 
   beforeAll(async () => {
-    // Initialize database connection once for the entire test suite
     await initDataSource();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
@@ -83,22 +82,24 @@ describe('SaleController (e2e) [POST]', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.use(cookieParser());
     await app.init();
     repoPaymentMethod = app.get('PaymentMethodRepository');
     repoUser = app.get('UserRepository');
   });
 
   beforeEach(async () => {
-    // Clean all data before each test to ensure isolation
     await cleanDB();
 
     /* Login Users */
     const resLoginAdmin = await loginAdmin(app, repoUser);
-    adminAccessToken = resLoginAdmin.access_token;
+    adminCookies = resLoginAdmin.cookies;
+
     const resLoginSeller = await loginSeller(app, repoUser);
-    sellerAccessToken = resLoginSeller.access_token;
+    sellerCookies = resLoginSeller.cookies;
+
     const resLoginCustomer = await loginCustomer(app, repoUser);
-    customerAccessToken = resLoginCustomer.access_token;
+    customerCookies = resLoginCustomer.cookies;
 
     /* Create payment method for testing */
     const newPaymentMethods = generateNewPaymentMethods(5);
@@ -107,55 +108,59 @@ describe('SaleController (e2e) [POST]', () => {
   });
 
   describe('POST Sale', () => {
-    it('/ should create a sale, return 201 with customer user', async () => {
+    it('/ should create a sale, return 201 with customer cookies', async () => {
       const dto: CreateSaleDto = {
-        ...createSale(),
+        totalAmount: 1500,
+        shippingAddress: 'Calle Falsa 123',
         paymentMethod: paymentMethod.id,
       };
       const res = await request(app.getHttpServer())
         .post(PATH)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`)
+        .set('Cookie', customerCookies)
         .send(dto);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.CREATED);
-      expect(parseFloat(data.totalAmount)).toEqual(dto.totalAmount);
+      expect(data.totalAmount).toEqual(dto.totalAmount);
       expect(data.shippingAddress).toEqual(dto.shippingAddress);
     });
 
-    it('/ should create a sale, return 201 with admin user', async () => {
+    it('/ should create a sale, return 201 with admin cookies', async () => {
       const dto: CreateSaleDto = {
-        ...createSale(),
+        totalAmount: 2000,
+        shippingAddress: 'Calle Real 456',
         paymentMethod: paymentMethod.id,
       };
       const res = await request(app.getHttpServer())
         .post(PATH)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .set('Cookie', adminCookies)
         .send(dto);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.CREATED);
-      expect(parseFloat(data.totalAmount)).toEqual(dto.totalAmount);
+      expect(data.totalAmount).toEqual(dto.totalAmount);
     });
 
-    it('/ should create a sale, return 201 with seller user', async () => {
+    it('/ should create a sale, return 201 with seller cookies', async () => {
       const dto: CreateSaleDto = {
-        ...createSale(),
+        totalAmount: 2500,
+        shippingAddress: 'Avenida Central 789',
         paymentMethod: paymentMethod.id,
       };
       const res = await request(app.getHttpServer())
         .post(PATH)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`)
+        .set('Cookie', sellerCookies)
         .send(dto);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.CREATED);
-      expect(parseFloat(data.totalAmount)).toEqual(dto.totalAmount);
+      expect(data.totalAmount).toEqual(dto.totalAmount);
     });
 
-    it('/ should return 401 without user', async () => {
+    it('/ should return 401 without cookies', async () => {
       const dto: CreateSaleDto = {
-        ...createSale(),
+        totalAmount: 1500,
+        shippingAddress: 'Calle Falsa 123',
         paymentMethod: paymentMethod.id,
       };
       const res = await request(app.getHttpServer())
@@ -169,13 +174,14 @@ describe('SaleController (e2e) [POST]', () => {
 
     it('/ should not create a sale, return 401 with invalid api key', async () => {
       const dto: CreateSaleDto = {
-        ...createSale(),
+        totalAmount: 1500,
+        shippingAddress: 'Calle Falsa 123',
         paymentMethod: paymentMethod.id,
       };
       const res = await request(app.getHttpServer())
         .post(`${PATH}`)
         .set('x-api-key', 'invalid-api-key')
-        .set('Authorization', `Bearer ${customerAccessToken}`)
+        .set('Cookie', customerCookies)
         .send(dto);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
@@ -184,12 +190,13 @@ describe('SaleController (e2e) [POST]', () => {
 
     it('/ should not create a sale, return 401 if api key is missing', async () => {
       const dto: CreateSaleDto = {
-        ...createSale(),
+        totalAmount: 1500,
+        shippingAddress: 'Calle Falsa 123',
         paymentMethod: paymentMethod.id,
       };
       const res = await request(app.getHttpServer())
         .post(`${PATH}`)
-        .set('Authorization', `Bearer ${customerAccessToken}`)
+        .set('Cookie', customerCookies)
         .send(dto);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);

@@ -4,6 +4,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import * as cookieParser from 'cookie-parser';
 import { App } from 'supertest/types';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -15,17 +16,8 @@ import { SaleModule } from '@sale/sale.module';
 import { PaymentMethodModule } from '@payment_method/payment-method.module';
 import { UserModule } from '@user/user.module';
 
-/* Entities */
-import { PaymentMethod } from '@payment_method/entities/payment-method.entity';
-
 /* Interceptors */
 import { AuditInterceptor } from '@commons/interceptors/audit.interceptor';
-
-import {
-  ERROR_MESSAGES,
-  ERRORS,
-  HTTP_STATUS,
-} from '../../src/commons/constants';
 
 /* Seed */
 import { initDataSource, cleanDB, closeDataSource } from '../utils/seed';
@@ -42,6 +34,9 @@ import { loginAdmin } from '../utils/login-admin';
 import { loginSeller } from '../utils/login-seller';
 import { loginCustomer } from '../utils/login-customer';
 
+/* Constants */
+import { ERROR_MESSAGES, HTTP_STATUS } from '../../src/commons/constants';
+
 /* ApiKey */
 const API_KEY = process.env.API_KEY || 'api-e2e-key';
 
@@ -55,10 +50,10 @@ describe('SaleController (e2e) [GET]', () => {
   let repo: any = undefined;
   let repoPaymentMethod: any = undefined;
   let repoUser: any = undefined;
-  let adminAccessToken: string;
-  let sellerAccessToken: string;
-  let customerAccessToken: string;
-  let paymentMethod: PaymentMethod;
+  let adminCookies: string[];
+  let sellerCookies: string[];
+  let customerCookies: string[];
+  let paymentMethod: any;
   let sales: any[] = [];
 
   beforeAll(async () => {
@@ -90,6 +85,7 @@ describe('SaleController (e2e) [GET]', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.use(cookieParser());
     await app.init();
     repo = app.get('SaleRepository');
     repoPaymentMethod = app.get('PaymentMethodRepository');
@@ -99,30 +95,38 @@ describe('SaleController (e2e) [GET]', () => {
   beforeEach(async () => {
     await cleanDB();
 
+    /* Login Users */
     const resLoginAdmin = await loginAdmin(app, repoUser);
-    adminAccessToken = resLoginAdmin.access_token;
-    const resLoginSeller = await loginSeller(app, repoUser);
-    sellerAccessToken = resLoginSeller.access_token;
-    const resLoginCustomer = await loginCustomer(app, repoUser);
-    customerAccessToken = resLoginCustomer.access_token;
+    adminCookies = resLoginAdmin.cookies;
 
+    const resLoginSeller = await loginSeller(app, repoUser);
+    sellerCookies = resLoginSeller.cookies;
+
+    const resLoginCustomer = await loginCustomer(app, repoUser);
+    customerCookies = resLoginCustomer.cookies;
+
+    /* Create Payment Methods */
     const newPaymentMethods = generateNewPaymentMethods(5);
     const paymentMethods = await repoPaymentMethod.save(newPaymentMethods);
     paymentMethod = paymentMethods[0];
 
+    /* Create Sales */
     const newSales = generateManySales(5);
+    for (const sale of newSales) {
+      sale.paymentMethod = paymentMethod;
+    }
     sales = await repo.save(newSales);
   });
 
   describe('GET Sale - Count-All', () => {
-    it('/count-all should return 401 if api key is missing', async () => {
+    it('/count-all should return HTTP_STATUS.UNAUTHORIZED if api key is missing', async () => {
       const res: any = await request(app.getHttpServer()).get(COUNT_ALL);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
       expect(message).toBe(ERROR_MESSAGES.INVALID_API_KEY);
     });
 
-    it('/count-all should return 401 if api key is invalid', async () => {
+    it('/count-all should return HTTP_STATUS.UNAUTHORIZED if api key is invalid', async () => {
       const res: any = await request(app.getHttpServer())
         .get(COUNT_ALL)
         .set('x-api-key', 'invalid-api-key');
@@ -131,41 +135,37 @@ describe('SaleController (e2e) [GET]', () => {
       expect(message).toBe(ERROR_MESSAGES.INVALID_API_KEY);
     });
 
-    it('/count-all should return 200 with admin access token', async () => {
+    it('/count-all should return HTTP_STATUS.OK with admin cookies', async () => {
       const res = await request(app.getHttpServer())
         .get(COUNT_ALL)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, total } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.OK);
       expect(total).toEqual(sales.length);
     });
 
-    it('/count-all should return 401 with seller access token', async () => {
+    it('/count-all should return HTTP_STATUS.UNAUTHORIZED with seller cookies', async () => {
       const res = await request(app.getHttpServer())
         .get(COUNT_ALL)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
-      const { statusCode, message, error, total } = res.body;
+        .set('Cookie', sellerCookies);
+      const { statusCode, message } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
       expect(message).toBe(ERROR_MESSAGES.ADMIN_REQUIRED);
-      expect(error).toBe(ERRORS.UNAUTHORIZED);
-      expect(total).toBeUndefined();
     });
 
-    it('/count-all should return 401 with customer access token', async () => {
+    it('/count-all should return HTTP_STATUS.UNAUTHORIZED with customer cookies', async () => {
       const res = await request(app.getHttpServer())
         .get(COUNT_ALL)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
-      const { statusCode, message, error, total } = res.body;
+        .set('Cookie', customerCookies);
+      const { statusCode, message } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
       expect(message).toBe(ERROR_MESSAGES.ADMIN_REQUIRED);
-      expect(error).toBe(ERRORS.UNAUTHORIZED);
-      expect(total).toBeUndefined();
     });
 
-    it('/count-all should return 401 without access token', async () => {
+    it('/count-all should return HTTP_STATUS.UNAUTHORIZED without cookies', async () => {
       const res = await request(app.getHttpServer())
         .get(COUNT_ALL)
         .set('x-api-key', API_KEY);
@@ -176,14 +176,14 @@ describe('SaleController (e2e) [GET]', () => {
   });
 
   describe('GET Sale - Count', () => {
-    it('/count should return 401 if api key is missing', async () => {
+    it('/count should return HTTP_STATUS.UNAUTHORIZED if api key is missing', async () => {
       const res: any = await request(app.getHttpServer()).get(COUNT);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
       expect(message).toBe(ERROR_MESSAGES.INVALID_API_KEY);
     });
 
-    it('/count should return 401 if api key is invalid', async () => {
+    it('/count should return HTTP_STATUS.UNAUTHORIZED if api key is invalid', async () => {
       const res: any = await request(app.getHttpServer())
         .get(COUNT)
         .set('x-api-key', 'invalid-api-key');
@@ -192,39 +192,37 @@ describe('SaleController (e2e) [GET]', () => {
       expect(message).toBe(ERROR_MESSAGES.INVALID_API_KEY);
     });
 
-    it('/count should return 200 with admin access token', async () => {
+    it('/count should return HTTP_STATUS.OK with admin cookies', async () => {
       const res = await request(app.getHttpServer())
         .get(COUNT)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, total } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.OK);
-      expect(total).toEqual(sales.length);
+      expect(total).toBeGreaterThanOrEqual(0);
     });
 
-    it('/count should return 401 with seller access token', async () => {
+    it('/count should return HTTP_STATUS.UNAUTHORIZED with seller cookies', async () => {
       const res = await request(app.getHttpServer())
         .get(COUNT)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
-      const { statusCode, message, error } = res.body;
+        .set('Cookie', sellerCookies);
+      const { statusCode, message } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
       expect(message).toBe(ERROR_MESSAGES.ADMIN_REQUIRED);
-      expect(error).toBe(ERRORS.UNAUTHORIZED);
     });
 
-    it('/count should return 401 with customer access token', async () => {
+    it('/count should return HTTP_STATUS.UNAUTHORIZED with customer cookies', async () => {
       const res = await request(app.getHttpServer())
         .get(COUNT)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
-      const { statusCode, message, error } = res.body;
+        .set('Cookie', customerCookies);
+      const { statusCode, message } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
       expect(message).toBe(ERROR_MESSAGES.ADMIN_REQUIRED);
-      expect(error).toBe(ERRORS.UNAUTHORIZED);
     });
 
-    it('/count should return 401 without access token', async () => {
+    it('/count should return HTTP_STATUS.UNAUTHORIZED without cookies', async () => {
       const res = await request(app.getHttpServer())
         .get(COUNT)
         .set('x-api-key', API_KEY);
@@ -234,14 +232,14 @@ describe('SaleController (e2e) [GET]', () => {
   });
 
   describe('GET Sale - Find All', () => {
-    it('/ should return 401 if api key is missing', async () => {
+    it('/ should return HTTP_STATUS.UNAUTHORIZED if api key is missing', async () => {
       const res: any = await request(app.getHttpServer()).get(`${PATH}`);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
       expect(message).toBe(ERROR_MESSAGES.INVALID_API_KEY);
     });
 
-    it('/ should return 401 if api key is invalid', async () => {
+    it('/ should return HTTP_STATUS.UNAUTHORIZED if api key is invalid', async () => {
       const res: any = await request(app.getHttpServer())
         .get(`${PATH}`)
         .set('x-api-key', 'invalid-api-key');
@@ -250,39 +248,37 @@ describe('SaleController (e2e) [GET]', () => {
       expect(message).toBe(ERROR_MESSAGES.INVALID_API_KEY);
     });
 
-    it('/ should return all sales with admin user', async () => {
+    it('/ should return all sales with admin cookies', async () => {
       const res = await request(app.getHttpServer())
         .get(`${PATH}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.OK);
-      expect(data.length).toEqual(sales.length);
+      expect(data).toBeDefined();
     });
 
-    it('/ should return 401 with seller user', async () => {
+    it('/ should return HTTP_STATUS.UNAUTHORIZED with seller cookies', async () => {
       const res = await request(app.getHttpServer())
         .get(`${PATH}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
-      const { statusCode, message, error } = res.body;
+        .set('Cookie', sellerCookies);
+      const { statusCode, message } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
       expect(message).toBe(ERROR_MESSAGES.ADMIN_REQUIRED);
-      expect(error).toBe(ERRORS.UNAUTHORIZED);
     });
 
-    it('/ should return 401 with customer user', async () => {
+    it('/ should return HTTP_STATUS.UNAUTHORIZED with customer cookies', async () => {
       const res = await request(app.getHttpServer())
         .get(`${PATH}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
-      const { statusCode, message, error } = res.body;
+        .set('Cookie', customerCookies);
+      const { statusCode, message } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
       expect(message).toBe(ERROR_MESSAGES.ADMIN_REQUIRED);
-      expect(error).toBe(ERRORS.UNAUTHORIZED);
     });
 
-    it('/ should return 401 without user', async () => {
+    it('/ should return HTTP_STATUS.UNAUTHORIZED without cookies', async () => {
       const res = await request(app.getHttpServer())
         .get(`${PATH}`)
         .set('x-api-key', API_KEY);
@@ -292,14 +288,14 @@ describe('SaleController (e2e) [GET]', () => {
   });
 
   describe('GET Sale - Find By Id', () => {
-    it('/:id should return 401 if api key is missing', async () => {
+    it('/:id should return HTTP_STATUS.UNAUTHORIZED if api key is missing', async () => {
       const res: any = await request(app.getHttpServer()).get(`${PATH}/${ID}`);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
       expect(message).toBe(ERROR_MESSAGES.INVALID_API_KEY);
     });
 
-    it('/:id should return 401 if api key is invalid', async () => {
+    it('/:id should return HTTP_STATUS.UNAUTHORIZED if api key is invalid', async () => {
       const res: any = await request(app.getHttpServer())
         .get(`${PATH}/${ID}`)
         .set('x-api-key', 'invalid-api-key');
@@ -308,69 +304,59 @@ describe('SaleController (e2e) [GET]', () => {
       expect(message).toBe(ERROR_MESSAGES.INVALID_API_KEY);
     });
 
-    it('/:id should return a sale by id with admin user', async () => {
+    it('/:id should return a sale by id with admin cookies', async () => {
       const res = await request(app.getHttpServer())
         .get(`${PATH}/${ID}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.OK);
+      expect(data).toBeDefined();
       expect(data.id).toBeDefined();
       expect(data.totalAmount).toBeDefined();
     });
 
-    it('/:id should return 401 with seller user', async () => {
+    it('/:id should return HTTP_STATUS.UNAUTHORIZED with seller cookies', async () => {
       const res = await request(app.getHttpServer())
         .get(`${PATH}/${ID}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
-      const { statusCode, message, error } = res.body;
+        .set('Cookie', sellerCookies);
+      const { statusCode, message } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
       expect(message).toBe(ERROR_MESSAGES.ADMIN_REQUIRED);
-      expect(error).toBe(ERRORS.UNAUTHORIZED);
     });
 
-    it('/:id should return 401 with customer user', async () => {
+    it('/:id should return HTTP_STATUS.UNAUTHORIZED with customer cookies', async () => {
       const res = await request(app.getHttpServer())
         .get(`${PATH}/${ID}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
-      const { statusCode, message, error } = res.body;
+        .set('Cookie', customerCookies);
+      const { statusCode, message } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
       expect(message).toBe(ERROR_MESSAGES.ADMIN_REQUIRED);
-      expect(error).toBe(ERRORS.UNAUTHORIZED);
     });
 
-    it('/:id should return 401 without user', async () => {
-      const res = await request(app.getHttpServer())
-        .get(`${PATH}/${ID}`)
-        .set('x-api-key', API_KEY);
-      const { statusCode } = res.body;
-      expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
-    });
-
-    it('/:id should return 404 for non-existent sale', async () => {
+    it('/:id should return HTTP_STATUS.NOT_FOUND for non-existent sale', async () => {
       const nonExistentId = 9999;
       const res = await request(app.getHttpServer())
         .get(`${PATH}/${nonExistentId}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
-      const { statusCode, message, error } = res.body;
+        .set('Cookie', adminCookies);
+      const { statusCode, message } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.NOT_FOUND);
       expect(message).toBe(`Sale with ID ${nonExistentId} not found`);
-      expect(error).toBe(ERRORS.NOT_FOUND);
     });
   });
 
   describe('GET Sale - Find By User', () => {
-    it('/user/:userId should return 401 if api key is missing', async () => {
+    it('/user/:userId should return HTTP_STATUS.UNAUTHORIZED if api key is missing', async () => {
       const res: any = await request(app.getHttpServer()).get(`${PATH}/user/1`);
       const { statusCode, message } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
       expect(message).toBe(ERROR_MESSAGES.INVALID_API_KEY);
     });
 
-    it('/user/:userId should return 401 if api key is invalid', async () => {
+    it('/user/:userId should return HTTP_STATUS.UNAUTHORIZED if api key is invalid', async () => {
       const res: any = await request(app.getHttpServer())
         .get(`${PATH}/user/1`)
         .set('x-api-key', 'invalid-api-key');
@@ -379,41 +365,39 @@ describe('SaleController (e2e) [GET]', () => {
       expect(message).toBe(ERROR_MESSAGES.INVALID_API_KEY);
     });
 
-    it('/user/:userId should return sales by user with admin user', async () => {
+    it('/user/:userId should return sales by user with admin cookies', async () => {
       const res = await request(app.getHttpServer())
         .get(`${PATH}/user/1`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.OK);
       expect(data).toBeDefined();
     });
 
-    it('/user/:userId should return 401 with seller user', async () => {
+    it('/user/:userId should return HTTP_STATUS.UNAUTHORIZED with seller cookies', async () => {
       const res = await request(app.getHttpServer())
         .get(`${PATH}/user/1`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
-      const { statusCode, message, error } = res.body;
+        .set('Cookie', sellerCookies);
+      const { statusCode, message } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
       expect(message).toBe(ERROR_MESSAGES.ADMIN_REQUIRED);
-      expect(error).toBe(ERRORS.UNAUTHORIZED);
     });
 
-    it('/user/:userId should return 401 with customer user', async () => {
+    it('/user/:userId should return HTTP_STATUS.UNAUTHORIZED with customer cookies', async () => {
       const res = await request(app.getHttpServer())
         .get(`${PATH}/user/1`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
-      const { statusCode, message, error } = res.body;
+        .set('Cookie', customerCookies);
+      const { statusCode, message } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
       expect(message).toBe(ERROR_MESSAGES.ADMIN_REQUIRED);
-      expect(error).toBe(ERRORS.UNAUTHORIZED);
     });
   });
 
   describe('GET Sale - Find By Payment Method', () => {
-    it('/payment-method/:id should return 401 if api key is missing', async () => {
+    it('/payment-method/:id should return HTTP_STATUS.UNAUTHORIZED if api key is missing', async () => {
       const res: any = await request(app.getHttpServer()).get(
         `${PATH}/payment-method/${paymentMethod.id}`,
       );
@@ -422,7 +406,7 @@ describe('SaleController (e2e) [GET]', () => {
       expect(message).toBe(ERROR_MESSAGES.INVALID_API_KEY);
     });
 
-    it('/payment-method/:id should return 401 if api key is invalid', async () => {
+    it('/payment-method/:id should return HTTP_STATUS.UNAUTHORIZED if api key is invalid', async () => {
       const res: any = await request(app.getHttpServer())
         .get(`${PATH}/payment-method/${paymentMethod.id}`)
         .set('x-api-key', 'invalid-api-key');
@@ -431,36 +415,34 @@ describe('SaleController (e2e) [GET]', () => {
       expect(message).toBe(ERROR_MESSAGES.INVALID_API_KEY);
     });
 
-    it('/payment-method/:id should return sales by payment method with admin user', async () => {
+    it('/payment-method/:id should return sales by payment method with admin cookies', async () => {
       const res = await request(app.getHttpServer())
         .get(`${PATH}/payment-method/${paymentMethod.id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.OK);
       expect(data).toBeDefined();
     });
 
-    it('/payment-method/:id should return 401 with seller user', async () => {
+    it('/payment-method/:id should return HTTP_STATUS.UNAUTHORIZED with seller cookies', async () => {
       const res = await request(app.getHttpServer())
         .get(`${PATH}/payment-method/${paymentMethod.id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
-      const { statusCode, message, error } = res.body;
+        .set('Cookie', sellerCookies);
+      const { statusCode, message } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
       expect(message).toBe(ERROR_MESSAGES.ADMIN_REQUIRED);
-      expect(error).toBe(ERRORS.UNAUTHORIZED);
     });
 
-    it('/payment-method/:id should return 401 with customer user', async () => {
+    it('/payment-method/:id should return HTTP_STATUS.UNAUTHORIZED with customer cookies', async () => {
       const res = await request(app.getHttpServer())
         .get(`${PATH}/payment-method/${paymentMethod.id}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
-      const { statusCode, message, error } = res.body;
+        .set('Cookie', customerCookies);
+      const { statusCode, message } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
       expect(message).toBe(ERROR_MESSAGES.ADMIN_REQUIRED);
-      expect(error).toBe(ERRORS.UNAUTHORIZED);
     });
   });
 

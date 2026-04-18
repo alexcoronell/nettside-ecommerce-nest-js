@@ -1,13 +1,12 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
-  CreateDateColumn,
   Column,
-  UpdateDateColumn,
+  CreateDateColumn,
   ManyToOne,
   JoinColumn,
   OneToMany,
 } from 'typeorm';
+import { BaseEntity } from '@commons/entities/baseEntity';
 
 /* Enums */
 import { SaleStatusEnum } from '@commons/enums/sale-status.enum';
@@ -19,10 +18,7 @@ import { SaleDetail } from '@sale_detail/entities/sale-detail.entity';
 import { User } from '@user/entities/user.entity';
 
 @Entity('sales')
-export class Sale {
-  @PrimaryGeneratedColumn()
-  id: number;
-
+export class Sale extends BaseEntity {
   @CreateDateColumn({
     name: 'sale_date',
     type: 'timestamp',
@@ -56,12 +52,10 @@ export class Sale {
   })
   status: SaleStatusEnum;
 
-  @UpdateDateColumn({
+  @CreateDateColumn({
     name: 'cancelled_at',
     type: 'timestamp',
     nullable: true,
-    onUpdate: 'CURRENT_TIMESTAMP',
-    default: null,
   })
   cancelledAt: Date | null;
 

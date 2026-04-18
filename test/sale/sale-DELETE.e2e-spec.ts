@@ -4,6 +4,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import * as cookieParser from 'cookie-parser';
 import { App } from 'supertest/types';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -53,9 +54,9 @@ describe('SaleController (e2e) [DELETE]', () => {
   let repo: any = undefined;
   let repoPaymentMethod: any = undefined;
   let repoUser: any = undefined;
-  let adminAccessToken: string;
-  let sellerAccessToken: string;
-  let customerAccessToken: string;
+  let adminCookies: string[];
+  let sellerCookies: string[];
+  let customerCookies: string[];
   let paymentMethod: PaymentMethod;
 
   beforeAll(async () => {
@@ -87,6 +88,7 @@ describe('SaleController (e2e) [DELETE]', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.use(cookieParser());
     await app.init();
     repo = app.get('SaleRepository');
     repoPaymentMethod = app.get('PaymentMethodRepository');
@@ -96,12 +98,15 @@ describe('SaleController (e2e) [DELETE]', () => {
   beforeEach(async () => {
     await cleanDB();
 
+    /* Login Users */
     const resLoginAdmin = await loginAdmin(app, repoUser);
-    adminAccessToken = resLoginAdmin.access_token;
+    adminCookies = resLoginAdmin.cookies;
+
     const resLoginSeller = await loginSeller(app, repoUser);
-    sellerAccessToken = resLoginSeller.access_token;
+    sellerCookies = resLoginSeller.cookies;
+
     const resLoginCustomer = await loginCustomer(app, repoUser);
-    customerAccessToken = resLoginCustomer.access_token;
+    customerCookies = resLoginCustomer.cookies;
 
     const newPaymentMethods = generateNewPaymentMethods(5);
     const paymentMethods = await repoPaymentMethod.save(newPaymentMethods);
@@ -116,11 +121,11 @@ describe('SaleController (e2e) [DELETE]', () => {
   });
 
   describe('DELETE Sale', () => {
-    it('/:id should cancel a sale with admin user', async () => {
+    it('/:id should cancel a sale with admin cookies', async () => {
       const res = await request(app.getHttpServer())
         .delete(`${PATH}/${ID}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, data } = res.body;
       const cancelledInDB = await repo.findOne({ where: { id: ID } });
       expect(statusCode).toBe(HTTP_STATUS.OK);
@@ -128,11 +133,11 @@ describe('SaleController (e2e) [DELETE]', () => {
       expect(cancelledInDB?.isCancelled).toBe(true);
     });
 
-    it('/:id should return 401 with seller user', async () => {
+    it('/:id should return 401 with seller cookies', async () => {
       const res = await request(app.getHttpServer())
         .delete(`${PATH}/${ID}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${sellerAccessToken}`);
+        .set('Cookie', sellerCookies);
       const { statusCode, error, message } = res.body;
       const cancelledInDB = await repo.findOne({ where: { id: ID } });
       expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
@@ -141,11 +146,11 @@ describe('SaleController (e2e) [DELETE]', () => {
       expect(cancelledInDB?.isCancelled).toBe(false);
     });
 
-    it('/:id should return 401 with customer user', async () => {
+    it('/:id should return 401 with customer cookies', async () => {
       const res = await request(app.getHttpServer())
         .delete(`${PATH}/${ID}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${customerAccessToken}`);
+        .set('Cookie', customerCookies);
       const { statusCode, error, message } = res.body;
       const cancelledInDB = await repo.findOne({ where: { id: ID } });
       expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
@@ -154,7 +159,7 @@ describe('SaleController (e2e) [DELETE]', () => {
       expect(cancelledInDB?.isCancelled).toBe(false);
     });
 
-    it('/:id should return 401 without user', async () => {
+    it('/:id should return 401 without cookies', async () => {
       const res = await request(app.getHttpServer())
         .delete(`${PATH}/${ID}`)
         .set('x-api-key', API_KEY);
@@ -169,7 +174,7 @@ describe('SaleController (e2e) [DELETE]', () => {
       const res = await request(app.getHttpServer())
         .delete(`${PATH}/${ID}`)
         .set('x-api-key', 'invalid-api-key')
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, message } = res.body;
       const cancelledInDB = await repo.findOne({ where: { id: ID } });
       expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
@@ -180,7 +185,7 @@ describe('SaleController (e2e) [DELETE]', () => {
     it('/:id should return 401 if api key is missing', async () => {
       const res = await request(app.getHttpServer())
         .delete(`${PATH}/${ID}`)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, message } = res.body;
       const cancelledInDB = await repo.findOne({ where: { id: ID } });
       expect(statusCode).toBe(HTTP_STATUS.UNAUTHORIZED);
@@ -193,7 +198,7 @@ describe('SaleController (e2e) [DELETE]', () => {
       const res = await request(app.getHttpServer())
         .delete(`${PATH}/${nonExistentId}`)
         .set('x-api-key', API_KEY)
-        .set('Authorization', `Bearer ${adminAccessToken}`);
+        .set('Cookie', adminCookies);
       const { statusCode, message, error } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.NOT_FOUND);
       expect(message).toBe(`Sale with ID ${nonExistentId} not found`);
