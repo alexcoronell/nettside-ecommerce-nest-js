@@ -95,7 +95,7 @@ describe('UserService', () => {
       expect(repository.findAndCount).toHaveBeenCalledTimes(1);
       expect(repository.findAndCount).toHaveBeenCalledWith({
         where: { isDeleted: false },
-        relations: ['createdBy', 'updatedBy', 'deletedBy'],
+        relations: ['createdBy', 'updatedBy'],
         order: { id: 'DESC' },
         skip: 0,
         take: 10,

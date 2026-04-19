@@ -156,7 +156,7 @@ export class UserService
     // Execute query
     const [users, total] = await this.userRepo.findAndCount({
       where: finalWhere,
-      relations: ['createdBy', 'updatedBy', 'deletedBy'],
+      relations: ['createdBy', 'updatedBy'],
       order: {
         [sortBy]: sortOrder,
       },

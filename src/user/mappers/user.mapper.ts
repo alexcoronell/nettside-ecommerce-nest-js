@@ -31,8 +31,20 @@ export const mapUserToResponseDto = (user: User): ResponseUserDto => {
     updatedAt: user.updatedAt ?? undefined,
     deletedAt: user.deletedAt ?? null,
     deletedBy: user.deletedBy?.id ?? null,
-    createdBy: user.createdBy?.id ? { id: user.createdBy.id } : undefined,
-    updatedBy: user.updatedBy?.id ? { id: user.updatedBy.id } : undefined,
+    createdBy: user.createdBy?.id
+      ? {
+          id: user.createdBy.id,
+          firstname: user.firstname,
+          lastname: user.lastname,
+        }
+      : undefined,
+    updatedBy: user.updatedBy?.id
+      ? {
+          id: user.updatedBy.id,
+          firstname: user.firstname,
+          lastname: user.lastname,
+        }
+      : undefined,
   };
 };
 
