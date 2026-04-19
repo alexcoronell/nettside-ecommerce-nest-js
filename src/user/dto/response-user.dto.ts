@@ -10,6 +10,7 @@
  */
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { AuditResponse } from '@commons/interfaces/audit-response.interface';
 import { UserRoleEnum } from '@commons/enums/user-role.enum';
 
 export class ResponseUserDto {
@@ -59,19 +60,11 @@ export class ResponseUserDto {
   readonly deletedAt: Date | null;
 
   @ApiPropertyOptional({ nullable: true })
-  readonly deletedBy: number | null;
+  readonly deletedBy: AuditResponse | null;
 
   @ApiPropertyOptional({ nullable: true })
-  readonly createdBy?: {
-    id: number;
-    firstname: string;
-    lastname: string;
-  } | null;
+  readonly createdBy?: AuditResponse | null;
 
   @ApiPropertyOptional({ nullable: true })
-  readonly updatedBy?: {
-    id: number;
-    firstname: string;
-    lastname: string;
-  } | null;
+  readonly updatedBy?: AuditResponse | null;
 }
