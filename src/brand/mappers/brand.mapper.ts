@@ -20,6 +20,20 @@ export const mapBrandToResponseDto = (brand: Brand): ResponseBrandDto => {
     logo: brand.logo,
     isDeleted: brand.isDeleted,
     createdAt: brand.createdAt,
+    createdBy: brand.createdBy?.id
+      ? {
+          id: brand.createdBy.id,
+          firstname: brand.createdBy.firstname,
+          lastname: brand.createdBy.lastname,
+        }
+      : null,
+    updatedBy: brand.updatedBy?.id
+      ? {
+          id: brand.updatedBy.id,
+          firstname: brand.updatedBy.firstname,
+          lastname: brand.updatedBy.lastname,
+        }
+      : null,
     updatedAt: brand.updatedAt ?? undefined,
     deletedAt: brand.deletedAt ?? null,
     deletedBy: brand.deletedBy?.id ?? null,

@@ -11,6 +11,8 @@
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+import { AuditResponse } from '@commons/interfaces/audit-response.interface';
+
 export class ResponseBrandDto {
   @ApiProperty()
   readonly id: number;
@@ -29,6 +31,12 @@ export class ResponseBrandDto {
 
   @ApiProperty()
   readonly createdAt: Date;
+
+  @ApiPropertyOptional({ nullable: true })
+  readonly createdBy: AuditResponse | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  readonly updatedBy: AuditResponse | null;
 
   @ApiPropertyOptional()
   readonly updatedAt: Date;
