@@ -137,10 +137,10 @@ All SOLID principles are now implemented!
 - [x] discount - completed in current branch
 - [x] payment-method - completed in current branch
 - [x] product - completed in current branch
-- [x] product-discount - completed in current branch
-- [x] product-images - completed in current branch
-- [x] product-supplier - completed in current branch
-- [x] product-tag - completed in current branch
+- [x] product-discount - completed (pendiente: internal module)
+- [x] product-images - completed (pendiente: internal module)
+- [x] product-supplier - completed (pendiente: internal module)
+- [x] product-tag - completed (pendiente: internal module)
 - [x] shipping-company - completed in current branch
 - [x] shipment - completed in current branch
 - [x] store-detail - completed in current branch
@@ -189,3 +189,45 @@ All SOLID principles are now implemented!
 - **Commits ahead of origin/dev**: 1 commit (1e09e5d)
 - **ISP Refactor**: ✅ COMPLETADO (19 módulos)
 - **Seeders**: ✅ COMPLETADOS (15 seeders)
+
+---
+
+## Internal Modules Pattern (Aggregate Root)
+
+### Overview
+
+Módulos de relación (junction tables) deben ser **internos** - gestionados por el módulo padre (Aggregate Root Pattern de DDD):
+
+| Módulo Padre | Módulos Internos                                                                    |
+| ------------ | ----------------------------------------------------------------------------------- |
+| `sale`       | `sale-detail` ✅                                                                    |
+| `product`    | `product-images`, `product-discount`, `product-supplier`, `product-tag` (PENDIENTE) |
+| `purchase`   | `purchase-detail` ✅                                                                |
+
+### Plan: Product Relations → Internal Modules
+
+**Problema**: Los módulos de relación tienen endpoints propios cuando deberían ser gestionados solo por el servicio del módulo padre.
+
+**Solución**: Hacerlos internos como `sale-detail` y `purchase-detail`.
+
+#### Fases de Implementación
+
+| Fase | Módulo             | Acción                                             |
+| ---- | ------------------ | -------------------------------------------------- |
+| 1    | `product-images`   | Eliminar controller, mover lógica a ProductService |
+| 2    | `product-discount` | Eliminar controller, mover lógica a ProductService |
+| 3    | `product-supplier` | Eliminar controller, mover lógica a ProductService |
+| 4    | `product-tag`      | Eliminar controller, mover lógica a ProductService |
+
+#### Por cada fase:
+
+1. Eliminar `{module}.controller.ts`
+2. Mover lógica de gestión a `{Parent}Service`
+3. Agregar Entity repository en `{Parent}Module`
+4. Actualizar `{Parent}Service` para gestionar relaciones
+5. Eliminar tests e2e del módulo
+6. Actualizar ResponseDto del padre para incluir relaciones
+
+#### Referencia
+
+- Pattern: `sale` con `sale-detail` (internal module)

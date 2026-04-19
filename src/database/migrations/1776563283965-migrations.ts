@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class Migrations1776561437706 implements MigrationInterface {
-  name = 'Migrations1776561437706';
+export class Migrations1776563283965 implements MigrationInterface {
+  name = 'Migrations1776563283965';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
@@ -26,7 +26,7 @@ export class Migrations1776561437706 implements MigrationInterface {
       `CREATE TABLE "shipments" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP, "is_deleted" boolean NOT NULL DEFAULT false, "tracking_number" character varying(100) NOT NULL, "shipment_date" TIMESTAMP, "estimated_delivery_date" TIMESTAMP, "status" "public"."shipments_status_enum" NOT NULL DEFAULT 'Label Created', "sale_id" integer, "shipping_company_id" integer, "created_by_user_id" integer, "updated_by_user_id" integer, "deleted_by_user_id" integer, CONSTRAINT "UQ_376e793e69f13a28648e1741b70" UNIQUE ("tracking_number", "shipping_company_id"), CONSTRAINT "PK_6deda4532ac542a93eab214b564" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
-      `CREATE TABLE "sale_detail" ("id" SERIAL NOT NULL, "quantity" integer NOT NULL DEFAULT '1', "unit_price" numeric(10,2) NOT NULL, "subtotal" numeric(10,2) NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "sale_id" integer NOT NULL, "product_id" integer NOT NULL, CONSTRAINT "UQ_5c834a675e4e5161cd1d221459a" UNIQUE ("sale_id", "product_id"), CONSTRAINT "PK_4a2e151a26169857b1f3d47c198" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "sale_detail" ("id" SERIAL NOT NULL, "quantity" integer NOT NULL DEFAULT '1', "unit_price" numeric(10,2) NOT NULL, "subtotal" numeric(10,2) NOT NULL, "sale_id" integer NOT NULL, "product_id" integer NOT NULL, CONSTRAINT "UQ_5c834a675e4e5161cd1d221459a" UNIQUE ("sale_id", "product_id"), CONSTRAINT "PK_4a2e151a26169857b1f3d47c198" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
       `CREATE TYPE "public"."sales_shipping_status_enum" AS ENUM('Pending Payment', 'Pending Failed', 'Processing', 'Ready for Shipment', 'Shipped', 'Delivered', 'Completed', 'Cancelled', 'Refunded', 'Failed')`,
