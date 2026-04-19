@@ -10,6 +10,8 @@ import { PaymentMethod } from '@payment_method/entities/payment-method.entity';
 import { Product } from '@product/entities/product.entity';
 import { Purchase } from '@purchase/entities/purchase.entity';
 import { PurchaseDetail } from '@purchase_detail/entities/purchase-detail.entity';
+import { Sale } from '@sale/entities/sale.entity';
+import { SaleDetail } from '@sale_detail/entities/sale-detail.entity';
 import { ShippingCompany } from '@shipping_company/entities/shipping-company.entity';
 import { Subcategory } from '@subcategory/entities/subcategory.entity';
 import { StoreDetail } from '@store_detail/entities/store-detail.entity';
@@ -26,6 +28,7 @@ import {
   FakePaymentMethodsSeeder,
   FakeProductsSeeder,
   FakePurchasesSeeder,
+  FakeSalesSeeder,
   FakeShippingCompaniesSeeder,
   FakeStoreDetailsSeeder,
   FakeSubcategoriesSeeder,
@@ -45,6 +48,8 @@ import {
       Product,
       Purchase,
       PurchaseDetail,
+      Sale,
+      SaleDetail,
       ShippingCompany,
       Subcategory,
       StoreDetail,
@@ -62,6 +67,7 @@ import {
     FakePaymentMethodsSeeder,
     FakeProductsSeeder,
     FakePurchasesSeeder,
+    FakeSalesSeeder,
     FakeShippingCompaniesSeeder,
     FakeStoreDetailsSeeder,
     FakeSubcategoriesSeeder,

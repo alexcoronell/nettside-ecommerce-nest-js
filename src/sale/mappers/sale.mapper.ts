@@ -44,8 +44,6 @@ export const mapSaleToResponseDto = (sale: Sale): ResponseSaleDto => {
           name: paymentMethod.name,
         }
       : { id: 0, name: '' },
-    createdAt: sale.createdAt,
-    updatedAt: sale.updatedAt,
   };
 };
 

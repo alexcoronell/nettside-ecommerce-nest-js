@@ -43,10 +43,6 @@ export const generateSale = (id: number = 1): Sale => {
   sale.user = generateUser();
   sale.paymentMethod = generatePaymentMethod();
   sale.saleDate = faker.date.recent();
-  sale.createdAt = faker.date.recent();
-  sale.updatedAt = faker.date.recent();
-  sale.deletedAt = null;
-  sale.isDeleted = false;
   return sale;
 };
 

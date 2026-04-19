@@ -2,7 +2,6 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  CreateDateColumn,
   ManyToOne,
   JoinColumn,
   Unique,
@@ -41,13 +40,6 @@ export class SaleDetail {
     nullable: false,
   })
   subtotal: number;
-
-  @CreateDateColumn({
-    name: 'created_at',
-    type: 'timestamp',
-    default: () => 'CURRENT_TIMESTAMP',
-  })
-  createdAt: Date;
 
   /**************************** Relations ****************************/
   @ManyToOne(() => Sale, (sale) => sale.details, { nullable: false })

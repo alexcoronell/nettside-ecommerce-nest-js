@@ -29,19 +29,4 @@ export class ResponseSaleDetailDto {
 
   @ApiProperty()
   readonly product: number;
-
-  @ApiProperty()
-  readonly isDeleted: boolean;
-
-  @ApiProperty()
-  readonly createdAt: Date;
-
-  @ApiProperty()
-  readonly updatedAt: Date;
-
-  @ApiProperty({ nullable: true })
-  readonly deletedAt: Date | null;
-
-  @ApiProperty({ nullable: true })
-  readonly deletedBy: number | null;
 }

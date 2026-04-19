@@ -25,11 +25,7 @@ export class SaleDetailService {
   }
 
   async findAll(): Promise<Result<SaleDetail[]>> {
-    const [saleDetails, total] = await this.repo.findAndCount({
-      order: {
-        createdAt: 'DESC',
-      },
-    });
+    const [saleDetails, total] = await this.repo.findAndCount();
     return {
       statusCode: HttpStatus.OK,
       data: saleDetails,
@@ -53,9 +49,6 @@ export class SaleDetailService {
   async findBySaleId(saleId: number): Promise<Result<SaleDetail[]>> {
     const [saleDetails, total] = await this.repo.findAndCount({
       where: { sale: { id: saleId } },
-      order: {
-        createdAt: 'DESC',
-      },
     });
     return {
       statusCode: HttpStatus.OK,

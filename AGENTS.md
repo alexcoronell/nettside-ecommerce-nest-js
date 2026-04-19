@@ -128,7 +128,7 @@ All SOLID principles are now implemented!
 
 **Status**: ISP refactor completado ✅ **TODOS LOS 19 MÓDULOS**
 
-**Completed**: sale (último refactorizado)
+**Completed**: sale (último refactorizado - con internal sale-detail)
 
 ## Implemented Modules (DTO Interface Segregation)
 
@@ -173,17 +173,19 @@ All SOLID principles are now implemented!
 | `FakeSuppliersSeeder`         | Fake    | Creates fake suppliers              |
 | `FakeTagsSeeder`              | Fake    | Creates fake tags                   |
 | `FakeProductsSeeder`          | Fake    | Creates fake products               |
+| `FakePurchasesSeeder`         | Fake    | Creates 500 fake purchases          |
+| `FakeSalesSeeder`             | Fake    | Creates 500 fake sales              |
 
 ### Seed Order (BootstrapService)
 
 1. **Default Seeds** (Production mode): UserSeeder → DefaultStoreDetailsSeeder
-2. **Fake Seeds**: FakeUsersSeeder → FakeShippingCompaniesSeeder → FakeStoreDetailsSeeder → FakeBrandsSeeder → FakeCategoriesSeeder → FakeDiscountsSeeder → FakePaymentMethodsSeeder → FakeSubcategoriesSeeder → FakeSuppliersSeeder → FakeTagsSeeder → FakeProductsSeeder
+2. **Fake Seeds**: FakeUsersSeeder → FakeShippingCompaniesSeeder → FakeStoreDetailsSeeder → FakeBrandsSeeder → FakeCategoriesSeeder → FakeDiscountsSeeder → FakePaymentMethodsSeeder → FakeSubcategoriesSeeder → FakeSuppliersSeeder → FakeTagsSeeder → FakeProductsSeeder → FakePurchasesSeeder → FakeSalesSeeder
 
 ---
 
 ## Current Branch Status
 
 - **Branch**: `dev`
-- **Commits ahead of origin/dev**: 5 commits
-- **Last refactored module**: shipping-company
-- **Pending modules**: purchase, sale (ISP refactor)
+- **Commits ahead of origin/dev**: 1 commit (1e09e5d)
+- **ISP Refactor**: ✅ COMPLETADO (19 módulos)
+- **Seeders**: ✅ COMPLETADOS (15 seeders)

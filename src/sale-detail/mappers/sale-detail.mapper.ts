@@ -23,13 +23,8 @@ export const mapSaleDetailToResponseDto = (
     quantity: saleDetail.quantity,
     unitPrice: Number(saleDetail.unitPrice),
     subtotal: Number(saleDetail.subtotal),
-    product: saleDetail.product
-      ? {
-          id: saleDetail.product.id,
-          name: saleDetail.product.name,
-        }
-      : { id: 0, name: '' },
-    createdAt: saleDetail.createdAt,
+    sale: saleDetail.sale?.id ?? 0,
+    product: saleDetail.product?.id ?? 0,
   };
 };
 

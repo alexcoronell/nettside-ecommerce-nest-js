@@ -125,16 +125,4 @@ export class ResponseSaleDto {
     description: 'Payment method used for the sale',
   })
   readonly paymentMethod: ResponsePaymentMethodDto;
-
-  @ApiProperty({
-    description: 'Creation timestamp',
-    example: '2024-01-15T10:30:00.000Z',
-  })
-  readonly createdAt: Date;
-
-  @ApiProperty({
-    description: 'Last update timestamp',
-    example: '2024-01-15T10:30:00.000Z',
-  })
-  readonly updatedAt: Date;
 }

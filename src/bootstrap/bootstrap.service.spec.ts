@@ -8,6 +8,7 @@ import {
   FakePaymentMethodsSeeder,
   FakeProductsSeeder,
   FakePurchasesSeeder,
+  FakeSalesSeeder,
   FakeShippingCompaniesSeeder,
   FakeStoreDetailsSeeder,
   FakeSubcategoriesSeeder,
@@ -98,6 +99,10 @@ describe('BootstrapService', () => {
       seed: jest.fn().mockResolvedValue(undefined),
     };
 
+    const fakeSalesSeeder = {
+      seed: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BootstrapService,
@@ -156,6 +161,10 @@ describe('BootstrapService', () => {
         {
           provide: FakePurchasesSeeder,
           useValue: fakePurchasesSeeder,
+        },
+        {
+          provide: FakeSalesSeeder,
+          useValue: fakeSalesSeeder,
         },
       ],
     }).compile();

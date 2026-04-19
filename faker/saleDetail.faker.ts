@@ -29,7 +29,6 @@ export const generateNewSaleDetails = (size = 1) => {
 export const generateSaleDetail = (id: number = 1): SaleDetail => ({
   ...createSaleDetail(),
   id,
-  createdAt: faker.date.recent(),
   product: generateProduct(),
   sale: generateSale(),
 });
