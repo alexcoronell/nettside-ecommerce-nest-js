@@ -31,6 +31,7 @@ import { initDataSource, cleanDB, closeDataSource } from '../utils/seed';
 import { dataSource } from '../utils/seed';
 
 /* Faker */
+import { createSale } from '@faker/sale.faker';
 import { generateNewPaymentMethods } from '@faker/paymentMethod.faker';
 
 /* Login Users */
@@ -110,8 +111,7 @@ describe('SaleController (e2e) [POST]', () => {
   describe('POST Sale', () => {
     it('/ should create a sale, return 201 with customer cookies', async () => {
       const dto: CreateSaleDto = {
-        totalAmount: 1500,
-        shippingAddress: 'Calle Falsa 123',
+        ...createSale(),
         paymentMethod: paymentMethod.id,
       };
       const res = await request(app.getHttpServer())
@@ -121,14 +121,15 @@ describe('SaleController (e2e) [POST]', () => {
         .send(dto);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.CREATED);
-      expect(data.totalAmount).toEqual(dto.totalAmount);
+      expect(parseInt(data.totalAmount as unknown as string)).toEqual(
+        parseInt(dto.totalAmount.toString()),
+      );
       expect(data.shippingAddress).toEqual(dto.shippingAddress);
     });
 
     it('/ should create a sale, return 201 with admin cookies', async () => {
       const dto: CreateSaleDto = {
-        totalAmount: 2000,
-        shippingAddress: 'Calle Real 456',
+        ...createSale(),
         paymentMethod: paymentMethod.id,
       };
       const res = await request(app.getHttpServer())
@@ -138,13 +139,14 @@ describe('SaleController (e2e) [POST]', () => {
         .send(dto);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.CREATED);
-      expect(data.totalAmount).toEqual(dto.totalAmount);
+      expect(parseInt(data.totalAmount as unknown as string)).toEqual(
+        parseInt(dto.totalAmount.toString()),
+      );
     });
 
     it('/ should create a sale, return 201 with seller cookies', async () => {
       const dto: CreateSaleDto = {
-        totalAmount: 2500,
-        shippingAddress: 'Avenida Central 789',
+        ...createSale(),
         paymentMethod: paymentMethod.id,
       };
       const res = await request(app.getHttpServer())
@@ -154,13 +156,14 @@ describe('SaleController (e2e) [POST]', () => {
         .send(dto);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(HTTP_STATUS.CREATED);
-      expect(data.totalAmount).toEqual(dto.totalAmount);
+      expect(parseInt(data.totalAmount as unknown as string)).toEqual(
+        parseInt(dto.totalAmount.toString()),
+      );
     });
 
     it('/ should return 401 without cookies', async () => {
       const dto: CreateSaleDto = {
-        totalAmount: 1500,
-        shippingAddress: 'Calle Falsa 123',
+        ...createSale(),
         paymentMethod: paymentMethod.id,
       };
       const res = await request(app.getHttpServer())
@@ -174,8 +177,7 @@ describe('SaleController (e2e) [POST]', () => {
 
     it('/ should not create a sale, return 401 with invalid api key', async () => {
       const dto: CreateSaleDto = {
-        totalAmount: 1500,
-        shippingAddress: 'Calle Falsa 123',
+        ...createSale(),
         paymentMethod: paymentMethod.id,
       };
       const res = await request(app.getHttpServer())
@@ -190,8 +192,7 @@ describe('SaleController (e2e) [POST]', () => {
 
     it('/ should not create a sale, return 401 if api key is missing', async () => {
       const dto: CreateSaleDto = {
-        totalAmount: 1500,
-        shippingAddress: 'Calle Falsa 123',
+        ...createSale(),
         paymentMethod: paymentMethod.id,
       };
       const res = await request(app.getHttpServer())

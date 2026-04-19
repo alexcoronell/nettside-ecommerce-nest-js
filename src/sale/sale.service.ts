@@ -4,6 +4,7 @@
  * Business logic for Sale operations.
  * Uses mapper pattern to return ResponseSaleDto instead of raw entities.
  * Follows Interface Segregation Principle.
+ * SaleDetail is managed internally (aggregate root pattern).
  *
  * @module SaleService
  * @version 1.0.0
@@ -16,6 +17,7 @@ import { Repository } from 'typeorm';
 
 /* Entities */
 import { Sale } from './entities/sale.entity';
+import { SaleDetail } from '@sale_detail/entities/sale-detail.entity';
 
 /* DTOS's */
 import { CreateSaleDto } from './dto/create-sale.dto';
@@ -31,10 +33,12 @@ import {
 import { Result } from '@commons/types/result.type';
 import { PaymentMethod } from '@payment_method/entities/payment-method.entity';
 import { User } from '@user/entities/user.entity';
+import { Product } from '@product/entities/product.entity';
 import { SaleStatusEnum } from '@commons/enums/sale-status.enum';
 
 /**
  * Service for managing sales.
+ * SaleDetail is managed internally as part of the Sale aggregate.
  *
  * @example
  * constructor(private readonly saleService: SaleService) {}
@@ -44,6 +48,8 @@ export class SaleService {
   constructor(
     @InjectRepository(Sale)
     private readonly saleRepository: Repository<Sale>,
+    @InjectRepository(SaleDetail)
+    private readonly saleDetailRepository: Repository<SaleDetail>,
   ) {}
 
   /**
@@ -165,6 +171,7 @@ export class SaleService {
 
   /**
    * Creates a new sale.
+   * If details are provided, also creates associated sale details.
    *
    * @param dto - The create sale DTO
    * @param userId - The user ID (from cookie)
@@ -174,14 +181,32 @@ export class SaleService {
     dto: CreateSaleDto,
     userId: number,
   ): Promise<Result<ResponseSaleDto>> {
+    const { details, ...saleData } = dto;
     const paymentMethodId = dto.paymentMethod;
+
+    // Create sale without details first
     const newSale = this.saleRepository.create({
-      ...dto,
+      ...saleData,
       paymentMethod: { id: paymentMethodId } as PaymentMethod,
       user: { id: userId } as User,
       status: SaleStatusEnum.PENDING_PAYMENT,
     });
     const savedSale = await this.saleRepository.save(newSale);
+
+    // Create sale details if provided
+    if (details && details.length > 0) {
+      const saleDetails = details.map((item) => {
+        const subtotal = item.subtotal ?? item.quantity * item.unitPrice;
+        return this.saleDetailRepository.create({
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          subtotal,
+          sale: { id: savedSale.id } as Sale,
+          product: { id: item.product } as Product,
+        });
+      });
+      await this.saleDetailRepository.save(saleDetails);
+    }
 
     // Reload with relations for response
     const saleWithRelations = await this.saleRepository.findOne({

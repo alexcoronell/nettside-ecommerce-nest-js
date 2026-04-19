@@ -9,6 +9,7 @@ import { SaleService } from './sale.service';
 
 /* Entity */
 import { Sale } from './entities/sale.entity';
+import { SaleDetail } from '@sale_detail/entities/sale-detail.entity';
 
 /* Faker */
 import { generateSale, generateManySales } from '@faker/sale.faker';
@@ -25,6 +26,10 @@ describe('SaleService', () => {
         SaleService,
         {
           provide: getRepositoryToken(Sale),
+          useClass: Repository,
+        },
+        {
+          provide: getRepositoryToken(SaleDetail),
           useClass: Repository,
         },
       ],
