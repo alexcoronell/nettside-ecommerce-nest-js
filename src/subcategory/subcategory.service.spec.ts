@@ -81,7 +81,6 @@ describe('SubcategoryService', () => {
       expect(result.data[0]).toHaveProperty('id');
       expect(result.data[0]).toHaveProperty('name');
       expect(result.data[0]).toHaveProperty('slug');
-      expect(result.data[0]).not.toHaveProperty('createdBy');
     });
 
     it('findAllByCategory should return all subcategories by category as ResponseSubcategoryDto', async () => {
@@ -104,7 +103,6 @@ describe('SubcategoryService', () => {
       // Verify data is ResponseSubcategoryDto
       expect(result.data![0]).toHaveProperty('id');
       expect(result.data![0]).toHaveProperty('name');
-      expect(result.data![0]).not.toHaveProperty('createdBy');
     });
 
     it('findOne should return a subcategory as ResponseSubcategoryDto', async () => {
@@ -124,7 +122,6 @@ describe('SubcategoryService', () => {
       expect(result.data).toHaveProperty('id');
       expect(result.data).toHaveProperty('name');
       expect(result.data).toHaveProperty('slug');
-      expect(result.data).not.toHaveProperty('createdBy');
     });
 
     it('findOne should throw NotFoundException if subcategory does not exist', async () => {
@@ -152,7 +149,6 @@ describe('SubcategoryService', () => {
       // Verify data is ResponseSubcategoryDto
       expect(result.data).toHaveProperty('id');
       expect(result.data).toHaveProperty('name');
-      expect(result.data).not.toHaveProperty('createdBy');
     });
 
     it('findOneBySlug should throw NotFoundException if subcategory does not exist', async () => {
@@ -255,7 +251,6 @@ describe('SubcategoryService', () => {
         `The Subcategory with ID: ${id} has been modified`,
       );
       expect(result.data).toHaveProperty('id');
-      expect(result.data).not.toHaveProperty('createdBy');
     });
 
     it('update should return Conflict Exception when name subcategory exists with the same category', async () => {

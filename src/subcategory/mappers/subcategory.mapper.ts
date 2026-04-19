@@ -23,8 +23,28 @@ export const mapSubcategoryToResponseDto = (
     isDeleted: subcategory.isDeleted,
     createdAt: subcategory.createdAt,
     updatedAt: subcategory.updatedAt ?? undefined,
+    createdBy: subcategory.createdBy?.id
+      ? {
+          id: subcategory.createdBy.id,
+          firstname: subcategory.createdBy.firstname,
+          lastname: subcategory.createdBy.lastname,
+        }
+      : null,
+    updatedBy: subcategory.updatedBy?.id
+      ? {
+          id: subcategory.updatedBy.id,
+          firstname: subcategory.updatedBy.firstname,
+          lastname: subcategory.updatedBy.lastname,
+        }
+      : null,
     deletedAt: subcategory.deletedAt ?? null,
-    deletedBy: subcategory.deletedBy?.id ?? null,
+    deletedBy: subcategory.deletedBy?.id
+      ? {
+          id: subcategory.deletedBy.id,
+          firstname: subcategory.deletedBy.firstname,
+          lastname: subcategory.deletedBy.lastname,
+        }
+      : null,
   };
 };
 

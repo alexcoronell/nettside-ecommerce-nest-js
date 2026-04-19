@@ -45,5 +45,5 @@ export class ResponseBrandDto {
   readonly deletedAt: Date | null;
 
   @ApiPropertyOptional({ nullable: true })
-  readonly deletedBy: number | null;
+  readonly deletedBy: AuditResponse | null;
 }

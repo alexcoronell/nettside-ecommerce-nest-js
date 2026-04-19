@@ -31,6 +31,8 @@ describe('SubcategoryController', () => {
     isDeleted: false,
     createdAt: new Date(),
     updatedAt: new Date(),
+    createdBy: null,
+    updatedBy: null,
     deletedAt: null,
     deletedBy: null,
   };

@@ -79,7 +79,6 @@ describe('CategoryService', () => {
       expect(data[0]).toHaveProperty('id');
       expect(data[0]).toHaveProperty('name');
       expect(data[0]).toHaveProperty('slug');
-      expect(data[0]).not.toHaveProperty('createdBy');
     });
 
     it('findOne should return a category', async () => {
@@ -99,7 +98,6 @@ describe('CategoryService', () => {
       expect(data).toHaveProperty('id');
       expect(data).toHaveProperty('name');
       expect(data).toHaveProperty('slug');
-      expect(data).not.toHaveProperty('createdBy');
     });
 
     it('findOne should throw NotFoundException if category does not exist', async () => {

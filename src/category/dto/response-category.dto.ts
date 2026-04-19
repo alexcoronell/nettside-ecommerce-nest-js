@@ -9,7 +9,8 @@
  * @author Nettside E-commerce Team
  */
 
-import { ApiProperty } from '@nestjs/swagger';
+import { AuditResponse } from '@commons/interfaces/audit-response.interface';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class ResponseCategoryDto {
   @ApiProperty()
@@ -30,9 +31,15 @@ export class ResponseCategoryDto {
   @ApiProperty()
   readonly updatedAt: Date;
 
+  @ApiPropertyOptional({ nullable: true })
+  readonly createdBy: AuditResponse | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  readonly updatedBy: AuditResponse | null;
+
   @ApiProperty({ nullable: true })
   readonly deletedAt: Date | null;
 
   @ApiProperty({ nullable: true })
-  readonly deletedBy: number | null;
+  readonly deletedBy: AuditResponse | null;
 }

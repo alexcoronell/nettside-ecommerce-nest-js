@@ -22,8 +22,28 @@ export const mapCategoryToResponseDto = (
     isDeleted: category.isDeleted,
     createdAt: category.createdAt,
     updatedAt: category.updatedAt ?? undefined,
+    createdBy: category.createdBy?.id
+      ? {
+          id: category.createdBy.id,
+          firstname: category.createdBy.firstname,
+          lastname: category.createdBy.lastname,
+        }
+      : null,
+    updatedBy: category.updatedBy?.id
+      ? {
+          id: category.updatedBy.id,
+          firstname: category.updatedBy.firstname,
+          lastname: category.updatedBy.lastname,
+        }
+      : null,
     deletedAt: category.deletedAt ?? null,
-    deletedBy: category.deletedBy?.id ?? null,
+    deletedBy: category.deletedBy?.id
+      ? {
+          id: category.deletedBy.id,
+          firstname: category.deletedBy.firstname,
+          lastname: category.deletedBy.lastname,
+        }
+      : null,
   };
 };
 
