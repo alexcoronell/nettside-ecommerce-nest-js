@@ -24,6 +24,8 @@ import { Category } from './entities/category.entity';
 import { CreateCategoryDto } from '@category/dto/create-category.dto';
 import { UpdateCategoryDto } from '@category/dto/update-category.dto';
 import { ResponseCategoryDto } from '@category/dto/response-category.dto';
+import { NameOnlyDto } from '@commons/dtos/name-only.dto';
+
 import {
   PaginationDto,
   PaginatedResult,
@@ -80,6 +82,28 @@ export class CategoryService
       },
     });
     return { statusCode: HttpStatus.OK, total };
+  }
+
+  /**
+   * Retrieves all active category names without pagination or filters.
+   *
+   * @returns Promise resolving to a Result containing an array of category names only
+   *
+   * @example
+   * const result = await categoryService.findAllNoPagination();
+   * // Returns: { statusCode: 200, data: [{ name: 'Electronics' }, { name: 'Clothing' }, ...] }
+   */
+  async findAllNoPagination(): Promise<Result<NameOnlyDto[]>> {
+    const categories = await this.repo.find({
+      where: { isDeleted: false },
+      order: { name: 'ASC' },
+      select: ['id', 'name'],
+    });
+
+    return {
+      statusCode: HttpStatus.OK,
+      data: categories,
+    };
   }
 
   /**

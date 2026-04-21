@@ -12,6 +12,12 @@
 import { AuditResponse } from '@commons/interfaces/audit-response.interface';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+/* Commons DTOs */
+import { NameOnlyDto } from '@commons/dtos/name-only.dto';
+
+/* Reexport NameOnlyDto as CategoryNameOnlyDto */
+export { NameOnlyDto as CategoryNameOnlyDto };
+
 export class ResponseCategoryDto {
   @ApiProperty()
   readonly id: number;

@@ -63,6 +63,37 @@ describe('CategoryService', () => {
     });
   });
 
+  describe('findAllNoPagination categories services', () => {
+    it('should return all categories with id and name only', async () => {
+      const categories = generateManyCategories(5);
+
+      jest.spyOn(repository, 'find').mockResolvedValue(categories);
+
+      const result = await service.findAllNoPagination();
+      expect(repository.find).toHaveBeenCalledTimes(1);
+      expect(repository.find).toHaveBeenCalledWith({
+        where: { isDeleted: false },
+        order: { name: 'ASC' },
+        select: ['id', 'name'],
+      });
+      expect(result.statusCode).toBe(200);
+      expect(result.data).toBeDefined();
+
+      const [first] = result.data!;
+      expect(first).toHaveProperty('id');
+      expect(first).toHaveProperty('name');
+    });
+
+    it('should return empty array when no categories exist', async () => {
+      jest.spyOn(repository, 'find').mockResolvedValue([]);
+
+      const result = await service.findAllNoPagination();
+      expect(result.statusCode).toBe(200);
+      expect(result.data).toBeDefined();
+      expect(result.data!).toHaveLength(0);
+    });
+  });
+
   describe('find categories services', () => {
     it('findAll should return all categories with pagination', async () => {
       const categories = generateManyCategories(50);

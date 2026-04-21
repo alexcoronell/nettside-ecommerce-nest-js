@@ -49,6 +49,13 @@ describe('CategoryController', () => {
     count: jest
       .fn()
       .mockResolvedValue({ statusCode: 200, total: mockCategories.length }),
+    findAllNoPagination: jest.fn().mockResolvedValue({
+      statusCode: 200,
+      data: [
+        { id: 1, name: 'Electronics' },
+        { id: 2, name: 'Clothing' },
+      ],
+    }),
     findAll: jest.fn().mockResolvedValue({
       statusCode: 200,
       data: [mockResponseCategory],
@@ -107,6 +114,20 @@ describe('CategoryController', () => {
       const result = await controller.count();
       expect(result).toEqual({ statusCode: 200, total: mockCategories.length });
       expect(service.count).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('FindAllNoPagination category controllers', () => {
+    it('should call findAllNoPagination category service', async () => {
+      const result = await controller.findAllNoPagination();
+      expect(result).toEqual({
+        statusCode: 200,
+        data: [
+          { id: 1, name: 'Electronics' },
+          { id: 2, name: 'Clothing' },
+        ],
+      });
+      expect(service.findAllNoPagination).toHaveBeenCalledTimes(1);
     });
   });
 

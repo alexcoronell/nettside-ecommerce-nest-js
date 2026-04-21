@@ -42,7 +42,6 @@ import { CategoryService } from '@category/category.service';
 /* DTO's */
 import { CreateCategoryDto } from '@category/dto/create-category.dto';
 import { UpdateCategoryDto } from '@category/dto/update-category.dto';
-import { ResponseCategoryDto } from '@category/dto/response-category.dto';
 import { PaginationDto } from '@commons/dtos/Pagination.dto';
 
 /* Guards */
@@ -112,6 +111,30 @@ export class CategoryController {
   }
 
   /**
+   * Retrieves all active category names without pagination or filters.
+   *
+   * @returns Array of category names only
+   *
+   * @endpoint GET /category/all
+   * @public
+   */
+  @ApiOperation({
+    summary: 'Get all category names (no pagination)',
+    description:
+      'Returns a complete list of all active category names without pagination or filters. Ordered by name ASC.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Complete list of category names',
+    type: 'NameOnlyDto',
+    isArray: true,
+  })
+  @Get('all')
+  findAllNoPagination() {
+    return this.categoryService.findAllNoPagination();
+  }
+
+  /**
    * Retrieves all active categories with optional pagination and search.
    *
    * @param paginationDto - Optional pagination parameters (page, limit, search, sortBy, sortOrder)
@@ -128,7 +151,7 @@ export class CategoryController {
   @ApiResponse({
     status: 200,
     description: 'Paginated list of categories',
-    type: ResponseCategoryDto,
+    type: 'ResponseCategoryDto',
     isArray: false,
   })
   @ApiQuery({
@@ -195,7 +218,7 @@ export class CategoryController {
   @ApiResponse({
     status: 200,
     description: 'Category found',
-    type: ResponseCategoryDto,
+    type: 'ResponseCategoryDto',
   })
   @ApiResponse({
     status: 401,
@@ -240,7 +263,7 @@ export class CategoryController {
   @ApiResponse({
     status: 200,
     description: 'Category found',
-    type: ResponseCategoryDto,
+    type: 'ResponseCategoryDto',
   })
   @ApiResponse({
     status: 401,
@@ -281,7 +304,7 @@ export class CategoryController {
   @ApiResponse({
     status: 201,
     description: 'Category successfully created',
-    type: ResponseCategoryDto,
+    type: 'ResponseCategoryDto',
   })
   @ApiResponse({
     status: 400,
@@ -332,7 +355,7 @@ export class CategoryController {
   @ApiResponse({
     status: 200,
     description: 'Category successfully updated',
-    type: ResponseCategoryDto,
+    type: 'ResponseCategoryDto',
   })
   @ApiResponse({
     status: 400,
