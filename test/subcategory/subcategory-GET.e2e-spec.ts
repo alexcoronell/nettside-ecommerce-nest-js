@@ -156,6 +156,50 @@ describe('SubcategoryController (e2e) [GET]', () => {
     });
   });
 
+  describe('GET Subcategory - /all FindAllNoPagination', () => {
+    it('/all should return all subcategory names without authentication (public endpoint)', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`${PATH}/all`)
+        .set('x-api-key', API_KEY);
+      const { statusCode, data } = res.body;
+      expect(statusCode).toBe(200);
+      expect(data).toBeInstanceOf(Array);
+      expect(data.length).toEqual(subcategories.length);
+      // Verify response contains only id and name
+      data.forEach((subcat: any) => {
+        expect(subcat).toHaveProperty('id');
+        expect(subcat).toHaveProperty('name');
+        expect(subcat).not.toHaveProperty('slug');
+        expect(subcat).not.toHaveProperty('isDeleted');
+      });
+    });
+
+    it('/all should return empty array when no subcategories exist', async () => {
+      // Clean all subcategories first
+      await repo.remove(await repo.find());
+      const res = await request(app.getHttpServer())
+        .get(`${PATH}/all`)
+        .set('x-api-key', API_KEY);
+      const { statusCode, data } = res.body;
+      expect(statusCode).toBe(200);
+      expect(data).toHaveLength(0);
+    });
+
+    it('/all should return 401 if api key is missing', async () => {
+      const res = await request(app.getHttpServer()).get(`${PATH}/all`);
+      const { statusCode } = res.body;
+      expect(statusCode).toBe(401);
+    });
+
+    it('/all should return 401 if api key is invalid', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`${PATH}/all`)
+        .set('x-api-key', 'invalid-api-key');
+      const { statusCode } = res.body;
+      expect(statusCode).toBe(401);
+    });
+  });
+
   describe('GET Subcategory - / Find (PUBLIC)', () => {
     it('/ should return 200 and all subcategories WITHOUT auth (public)', async () => {
       const res = await request(app.getHttpServer())
