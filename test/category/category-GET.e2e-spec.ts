@@ -147,6 +147,50 @@ describe('CategoryController (e2e) [GET]', () => {
     });
   });
 
+  describe('GET Category - /all FindAllNoPagination', () => {
+    it('/all should return all category names without authentication (public endpoint)', async () => {
+      const categories = generateManyCategories(10);
+      await repo.save(categories);
+      const res = await request(app.getHttpServer())
+        .get('/category/all')
+        .set('x-api-key', API_KEY);
+      const { statusCode, data } = res.body;
+      expect(statusCode).toBe(200);
+      expect(data).toBeInstanceOf(Array);
+      expect(data.length).toEqual(categories.length);
+      // Verify response contains only id and name
+      data.forEach((cat: any) => {
+        expect(cat).toHaveProperty('id');
+        expect(cat).toHaveProperty('name');
+        expect(cat).not.toHaveProperty('slug');
+        expect(cat).not.toHaveProperty('isDeleted');
+      });
+    });
+
+    it('/all should return empty array when no categories exist', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/category/all')
+        .set('x-api-key', API_KEY);
+      const { statusCode, data } = res.body;
+      expect(statusCode).toBe(200);
+      expect(data).toHaveLength(0);
+    });
+
+    it('/all should return 401 if api key is missing', async () => {
+      const res = await request(app.getHttpServer()).get('/category/all');
+      const { statusCode } = res.body;
+      expect(statusCode).toBe(401);
+    });
+
+    it('/all should return 401 if api key is invalid', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/category/all')
+        .set('x-api-key', 'invalid-api-key');
+      const { statusCode } = res.body;
+      expect(statusCode).toBe(401);
+    });
+  });
+
   describe('GET Category - / Find', () => {
     it('/ should return all categories without logged user (public endpoint)', async () => {
       const categories = generateManyCategories(10);
