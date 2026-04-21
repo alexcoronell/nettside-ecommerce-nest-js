@@ -37,6 +37,7 @@ import {
 
 /* Types */
 import { Result } from '@commons/types/result.type';
+import { NameOnlyDto } from '@commons/dtos/name-only.dto';
 
 /* Utils */
 import { createSlug } from '@commons/utils/create-slug.util';
@@ -90,6 +91,28 @@ export class SubcategoryService
       },
     });
     return { statusCode: HttpStatus.OK, total };
+  }
+
+  /**
+   * Retrieves all active category names without pagination or filters.
+   *
+   * @returns Promise resolving to a Result containing an array of category names only
+   *
+   * @example
+   * const result = await categoryService.findAllNoPagination();
+   * // Returns: { statusCode: 200, data: [{ name: 'Electronics' }, { name: 'Clothing' }, ...] }
+   */
+  async findAllNoPagination(): Promise<Result<NameOnlyDto[]>> {
+    const subcategories = await this.repo.find({
+      where: { isDeleted: false },
+      order: { name: 'ASC' },
+      select: ['id', 'name'],
+    });
+
+    return {
+      statusCode: HttpStatus.OK,
+      data: subcategories,
+    };
   }
 
   /**

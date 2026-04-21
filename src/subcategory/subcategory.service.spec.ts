@@ -58,6 +58,34 @@ describe('SubcategoryService', () => {
     });
   });
 
+  describe('findAllNoPagination subcategories services', () => {
+    it('should return all subcategories with id and name only', async () => {
+      const subcategories = generateManySubcategories(5);
+
+      jest.spyOn(repository, 'find').mockResolvedValue(subcategories);
+
+      const result = await service.findAllNoPagination();
+      expect(repository.find).toHaveBeenCalledTimes(1);
+      expect(repository.find).toHaveBeenCalledWith({
+        where: { isDeleted: false },
+        order: { name: 'ASC' },
+        select: ['id', 'name'],
+      });
+      expect(result.statusCode).toBe(200);
+      expect(result.data).toBeDefined();
+      expect(result.data).toHaveLength(5);
+    });
+
+    it('should return empty array when no subcategories exist', async () => {
+      jest.spyOn(repository, 'find').mockResolvedValue([]);
+
+      const result = await service.findAllNoPagination();
+      expect(result.statusCode).toBe(200);
+      expect(result.data).toBeDefined();
+      expect(result.data!).toHaveLength(0);
+    });
+  });
+
   describe('find subcategories services', () => {
     it('findAll should return all subcategories with pagination as ResponseSubcategoryDto', async () => {
       const subcategories = generateManySubcategories(50);

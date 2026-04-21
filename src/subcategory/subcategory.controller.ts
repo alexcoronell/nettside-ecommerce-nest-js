@@ -114,6 +114,30 @@ export class SubcategoryController {
   }
 
   /**
+   * Retrieves all active subcategory names without pagination or filters.
+   *
+   * @returns Array of subcategory names only
+   *
+   * @endpoint GET /subcategory/all
+   * @public
+   */
+  @ApiOperation({
+    summary: 'Get all subcategory names (no pagination)',
+    description:
+      'Returns a complete list of all active subcategory names without pagination or filters. Ordered by name ASC.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Complete list of subcategory names',
+    type: ResponseSubcategoryDto,
+    isArray: true,
+  })
+  @Get('all')
+  findAllNoPagination() {
+    return this.subcategoryService.findAllNoPagination();
+  }
+
+  /**
    * Retrieves all active subcategories with optional pagination and search.
    *
    * @param paginationDto - Optional pagination parameters (page, limit, search, sortBy, sortOrder)

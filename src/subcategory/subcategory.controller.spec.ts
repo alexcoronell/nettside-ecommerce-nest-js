@@ -77,8 +77,19 @@ describe('SubcategoryController', () => {
     message: 'The Subcategory with ID: 1 has been deleted',
   };
 
+  const findAllNoPaginationResponse = {
+    statusCode: HttpStatus.OK,
+    data: [
+      { id: 1, name: 'Electronics' },
+      { id: 2, name: 'Clothing' },
+    ],
+  };
+
   const mockService = {
     count: jest.fn().mockResolvedValue(countResponse),
+    findAllNoPagination: jest
+      .fn()
+      .mockResolvedValue(findAllNoPaginationResponse),
     findAll: jest.fn().mockResolvedValue(findAllResponse),
     findAllByCategory: jest.fn().mockResolvedValue(findAllByCategoryResponse),
     findOne: jest.fn().mockResolvedValue(findOneResponse),
@@ -112,6 +123,14 @@ describe('SubcategoryController', () => {
       const result = await controller.count();
       expect(result).toEqual(countResponse);
       expect(service.count).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('FindAllNoPagination subcategory controllers', () => {
+    it('should call findAllNoPagination subcategory service', async () => {
+      const result = await controller.findAllNoPagination();
+      expect(result).toEqual(findAllNoPaginationResponse);
+      expect(service.findAllNoPagination).toHaveBeenCalledTimes(1);
     });
   });
 
