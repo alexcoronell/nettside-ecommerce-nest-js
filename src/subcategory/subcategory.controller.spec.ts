@@ -27,7 +27,7 @@ describe('SubcategoryController', () => {
     id: 1,
     name: 'Electronics',
     slug: 'electronics',
-    category: 1,
+    category: { id: 1, name: 'Category test' },
     isDeleted: false,
     createdAt: new Date(),
     updatedAt: new Date(),

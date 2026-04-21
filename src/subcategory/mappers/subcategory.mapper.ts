@@ -19,7 +19,7 @@ export const mapSubcategoryToResponseDto = (
     id: subcategory.id,
     name: subcategory.name,
     slug: subcategory.slug,
-    category: subcategory.category?.id ?? subcategory.category,
+    category: { id: subcategory.category.id, name: subcategory.category.name },
     isDeleted: subcategory.isDeleted,
     createdAt: subcategory.createdAt,
     updatedAt: subcategory.updatedAt ?? undefined,

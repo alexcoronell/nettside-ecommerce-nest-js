@@ -11,6 +11,7 @@
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AuditResponse } from '@commons/interfaces/audit-response.interface';
+import { NameOnlyDto } from '@commons/dtos/name-only.dto';
 
 export class ResponseSubcategoryDto {
   @ApiProperty()
@@ -23,7 +24,7 @@ export class ResponseSubcategoryDto {
   readonly slug: string;
 
   @ApiProperty()
-  readonly category: number;
+  readonly category: NameOnlyDto;
 
   @ApiProperty()
   readonly isDeleted: boolean;
