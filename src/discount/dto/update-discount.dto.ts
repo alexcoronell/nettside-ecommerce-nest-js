@@ -26,7 +26,7 @@ export class UpdateDiscountDto {
   @IsString()
   @IsOptional()
   @ApiPropertyOptional()
-  readonly code?: string;
+  readonly name?: string;
 
   @Trim()
   @IsString()
@@ -61,6 +61,12 @@ export class UpdateDiscountDto {
   @IsOptional()
   @ApiPropertyOptional()
   readonly minimumOrderAmount?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  @ApiPropertyOptional()
+  readonly minimumProductsCount?: number;
 
   @IsNumber()
   @Min(0)

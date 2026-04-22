@@ -39,6 +39,10 @@ describe('DiscountController', () => {
     data: mockDiscounts,
     meta: { total: mockDiscounts.length, page: 1, limit: 10, totalPages: 1 },
   };
+  const findAllNoPaginationResponse = {
+    statusCode: HttpStatus.OK,
+    data: mockDiscounts.map((d) => ({ id: d.id, name: d.name })),
+  };
   const findOneResponse = { statusCode: HttpStatus.OK, data: mockDiscount };
   const createResponse = {
     statusCode: HttpStatus.CREATED,
@@ -58,6 +62,9 @@ describe('DiscountController', () => {
   const mockService = {
     count: jest.fn().mockResolvedValue(countResponse),
     findAll: jest.fn().mockResolvedValue(findAllResponse),
+    findAllNoPagination: jest
+      .fn()
+      .mockResolvedValue(findAllNoPaginationResponse),
     findOne: jest.fn().mockResolvedValue(findOneResponse),
     create: jest.fn().mockResolvedValue(createResponse),
     update: jest.fn().mockResolvedValue(updateResponse),
@@ -118,9 +125,22 @@ describe('DiscountController', () => {
     });
 
     it('should return all discounts with sort params', async () => {
-      const paginationDto = { sortBy: 'code', sortOrder: 'DESC' as const };
+      const paginationDto = { sortBy: 'name', sortOrder: 'DESC' as const };
       await controller.findAll(paginationDto);
       expect(service.findAll).toHaveBeenCalledWith(paginationDto);
+    });
+  });
+
+  describe('findAllNoPagination', () => {
+    it('should return all discounts without pagination', async () => {
+      const result = await controller.findAllNoPagination();
+      expect(result).toEqual(findAllNoPaginationResponse);
+      expect(service.findAllNoPagination).toHaveBeenCalledTimes(1);
+    });
+
+    it('should return only id and name fields', async () => {
+      await controller.findAllNoPagination();
+      expect(service.findAllNoPagination).toHaveBeenCalledWith();
     });
   });
 
@@ -159,7 +179,7 @@ describe('DiscountController', () => {
     it('should update a discount', async () => {
       const id = 1;
       const userId = 1;
-      const changes: UpdateDiscountDto = { code: 'newCode' };
+      const changes: UpdateDiscountDto = { name: 'newName' };
       const result = await controller.update(id, changes, userId);
       expect(result).toEqual(updateResponse);
       expect(service.update).toHaveBeenCalledTimes(1);

@@ -3,7 +3,7 @@ import { faker } from '@faker-js/faker';
 import { BaseEntity } from '@commons/entities/baseEntity';
 
 const generateBaseEntity = (
-  id: BaseEntity['id'],
+  id: BaseEntity['id'] = 1,
   isDeleted = false,
 ): BaseEntity => ({
   id,

@@ -133,7 +133,7 @@ describe('DiscountController (e2e) [POST]', () => {
         .send(newDiscount);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(201);
-      expect(data.code).toEqual(newDiscount.code);
+      expect(data.name).toEqual(newDiscount.name);
     });
 
     it('/ should create a discount, return 401 if user is seller', async () => {

@@ -10,13 +10,14 @@
  */
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { AuditResponse } from '@commons/interfaces/audit-response.interface';
 
 export class ResponseDiscountDto {
   @ApiProperty()
   readonly id: number;
 
   @ApiProperty()
-  readonly code: string;
+  readonly name: string;
 
   @ApiPropertyOptional()
   readonly description: string | null;
@@ -35,6 +36,9 @@ export class ResponseDiscountDto {
 
   @ApiProperty()
   readonly minimumOrderAmount: number;
+
+  @ApiProperty()
+  readonly minimumProductsCount: number;
 
   @ApiPropertyOptional()
   readonly usageLimit: number | null;
@@ -55,8 +59,14 @@ export class ResponseDiscountDto {
   readonly updatedAt: Date;
 
   @ApiPropertyOptional({ nullable: true })
-  readonly deletedAt: Date | null;
+  readonly createdBy: AuditResponse | null;
 
   @ApiPropertyOptional({ nullable: true })
-  readonly deletedBy: number | null;
+  readonly updatedBy: AuditResponse | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  readonly deletedAt: Date | null;
+
+  @ApiProperty({ nullable: true })
+  readonly deletedBy: AuditResponse | null;
 }

@@ -52,6 +52,35 @@ describe('DiscountService', () => {
     });
   });
 
+  describe('findAllNoPagination discounts services', () => {
+    it('should return all discounts with only id and name fields', async () => {
+      const discounts = generateManyDiscounts(10);
+
+      jest.spyOn(repository, 'find').mockResolvedValue(discounts);
+
+      const result = await service.findAllNoPagination();
+      expect(repository.find).toHaveBeenCalledTimes(1);
+      expect(repository.find).toHaveBeenCalledWith({
+        where: { isDeleted: false },
+        order: { name: 'ASC' },
+        select: ['id', 'name'],
+      });
+      expect(result.statusCode).toBe(200);
+      expect(result.data!).toHaveLength(discounts.length);
+      expect(result.data![0]).toHaveProperty('id');
+      expect(result.data![0]).toHaveProperty('name');
+    });
+
+    it('should return empty array when no discounts exist', async () => {
+      jest.spyOn(repository, 'find').mockResolvedValue([]);
+
+      const result = await service.findAllNoPagination();
+      expect(repository.find).toHaveBeenCalledTimes(1);
+      expect(result.statusCode).toBe(200);
+      expect(result.data!).toHaveLength(0);
+    });
+  });
+
   describe('findAll discounts services', () => {
     it('should return all discounts with pagination', async () => {
       const mocks = generateManyDiscounts(50);
@@ -66,8 +95,7 @@ describe('DiscountService', () => {
       expect(result.meta.total).toEqual(mocks.length);
       // Verify data is mapped to ResponseDiscountDto
       expect(result.data[0]).toHaveProperty('id');
-      expect(result.data[0]).toHaveProperty('code');
-      expect(result.data[0]).not.toHaveProperty('createdBy');
+      expect(result.data[0]).toHaveProperty('name');
     });
   });
 
@@ -87,8 +115,7 @@ describe('DiscountService', () => {
       expect(result.statusCode).toBe(200);
       // Verify data is ResponseDiscountDto, not Discount entity
       expect(result.data).toHaveProperty('id');
-      expect(result.data).toHaveProperty('code');
-      expect(result.data).not.toHaveProperty('createdBy');
+      expect(result.data).toHaveProperty('name');
     });
 
     it('should throw NotFoundException if discount does not exist', async () => {
@@ -116,7 +143,7 @@ describe('DiscountService', () => {
       expect(repository.findOne).toHaveBeenCalled(); // Re-fetch for relations
       expect(result.statusCode).toBe(201);
       expect(result.data).toHaveProperty('id');
-      expect(result.data).toHaveProperty('code');
+      expect(result.data).toHaveProperty('name');
       expect(result.message).toBe('The Discount was created');
     });
   });
@@ -126,7 +153,7 @@ describe('DiscountService', () => {
       const discount = generateDiscount(1);
       const id = discount.id;
       const userId: User['id'] = 1;
-      const changes: UpdateDiscountDto = { code: 'NEWCODE' };
+      const changes: UpdateDiscountDto = { name: 'NEWname' };
 
       const updatedDiscount = { ...discount, ...changes };
 
@@ -153,7 +180,7 @@ describe('DiscountService', () => {
       jest.spyOn(repository, 'findOne').mockResolvedValue(null);
 
       await expect(
-        service.update(id, userId, { code: 'newCode' }),
+        service.update(id, userId, { name: 'newname' }),
       ).rejects.toThrowError(
         new NotFoundException(`The Discount with ID: ${id} not found`),
       );

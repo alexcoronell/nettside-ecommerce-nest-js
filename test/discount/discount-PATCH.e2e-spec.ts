@@ -100,7 +100,7 @@ describe('DiscountController (e2e) [PATCH]', () => {
       const dataNewDiscounts = await repo.save(newDiscounts);
       const id = dataNewDiscounts[0].id;
       const updatedData: UpdateDiscountDto = {
-        code: 'Updated code',
+        name: 'Updated name',
         description: 'updated-description',
       };
       const res = await request(app.getHttpServer())
@@ -110,7 +110,7 @@ describe('DiscountController (e2e) [PATCH]', () => {
         .send(updatedData);
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
-      expect(data.code).toBe(updatedData.code);
+      expect(data.name).toBe(updatedData.name);
     });
 
     it('/:id should return 401 if the user is seller', async () => {
@@ -118,7 +118,7 @@ describe('DiscountController (e2e) [PATCH]', () => {
       const dataNewDiscounts = await repo.save(newDiscounts);
       const id = dataNewDiscounts[0].id;
       const updatedData: UpdateDiscountDto = {
-        code: 'Updated code',
+        name: 'Updated name',
       };
       const res = await request(app.getHttpServer())
         .patch(`/discount/${id}`)
@@ -135,7 +135,7 @@ describe('DiscountController (e2e) [PATCH]', () => {
       const dataNewDiscounts = await repo.save(newDiscounts);
       const id = dataNewDiscounts[0].id;
       const updatedData: UpdateDiscountDto = {
-        code: 'Updated code',
+        name: 'Updated name',
       };
       const res = await request(app.getHttpServer())
         .patch(`/discount/${id}`)
@@ -150,7 +150,7 @@ describe('DiscountController (e2e) [PATCH]', () => {
     it('should return 404 if discount does not exist', async () => {
       const id = 9999;
       const updatedData: UpdateDiscountDto = {
-        code: 'Updated code',
+        name: 'Updated name',
       };
       const res = await request(app.getHttpServer())
         .patch(`/discount/${id}`)
@@ -167,7 +167,7 @@ describe('DiscountController (e2e) [PATCH]', () => {
       const dataNewDiscounts = await repo.save(newDiscounts);
       const id = dataNewDiscounts[0].id;
       const updatedData: UpdateDiscountDto = {
-        code: 'Updated code',
+        name: 'Updated name',
       };
       const res = await request(app.getHttpServer())
         .patch(`/discount/${id}`)
@@ -183,7 +183,7 @@ describe('DiscountController (e2e) [PATCH]', () => {
       const dataNewDiscounts = await repo.save(newDiscounts);
       const id = dataNewDiscounts[0].id;
       const updatedData: UpdateDiscountDto = {
-        code: 'Updated code',
+        name: 'Updated name',
       };
       const res = await request(app.getHttpServer())
         .patch(`/discount/${id}`)

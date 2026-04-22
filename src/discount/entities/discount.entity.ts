@@ -6,7 +6,7 @@ import { User } from '@user/entities/user.entity';
 @Entity('discounts')
 export class Discount extends BaseEntity {
   @Column({ type: 'varchar', length: 255, nullable: false })
-  code: string;
+  name: string;
 
   @Column({ type: 'text' })
   description: string;
@@ -32,6 +32,13 @@ export class Discount extends BaseEntity {
     default: 0,
   })
   minimumOrderAmount: number;
+
+  @Column({
+    name: 'minimum_order_count',
+    nullable: false,
+    default: 0,
+  })
+  minimumProductsCount: number;
 
   @Column({
     name: 'usage_limit',
@@ -66,5 +73,5 @@ export class Discount extends BaseEntity {
   deletedBy: User | null;
 
   @OneToMany(() => ProductDiscount, (items) => items.discount)
-  productDiscounts: ProductDiscount[];
+  productDiscounts?: ProductDiscount[];
 }

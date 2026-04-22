@@ -38,6 +38,7 @@ import {
   mapDiscountToResponseDto,
   mapDiscountsToResponseDto,
 } from './mappers/discount.mapper';
+import { NameOnlyDto } from '@commons/dtos/name-only.dto';
 
 /**
  * Service for managing discount operations.
@@ -80,6 +81,28 @@ export class DiscountService
   }
 
   /**
+   * Retrieves all active category names without pagination or filters.
+   *
+   * @returns Promise resolving to a Result containing an array of category names only
+   *
+   * @example
+   * const result = await categoryService.findAllNoPagination();
+   * // Returns: { statusCode: 200, data: [{ name: 'Electronics' }, { name: 'Clothing' }, ...] }
+   */
+  async findAllNoPagination(): Promise<Result<NameOnlyDto[]>> {
+    const categories = await this.repo.find({
+      where: { isDeleted: false },
+      order: { name: 'ASC' },
+      select: ['id', 'name'],
+    });
+
+    return {
+      statusCode: HttpStatus.OK,
+      data: categories,
+    };
+  }
+
+  /**
    * Retrieves a paginated list of active discounts with optional search and sorting.
    *
    * @param paginationDto - Optional pagination parameters (page, limit, search, sortBy, sortOrder)
@@ -93,7 +116,7 @@ export class DiscountService
    * // Search and sort
    * const result = await discountService.findAll({
    *   search: 'SUMMER',
-   *   sortBy: 'code',
+   *   sortBy: 'name',
    *   sortOrder: 'ASC'
    * });
    */
@@ -110,18 +133,18 @@ export class DiscountService
       isDeleted: false,
     };
 
-    // Build search conditions for code and description
+    // Build search conditions for name and description
     const searchConditions: FindOptionsWhere<Discount>[] = [];
     if (paginationDto?.search) {
       const searchTerm = `%${paginationDto.search}%`;
       searchConditions.push(
-        { ...where, code: ILike(searchTerm) },
+        { ...where, name: ILike(searchTerm) },
         { ...where, description: ILike(searchTerm) },
       );
     }
 
     // Determine sort field and order
-    const sortBy = paginationDto?.sortBy || 'code';
+    const sortBy = paginationDto?.sortBy || 'name';
     const sortOrder = paginationDto?.sortOrder || 'ASC';
 
     // Execute query with relations
@@ -149,7 +172,7 @@ export class DiscountService
    *
    * @example
    * const result = await discountService.findOne(1);
-   * // Returns: { statusCode: 200, data: { id: 1, code: 'SUMMER50', ... } }
+   * // Returns: { statusCode: 200, data: { id: 1, name: 'SUMMER50', ... } }
    */
   async findOne(id: Discount['id']): Promise<Result<ResponseDiscountDto>> {
     const discount = await this.repo.findOne({
@@ -176,7 +199,7 @@ export class DiscountService
    *
    * @example
    * const result = await discountService.create(
-   *   { code: 'SUMMER50', value: 50, startDate: new Date() },
+   *   { name: 'SUMMER50', value: 50, startDate: new Date() },
    *   1
    * );
    * // Returns: { statusCode: 201, data: { ... }, message: 'The Discount was created' }

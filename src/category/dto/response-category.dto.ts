@@ -9,14 +9,8 @@
  * @author Nettside E-commerce Team
  */
 
-import { AuditResponse } from '@commons/interfaces/audit-response.interface';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-
-/* Commons DTOs */
-import { NameOnlyDto } from '@commons/dtos/name-only.dto';
-
-/* Reexport NameOnlyDto as CategoryNameOnlyDto */
-export { NameOnlyDto as CategoryNameOnlyDto };
+import { AuditResponse } from '@commons/interfaces/audit-response.interface';
 
 export class ResponseCategoryDto {
   @ApiProperty()

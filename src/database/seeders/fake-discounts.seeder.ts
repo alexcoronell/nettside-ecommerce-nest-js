@@ -41,7 +41,7 @@ export class FakeDiscountsSeeder {
       });
 
       const savedDiscount = await this.discountRepository.save(discount);
-      console.log(`✅ Discount created: ${savedDiscount.code}`);
+      console.log(`✅ Discount created: ${savedDiscount.name}`);
     }
 
     return true;

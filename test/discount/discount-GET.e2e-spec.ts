@@ -157,10 +157,10 @@ describe('DiscountController (e2e) [GET]', () => {
       expect(statusCode).toBe(200);
       expect(data.length).toEqual(discounts.length);
       data.forEach((data) => {
-        const discount = discounts.find((su) => su.code === data.code);
+        const discount = discounts.find((su) => su.name === data.name);
         expect(data).toEqual(
           expect.objectContaining({
-            code: discount?.code,
+            name: discount?.name,
           }),
         );
       });
@@ -177,10 +177,10 @@ describe('DiscountController (e2e) [GET]', () => {
       expect(statusCode).toBe(200);
       expect(data.length).toEqual(discounts.length);
       data.forEach((data) => {
-        const discount = discounts.find((su) => su.code === data.code);
+        const discount = discounts.find((su) => su.name === data.name);
         expect(data).toEqual(
           expect.objectContaining({
-            code: discount?.code,
+            name: discount?.name,
           }),
         );
       });
@@ -237,7 +237,7 @@ describe('DiscountController (e2e) [GET]', () => {
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
       expect(data.id).toEqual(savedDiscount.id);
-      expect(data.code).toEqual(savedDiscount.code);
+      expect(data.name).toEqual(savedDiscount.name);
     });
 
     it('/:id should return one discount by id with seller cookies', async () => {
@@ -250,7 +250,7 @@ describe('DiscountController (e2e) [GET]', () => {
       const { statusCode, data } = res.body;
       expect(statusCode).toBe(200);
       expect(data.id).toEqual(savedDiscount.id);
-      expect(data.code).toEqual(savedDiscount.code);
+      expect(data.name).toEqual(savedDiscount.name);
     });
 
     it('/:id should return 401 by id with customer cookies', async () => {

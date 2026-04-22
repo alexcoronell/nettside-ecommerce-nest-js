@@ -124,7 +124,7 @@ export class DiscountController {
   @ApiOperation({
     summary: 'Get all discounts',
     description:
-      'Returns a paginated list of active discounts. Supports pagination, search by code/description, and sorting.',
+      'Returns a paginated list of active discounts. Supports pagination, search by name/description, and sorting.',
   })
   @ApiResponse({
     status: 200,
@@ -157,16 +157,16 @@ export class DiscountController {
   @ApiQuery({
     name: 'search',
     required: false,
-    description: 'Search term to filter discounts by code or description',
+    description: 'Search term to filter discounts by name or description',
     type: String,
     example: 'SUMMER',
   })
   @ApiQuery({
     name: 'sortBy',
     required: false,
-    description: 'Field to sort by (code, value, createdAt, etc.)',
+    description: 'Field to sort by (name, value, createdAt, etc.)',
     type: String,
-    example: 'code',
+    example: 'name',
   })
   @ApiQuery({
     name: 'sortOrder',
@@ -179,6 +179,45 @@ export class DiscountController {
   @Get()
   findAll(@Query() paginationDto?: PaginationDto) {
     return this.discountService.findAll(paginationDto);
+  }
+
+  /**
+   * Retrieves all active discounts without pagination.
+   * Public endpoint - no authentication required.
+   *
+   * @returns Array of discounts with only id and name fields
+   *
+   * @endpoint GET /discount/all
+   * @security Public (no authentication)
+   */
+  @ApiOperation({
+    summary: 'Get all discounts without pagination',
+    description:
+      'Returns all active discounts without pagination. Useful for dropdowns or lists. Only returns id and name fields.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Array of discounts with id and name',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 200 },
+        data: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number', example: 1 },
+              name: { type: 'string', example: 'Summer Sale' },
+            },
+          },
+        },
+      },
+    },
+  })
+  @Get('all')
+  findAllNoPagination() {
+    return this.discountService.findAllNoPagination();
   }
 
   /**
@@ -231,7 +270,7 @@ export class DiscountController {
    * @param payload - Data required to create a new discount
    * @param userId - ID of the authenticated user creating the discount
    * @returns Created Discount object
-   * @throws ConflictException if discount code already exists
+   * @throws ConflictException if discount name already exists
    * @throws BadRequestException if validation fails
    *
    * @endpoint POST /discount
@@ -240,7 +279,7 @@ export class DiscountController {
   @ApiBearerAuth('JWT')
   @ApiOperation({
     summary: 'Create a new discount',
-    description: 'Creates a new discount. The discount code must be unique.',
+    description: 'Creates a new discount. The discount name must be unique.',
   })
   @ApiResponse({
     status: 201,
@@ -261,7 +300,7 @@ export class DiscountController {
   })
   @ApiResponse({
     status: 409,
-    description: 'Conflict - Discount code already exists',
+    description: 'Conflict - Discount name already exists',
   })
   @UseGuards(JwtAuthGuard, AdminGuard)
   @Post()

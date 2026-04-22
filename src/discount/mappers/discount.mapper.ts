@@ -17,21 +17,42 @@ export const mapDiscountToResponseDto = (
 ): ResponseDiscountDto => {
   return {
     id: discount.id,
-    code: discount.code,
+    name: discount.name,
     description: discount.description ?? null,
     type: discount.type ?? null,
     value: Number(discount.value),
     startDate: discount.startDate,
     endDate: discount.endDate ?? null,
     minimumOrderAmount: Number(discount.minimumOrderAmount),
+    minimumProductsCount: Number(discount.minimumProductsCount),
     usageLimit: discount.usageLimit ?? null,
     usageLimitPerUser: discount.usageLimitPerUser ?? null,
     active: discount.active,
     isDeleted: discount.isDeleted,
     createdAt: discount.createdAt,
     updatedAt: discount.updatedAt ?? undefined,
+    createdBy: discount.createdBy?.id
+      ? {
+          id: discount.createdBy.id,
+          firstname: discount.createdBy.firstname,
+          lastname: discount.createdBy.lastname,
+        }
+      : null,
+    updatedBy: discount.updatedBy?.id
+      ? {
+          id: discount.updatedBy.id,
+          firstname: discount.updatedBy.firstname,
+          lastname: discount.updatedBy.lastname,
+        }
+      : null,
     deletedAt: discount.deletedAt ?? null,
-    deletedBy: discount.deletedBy?.id ?? null,
+    deletedBy: discount.deletedBy?.id
+      ? {
+          id: discount.deletedBy.id,
+          firstname: discount.deletedBy.firstname,
+          lastname: discount.deletedBy.lastname,
+        }
+      : null,
   };
 };
 
