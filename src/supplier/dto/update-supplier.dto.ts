@@ -33,4 +33,32 @@ export class UpdateSupplierDto {
   @IsOptional()
   @ApiPropertyOptional()
   readonly email?: string;
+
+  @IsString()
+  @ApiPropertyOptional()
+  readonly webPage: string;
+
+  @IsString()
+  @ApiPropertyOptional()
+  readonly state: string;
+
+  @IsString()
+  @ApiPropertyOptional()
+  readonly county: string;
+
+  @IsString()
+  @ApiPropertyOptional()
+  readonly city: string;
+
+  @IsString()
+  @ApiPropertyOptional()
+  readonly streetAddress: string;
+
+  @IsString()
+  @ApiPropertyOptional()
+  readonly postalCode: string;
+
+  @IsString()
+  @ApiPropertyOptional()
+  readonly notes: string;
 }

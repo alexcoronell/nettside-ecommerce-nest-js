@@ -15,6 +15,13 @@ export const createSupplier = (): CreateSupplierDto => ({
   contactName: faker.person.fullName(),
   phoneNumber: faker.phone.number({ style: 'international' }),
   email: faker.internet.email(),
+  webPage: faker.internet.url(),
+  state: faker.location.state(),
+  county: faker.location.county(),
+  city: faker.location.city(),
+  streetAddress: faker.location.streetAddress(),
+  postalCode: faker.location.zipCode(),
+  notes: faker.lorem.paragraph(),
 });
 
 export const generateNewSuppliers = (size: number = 1): CreateSupplierDto[] => {

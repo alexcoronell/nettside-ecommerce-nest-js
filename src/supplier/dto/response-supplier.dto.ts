@@ -28,6 +28,24 @@ export class ResponseSupplierDto {
   @ApiProperty()
   readonly email: string;
 
+  @ApiPropertyOptional()
+  readonly webPage: string;
+
+  @ApiPropertyOptional()
+  readonly state: string;
+
+  @ApiPropertyOptional()
+  readonly county: string;
+
+  @ApiPropertyOptional()
+  readonly city: string;
+
+  @ApiPropertyOptional()
+  readonly streetAddress: string;
+
+  @ApiPropertyOptional()
+  readonly postalCode: string;
+
   @ApiProperty()
   readonly isDeleted: boolean;
 
@@ -48,4 +66,7 @@ export class ResponseSupplierDto {
 
   @ApiPropertyOptional({ nullable: true })
   readonly deletedBy: AuditResponse | null;
+
+  @ApiPropertyOptional()
+  readonly notes: string;
 }

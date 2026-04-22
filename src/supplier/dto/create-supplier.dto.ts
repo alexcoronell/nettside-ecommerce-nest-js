@@ -9,8 +9,8 @@
  * @author Nettside E-commerce Team
  */
 
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsEmail, IsPhoneNumber } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateSupplierDto {
   @IsString()
@@ -32,4 +32,32 @@ export class CreateSupplierDto {
   @IsNotEmpty()
   @ApiProperty()
   readonly email: string;
+
+  @IsString()
+  @ApiPropertyOptional()
+  readonly webPage: string;
+
+  @IsString()
+  @ApiPropertyOptional()
+  readonly state: string;
+
+  @IsString()
+  @ApiPropertyOptional()
+  readonly county: string;
+
+  @IsString()
+  @ApiPropertyOptional()
+  readonly city: string;
+
+  @IsString()
+  @ApiPropertyOptional()
+  readonly streetAddress: string;
+
+  @IsString()
+  @ApiPropertyOptional()
+  readonly postalCode: string;
+
+  @IsString()
+  @ApiPropertyOptional()
+  readonly notes: string;
 }
