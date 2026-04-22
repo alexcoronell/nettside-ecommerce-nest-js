@@ -30,6 +30,7 @@ describe('SupplierService', () => {
 
   const createMockRepo = () => ({
     count: jest.fn(),
+    find: jest.fn(),
     findAndCount: jest.fn(),
     findOne: jest.fn(),
     create: jest.fn(),
@@ -70,6 +71,39 @@ describe('SupplierService', () => {
       });
       expect(statusCode).toBe(200);
       expect(total).toEqual(100);
+    });
+  });
+
+  describe('findAllNoPagination', () => {
+    it('should return all supplier names without pagination', async () => {
+      const suppliersWithNames = mockSuppliers.map((s) => ({
+        id: s.id,
+        name: s.name,
+      }));
+      mockRepository.find.mockResolvedValue(suppliersWithNames);
+
+      const { statusCode, data } = await service.findAllNoPagination();
+      expect(mockRepository.find).toHaveBeenCalledWith({
+        where: { isDeleted: false },
+        order: { name: 'ASC' },
+        select: ['id', 'name'],
+      });
+      expect(statusCode).toBe(200);
+      expect(data).toEqual(suppliersWithNames);
+    });
+
+    it('should return empty array when no suppliers exist', async () => {
+      mockRepository.find.mockResolvedValue([]);
+
+      const { statusCode, data } = await service.findAllNoPagination();
+      expect(statusCode).toBe(200);
+      expect(data).toEqual([]);
+    });
+
+    it('should handle find errors', async () => {
+      mockRepository.find.mockRejectedValue(new Error('DB error'));
+
+      await expect(service.findAllNoPagination()).rejects.toThrow('DB error');
     });
   });
 

@@ -24,14 +24,28 @@ export const mapSupplierToResponseDto = (
     isDeleted: supplier.isDeleted,
     createdAt: supplier.createdAt,
     updatedAt: supplier.updatedAt,
-    deletedAt: supplier.deletedAt ?? null,
-    deletedBy: supplier.deletedBy?.id ?? null,
     createdBy: supplier.createdBy?.id
-      ? { id: supplier.createdBy.id }
-      : undefined,
+      ? {
+          id: supplier.createdBy.id,
+          firstname: supplier.createdBy.firstname,
+          lastname: supplier.createdBy.lastname,
+        }
+      : null,
     updatedBy: supplier.updatedBy?.id
-      ? { id: supplier.updatedBy.id }
-      : undefined,
+      ? {
+          id: supplier.updatedBy.id,
+          firstname: supplier.updatedBy.firstname,
+          lastname: supplier.updatedBy.lastname,
+        }
+      : null,
+    deletedAt: supplier.deletedAt ?? null,
+    deletedBy: supplier.deletedBy?.id
+      ? {
+          id: supplier.deletedBy.id,
+          firstname: supplier.deletedBy.firstname,
+          lastname: supplier.deletedBy.lastname,
+        }
+      : null,
   };
 };
 

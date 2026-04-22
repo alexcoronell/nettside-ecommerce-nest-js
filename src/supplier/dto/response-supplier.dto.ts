@@ -10,6 +10,7 @@
  */
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { AuditResponse } from '@commons/interfaces/audit-response.interface';
 
 export class ResponseSupplierDto {
   @ApiProperty()
@@ -36,15 +37,15 @@ export class ResponseSupplierDto {
   @ApiProperty()
   readonly updatedAt: Date;
 
-  @ApiProperty({ nullable: true })
+  @ApiPropertyOptional({ nullable: true })
+  readonly createdBy: AuditResponse | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  readonly updatedBy: AuditResponse | null;
+
+  @ApiPropertyOptional({ nullable: true })
   readonly deletedAt: Date | null;
 
-  @ApiProperty({ nullable: true })
-  readonly deletedBy: number | null;
-
   @ApiPropertyOptional({ nullable: true })
-  readonly createdBy?: { id: number } | null;
-
-  @ApiPropertyOptional({ nullable: true })
-  readonly updatedBy?: { id: number } | null;
+  readonly deletedBy: AuditResponse | null;
 }

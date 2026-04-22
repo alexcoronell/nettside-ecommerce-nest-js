@@ -32,6 +32,7 @@ describe('SupplierController', () => {
   const mockService = {
     count: jest.fn().mockResolvedValue(mockSuppliers.length),
     findAll: jest.fn().mockResolvedValue(mockSuppliers),
+    findAllNoPagination: jest.fn().mockResolvedValue(mockSuppliers),
     findOne: jest.fn().mockResolvedValue(mockSupplier),
 
     create: jest.fn().mockResolvedValue(mockNewSupplier),
@@ -69,6 +70,11 @@ describe('SupplierController', () => {
     it('should call findAll supplier service', async () => {
       expect(await controller.findAll()).toBe(mockSuppliers);
       expect(service.findAll).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call findAllNoPagination supplier service', async () => {
+      expect(await controller.findAllNoPagination()).toBe(mockSuppliers);
+      expect(service.findAllNoPagination).toHaveBeenCalledTimes(1);
     });
 
     it('should call findOne supplier service', async () => {

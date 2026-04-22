@@ -23,8 +23,8 @@ import { SupplierService } from './supplier.service';
 
 /* DTO's */
 import { CreateSupplierDto } from './dto/create-supplier.dto';
-import { UpdateSupplierDto } from './dto/update-supplier.dto';
 import { ResponseSupplierDto } from './dto/response-supplier.dto';
+import { UpdateSupplierDto } from './dto/update-supplier.dto';
 import { PaginationDto } from '@commons/dtos/Pagination.dto';
 
 /* Guards */
@@ -58,6 +58,30 @@ export class SupplierController
   @Get('count')
   count() {
     return this.supplierService.count();
+  }
+
+  /**
+   * Retrieves all active subcategory names without pagination or filters.
+   *
+   * @returns Array of subcategory names only
+   *
+   * @endpoint GET /subcategory/all
+   * @public
+   */
+  @ApiOperation({
+    summary: 'Get all supplier names (no pagination)',
+    description:
+      'Returns a complete list of all active supplier names without pagination or filters. Ordered by name ASC.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Complete list of supplier names',
+    type: ResponseSupplierDto,
+    isArray: true,
+  })
+  @Get('all')
+  findAllNoPagination() {
+    return this.supplierService.findAllNoPagination();
   }
 
   /**
