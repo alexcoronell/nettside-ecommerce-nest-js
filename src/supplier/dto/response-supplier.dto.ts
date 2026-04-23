@@ -29,7 +29,7 @@ export class ResponseSupplierDto {
   readonly email: string;
 
   @ApiPropertyOptional()
-  readonly webPage: string;
+  readonly website: string;
 
   @ApiPropertyOptional()
   readonly state: string;

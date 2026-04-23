@@ -15,7 +15,7 @@ export const createSupplier = (): CreateSupplierDto => ({
   contactName: faker.person.fullName(),
   phoneNumber: faker.phone.number({ style: 'international' }),
   email: faker.internet.email(),
-  webPage: faker.internet.url(),
+  website: faker.internet.url(),
   state: faker.location.state(),
   county: faker.location.county(),
   city: faker.location.city(),
@@ -35,8 +35,6 @@ export const generateNewSuppliers = (size: number = 1): CreateSupplierDto[] => {
 export const generateSupplier = (id: number = 1): Supplier => ({
   ...generateBaseEntity(id),
   ...createSupplier(),
-  productSuppliers: [],
-  purchases: [],
   createdBy: generateUser(),
   updatedBy: generateUser(),
   deletedBy: null,

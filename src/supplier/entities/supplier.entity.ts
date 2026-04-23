@@ -29,8 +29,8 @@ export class Supplier extends BaseEntity {
   @Column({ type: 'varchar', length: 255, unique: true })
   email: string;
 
-  @Column({ name: 'web_page', type: 'varchar', length: 255, nullable: true })
-  webPage: string;
+  @Column({ name: 'website', type: 'varchar', length: 255, nullable: true })
+  website: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   state: string;

@@ -21,7 +21,7 @@ export const mapSupplierToResponseDto = (
     contactName: supplier.contactName,
     phoneNumber: supplier.phoneNumber,
     email: supplier.email,
-    webPage: supplier.webPage,
+    website: supplier.website,
     state: supplier.state,
     county: supplier.county,
     city: supplier.city,

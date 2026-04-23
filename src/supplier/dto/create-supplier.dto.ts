@@ -35,7 +35,7 @@ export class CreateSupplierDto {
 
   @IsString()
   @ApiPropertyOptional()
-  readonly webPage: string;
+  readonly website: string;
 
   @IsString()
   @ApiPropertyOptional()
