@@ -28,22 +28,22 @@ import { Tag } from '@tag/entities/tag.entity';
 @Entity({ name: 'users' })
 export class User extends BaseEntity {
   @Column({ name: 'first_name', type: 'varchar', length: 255 })
-  firstname: string;
+  firstname!: string;
 
   @Column({ name: 'last_name', type: 'varchar', length: 255 })
-  lastname: string;
+  lastname!: string;
 
   @Column({ type: 'varchar', length: 255, unique: true })
-  email: string;
+  email!: string;
 
   @Column({ type: 'varchar', length: 255 })
-  password: string | undefined;
+  password!: string | undefined;
 
   @Column({ name: 'phone_number', type: 'varchar', length: 255 })
-  phoneNumber: string;
+  phoneNumber!: string;
 
   @Column({ type: 'boolean', default: true })
-  isActive: boolean;
+  isActive!: boolean;
 
   @Column({
     type: 'enum',
@@ -51,19 +51,19 @@ export class User extends BaseEntity {
     default: UserRoleEnum.CUSTOMER,
     nullable: false,
   })
-  role: UserRoleEnum;
+  role!: UserRoleEnum;
 
   @Column({ type: 'varchar', length: 100 })
-  department: string;
+  department!: string;
 
   @Column({ type: 'varchar', length: 100 })
-  city: string;
+  city!: string;
 
   @Column({ type: 'varchar', length: 255 })
-  address: string;
+  address!: string;
 
   @Column({ type: 'varchar', length: 255 })
-  neighborhood: string;
+  neighborhood!: string;
 
   /**************************** Relations ****************************/
   /* Users */
@@ -143,8 +143,8 @@ export class User extends BaseEntity {
   createdProductDiscounts?: ProductDiscount[];
 
   /* Product Images */
-  @OneToMany(() => ProductImage, (items) => items.uploadedBy)
-  uploadedProductImages?: ProductImage[];
+  @OneToMany(() => ProductImage, (items) => items.createdBy)
+  createdProductImages?: ProductImage[];
 
   @OneToMany(() => ProductImage, (items) => items.updatedBy)
   updatedProductImages?: ProductImage[];

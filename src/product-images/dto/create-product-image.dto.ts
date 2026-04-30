@@ -14,26 +14,26 @@ export class CreateProductImageDto {
   @IsString()
   @IsNotEmpty()
   @ApiProperty()
-  filePath: string;
+  filePath!: string;
 
   @Trim()
   @IsString()
   @IsNotEmpty()
   @ApiProperty()
-  title: string;
+  title!: string;
 
   @IsBoolean()
   @IsOptional()
   @ApiProperty()
-  isMain: boolean;
+  isMain!: boolean;
 
   @IsNumber()
   @Min(0)
   @ApiProperty()
-  product: number;
+  product!: number;
 
   @IsBoolean()
   @IsOptional()
   @ApiProperty()
-  isActive: boolean;
+  isActive!: boolean;
 }

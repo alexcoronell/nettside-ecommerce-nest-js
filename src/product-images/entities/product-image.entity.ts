@@ -6,28 +6,28 @@ import { User } from '@user/entities/user.entity';
 @Entity('product_images')
 export class ProductImage extends BaseEntity {
   @Column({ name: 'file_path', type: 'varchar', length: 256, nullable: false })
-  filePath: string;
+  filePath!: string;
 
   @Column({ type: 'varchar', length: 256, nullable: false })
-  title: string;
+  title!: string;
 
   @Column({ name: 'is_main', type: 'boolean', default: false })
-  isMain: boolean;
+  isMain!: boolean;
 
   @Column({ name: 'is_active', type: 'boolean', default: true })
-  isActive: boolean;
+  isActive!: boolean;
 
   /**************************** Relations ****************************/
 
   @ManyToOne(() => Product, (product) => product.images)
   @JoinColumn({ name: 'product_id' })
-  product: Product;
+  product!: Product;
 
-  @ManyToOne(() => User, (user) => user.uploadedProductImages)
-  @JoinColumn({ name: 'uploaded_by' })
-  uploadedBy: User;
+  @ManyToOne(() => User, (user) => user.createdProductImages)
+  @JoinColumn({ name: 'created_by' })
+  createdBy!: User;
 
   @ManyToOne(() => User, (user) => user.updatedProductImages)
   @JoinColumn({ name: 'updated_by' })
-  updatedBy: User;
+  updatedBy!: User;
 }

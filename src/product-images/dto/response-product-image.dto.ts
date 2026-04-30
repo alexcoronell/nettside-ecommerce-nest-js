@@ -13,35 +13,35 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class ResponseProductImageDto {
   @ApiProperty()
-  readonly id: number;
+  readonly id!: number;
 
   @ApiProperty()
-  readonly filePath: string;
+  readonly filePath!: string;
 
   @ApiProperty()
-  readonly title: string;
+  readonly title!: string;
 
   @ApiProperty()
-  readonly isMain: boolean;
+  readonly isMain!: boolean;
 
   @ApiProperty()
-  readonly product: number;
+  readonly product!: number;
 
   @ApiProperty()
-  readonly isActive: boolean;
+  readonly isActive!: boolean;
 
   @ApiProperty()
-  readonly isDeleted: boolean;
+  readonly isDeleted!: boolean;
 
   @ApiProperty()
-  readonly createdAt: Date;
+  readonly createdAt!: Date;
 
   @ApiProperty()
-  readonly updatedAt: Date;
+  readonly updatedAt!: Date;
 
   @ApiProperty({ nullable: true })
-  readonly deletedAt: Date | null;
+  readonly deletedAt!: Date | null;
 
   @ApiProperty({ nullable: true })
-  readonly deletedBy: number | null;
+  readonly deletedBy!: number | null;
 }

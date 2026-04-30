@@ -34,7 +34,7 @@ export const generateProductImage = (id: number = 1): ProductImage => ({
   ...createProductImage(),
   id,
   product: generateProduct(),
-  uploadedBy: generateUser(),
+  createdBy: generateUser(),
   updatedBy: generateUser(),
 });
 

@@ -186,9 +186,11 @@ All SOLID principles are now implemented!
 ## Current Branch Status
 
 - **Branch**: `dev`
-- **Commits ahead of origin/dev**: 1 commit (1e09e5d)
+- **Status**: Sincronizado con `origin/dev` ✅ (0 commits ahead)
+- **Último commit**: `34c0293 refactor(supplier): rename webPage field to website`
 - **ISP Refactor**: ✅ COMPLETADO (19 módulos)
 - **Seeders**: ✅ COMPLETADOS (15 seeders)
+- **Cambios locales**: Pendientes de commitear (product-images mapper, DTOs con definite assignment, user entity, nueva migración)
 
 ---
 
