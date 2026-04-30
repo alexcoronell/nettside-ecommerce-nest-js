@@ -15,44 +15,44 @@ import { Wishlist } from '@wishlist/entities/wishlist.entity';
 @Entity('products')
 export class Product extends BaseEntity {
   @Column({ type: 'varchar', length: 255, nullable: false })
-  name: string;
+  name!: string;
 
   @Column({ type: 'varchar', length: 255, nullable: false })
-  slug: string;
+  slug!: string;
 
   @Column({ type: 'text' })
-  description: string;
+  description!: string;
 
   @Column({ type: 'decimal', precision: 10, default: 0 })
-  price: number;
+  price!: number;
 
   @Column({ type: 'int', unsigned: true, default: 0 })
-  stock: number;
+  stock!: number;
 
   /**************************** Relations ****************************/
   @ManyToOne(() => Category, (item) => item.products)
   @JoinColumn({ name: 'category_id' })
-  category: Category;
+  category!: Category;
 
   @ManyToOne(() => Subcategory, (item) => item.products)
   @JoinColumn({ name: 'subcategory_id' })
-  subcategory: Subcategory;
+  subcategory!: Subcategory;
 
   @ManyToOne(() => Brand, (item) => item.products)
   @JoinColumn({ name: 'brand_id' })
-  brand: Brand;
+  brand!: Brand;
 
   @ManyToOne(() => User, (user) => user.createdProducts)
   @JoinColumn({ name: 'created_by_user_id' })
-  createdBy: User;
+  createdBy!: User;
 
   @ManyToOne(() => User, (user) => user.updatedProducts)
   @JoinColumn({ name: 'updated_by_user_id' })
-  updatedBy: User;
+  updatedBy!: User;
 
   @ManyToOne(() => User, (user) => user.deletedProducts)
   @JoinColumn({ name: 'deleted_by_user_id' })
-  deletedBy: User | null;
+  deletedBy!: User | null;
 
   @OneToMany(() => ProductDiscount, (items) => items.product)
   productDiscounts?: ProductDiscount[];

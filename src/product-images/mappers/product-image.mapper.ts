@@ -23,12 +23,14 @@ export const mapProductImageToResponseDto = (
 ): ResponseProductImageDto => {
   return {
     id: productImage.id,
+    product: productImage.product.id,
     filePath: productImage.filePath,
     title: productImage.title,
     isMain: productImage.isMain,
-    isActive: productImage.isActive,
     createdAt: productImage.createdAt,
-    uploadedBy: mapUserToAuditResponse(productImage.createdBy),
+    updatedAt: productImage.updatedAt,
+    isActive: productImage.isActive,
+    createdBy: mapUserToAuditResponse(productImage.createdBy),
     updatedBy: mapUserToAuditResponse(productImage.updatedBy),
   };
 };

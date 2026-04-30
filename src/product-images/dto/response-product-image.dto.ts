@@ -10,10 +10,14 @@
  */
 
 import { ApiProperty } from '@nestjs/swagger';
+import { AuditResponse } from '@commons/interfaces/audit-response.interface';
 
 export class ResponseProductImageDto {
   @ApiProperty()
   readonly id!: number;
+
+  @ApiProperty()
+  readonly product!: number;
 
   @ApiProperty()
   readonly filePath!: string;
@@ -25,23 +29,17 @@ export class ResponseProductImageDto {
   readonly isMain!: boolean;
 
   @ApiProperty()
-  readonly product!: number;
-
-  @ApiProperty()
   readonly isActive!: boolean;
 
   @ApiProperty()
-  readonly isDeleted!: boolean;
+  readonly createdBy!: AuditResponse | null;
+
+  @ApiProperty()
+  readonly updatedBy!: AuditResponse | null;
 
   @ApiProperty()
   readonly createdAt!: Date;
 
   @ApiProperty()
   readonly updatedAt!: Date;
-
-  @ApiProperty({ nullable: true })
-  readonly deletedAt!: Date | null;
-
-  @ApiProperty({ nullable: true })
-  readonly deletedBy!: number | null;
 }

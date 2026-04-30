@@ -24,7 +24,7 @@ export class CreateProductDto {
   @IsString()
   @IsNotEmpty()
   @ApiProperty()
-  readonly name: string;
+  readonly name!: string;
 
   @Trim()
   @IsString()
@@ -47,17 +47,17 @@ export class CreateProductDto {
   @Min(1)
   @IsNotEmpty()
   @ApiProperty()
-  readonly category: number;
+  readonly category!: number;
 
   @IsNumber()
   @Min(1)
   @IsNotEmpty()
   @ApiProperty()
-  readonly subcategory: number;
+  readonly subcategory!: number;
 
   @IsNumber()
   @Min(1)
   @IsNotEmpty()
   @ApiProperty()
-  readonly brand: number;
+  readonly brand!: number;
 }
