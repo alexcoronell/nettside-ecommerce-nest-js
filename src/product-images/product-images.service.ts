@@ -30,11 +30,6 @@ export class ProductImagesService
     private readonly repo: Repository<ProductImage>,
   ) {}
 
-  async countAll() {
-    const total = await this.repo.count();
-    return { statusCode: HttpStatus.OK, total };
-  }
-
   async count() {
     const total = await this.repo.count({
       where: {
@@ -83,7 +78,7 @@ export class ProductImagesService
     // Execute query
     const [data, total] = await this.repo.findAndCount({
       where: searchConditions.length > 0 ? searchConditions : where,
-      relations: ['product', 'uploadedBy', 'updatedBy'],
+      relations: ['product', 'createdBy', 'updatedBy'],
       order: {
         [sortBy]: sortOrder,
       },
@@ -114,7 +109,7 @@ export class ProductImagesService
     const newProductImage = this.repo.create({
       ...dto,
       product: { id: productId },
-      uploadedBy: { id: userId },
+      createdBy: { id: userId },
     });
     const productImage = await this.repo.save(newProductImage);
     return {

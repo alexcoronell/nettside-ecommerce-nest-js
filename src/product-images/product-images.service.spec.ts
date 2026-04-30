@@ -58,7 +58,7 @@ describe('ProductImagesService', () => {
       expect(repository.findAndCount).toHaveBeenCalledWith({
         where: { isDeleted: false },
         order: { title: 'ASC' },
-        relations: ['product', 'uploadedBy', 'updatedBy'],
+        relations: ['product', 'createdBy', 'updatedBy'],
         skip: 0,
         take: 10,
       });
