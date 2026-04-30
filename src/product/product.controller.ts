@@ -21,10 +21,6 @@ import { UserId } from '@auth/decorators/user-id.decorator';
 /* Services */
 import { ProductService } from './product.service';
 
-/* Entities */
-import { Brand } from '@brand/entities/brand.entity';
-import { Category } from '@category/entities/category.entity';
-
 /* DTO's */
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -74,23 +70,6 @@ export class ProductController
   @Get('slug/:slug')
   findOneBySlug(@Param('slug') slug: string) {
     return this.productService.findOneBySlug(slug);
-  }
-
-  @Get('brand/:brandSlug')
-  findByBrand(@Param('brandSlug') brandSlug: Brand['slug']) {
-    return this.productService.findByBrand(brandSlug);
-  }
-
-  @Get('category/:categorySlug')
-  findByCategory(@Param('categorySlug') categorySlug: Category['slug']) {
-    return this.productService.findByCategory(categorySlug);
-  }
-
-  @Get('subcategory/:subcategoryId')
-  findBySubcategory(
-    @Param('subcategoryId', ParseIntPipe) subcategoryId: number,
-  ) {
-    return this.productService.findBySubcategory(+subcategoryId);
   }
 
   @UseGuards(JwtAuthGuard, AdminGuard)

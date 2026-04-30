@@ -154,65 +154,6 @@ describe('ProductService', () => {
         expect(error.message).toBe(`The Product with SLUG: ${slug} not found`);
       }
     });
-
-    it('findByBrand should return products by brand', async () => {
-      const mocks = generateManyProducts(50);
-      const brandSlug = 'test-brand';
-
-      jest
-        .spyOn(repository, 'findAndCount')
-        .mockResolvedValue([mocks, mocks.length]);
-
-      const result = await service.findByBrand(brandSlug);
-      expect(repository.findAndCount).toHaveBeenCalledTimes(1);
-      expect(repository.findAndCount).toHaveBeenCalledWith({
-        relations: ['brand', 'category', 'subcategory'],
-        where: { brand: { slug: brandSlug }, isDeleted: false },
-        order: { name: 'ASC' },
-      });
-      expect(result.statusCode).toBe(200);
-      expect(result.meta.total).toEqual(mocks.length);
-      expect(result.data).toHaveLength(mocks.length);
-    });
-
-    it('findByCategory should return products by category', async () => {
-      const mocks = generateManyProducts(50);
-      const categorySlug = 'test-category';
-
-      jest
-        .spyOn(repository, 'findAndCount')
-        .mockResolvedValue([mocks, mocks.length]);
-
-      const result = await service.findByCategory(categorySlug);
-      expect(repository.findAndCount).toHaveBeenCalledTimes(1);
-      expect(repository.findAndCount).toHaveBeenCalledWith({
-        relations: ['brand', 'category', 'subcategory'],
-        where: { category: { slug: categorySlug }, isDeleted: false },
-        order: { name: 'ASC' },
-      });
-      expect(result.statusCode).toBe(200);
-      expect(result.meta.total).toEqual(mocks.length);
-      expect(result.data).toHaveLength(mocks.length);
-    });
-
-    it('findBySubcategory should return products by subcategory', async () => {
-      const mocks = generateManyProducts(50);
-      const subcategoryId = 1;
-
-      jest
-        .spyOn(repository, 'findAndCount')
-        .mockResolvedValue([mocks, mocks.length]);
-
-      const result = await service.findBySubcategory(subcategoryId);
-      expect(repository.findAndCount).toHaveBeenCalledWith({
-        relations: ['brand', 'category', 'subcategory'],
-        where: { subcategory: { id: subcategoryId }, isDeleted: false },
-        order: { name: 'ASC' },
-      });
-      expect(result.statusCode).toBe(200);
-      expect(result.meta.total).toEqual(mocks.length);
-      expect(result.data).toHaveLength(mocks.length);
-    });
   });
 
   describe('create products services', () => {

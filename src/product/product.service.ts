@@ -129,39 +129,6 @@ export class ProductService
     };
   }
 
-  async findByBrand(
-    brandSlug: Brand['slug'],
-  ): Promise<PaginatedResult<ResponseProductDto>> {
-    const [products, total] = await this.repo.findAndCount({
-      relations: ['brand', 'category', 'subcategory'],
-      where: { brand: { slug: brandSlug }, isDeleted: false },
-      order: { name: 'ASC' },
-    });
-    const data = mapProductsToResponseDto(products);
-    return PaginationHelper.createPaginatedResult(data, total, 1, total);
-  }
-
-  async findByCategory(
-    categorySlug: Category['slug'],
-  ): Promise<PaginatedResult<ResponseProductDto>> {
-    const [products, total] = await this.repo.findAndCount({
-      relations: ['brand', 'category', 'subcategory'],
-      where: { category: { slug: categorySlug }, isDeleted: false },
-      order: { name: 'ASC' },
-    });
-    const data = mapProductsToResponseDto(products);
-    return PaginationHelper.createPaginatedResult(data, total, 1, total);
-  }
-  async findBySubcategory(subcategoryId: Category['id']) {
-    const [products, total] = await this.repo.findAndCount({
-      relations: ['brand', 'category', 'subcategory'],
-      where: { subcategory: { id: subcategoryId }, isDeleted: false },
-      order: { name: 'ASC' },
-    });
-    const data = mapProductsToResponseDto(products);
-    return PaginationHelper.createPaginatedResult(data, total, 1, total);
-  }
-
   async create(dto: CreateProductDto, userId: number) {
     const brandId = dto.brand;
     const categoryId = dto.category;

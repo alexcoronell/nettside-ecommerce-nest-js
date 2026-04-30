@@ -46,21 +46,6 @@ describe('ProductController', () => {
     findOneBySlug: jest
       .fn()
       .mockResolvedValue({ statusCode: 200, data: mockProduct }),
-    findByBrand: jest.fn().mockResolvedValue({
-      statusCode: 200,
-      data: mockProducts,
-      total: mockProducts.length,
-    }),
-    findByCategory: jest.fn().mockResolvedValue({
-      statusCode: 200,
-      data: mockProducts,
-      total: mockProducts.length,
-    }),
-    findBySubcategory: jest.fn().mockResolvedValue({
-      statusCode: 200,
-      data: mockProducts,
-      total: mockProducts.length,
-    }),
     create: jest
       .fn()
       .mockResolvedValue({ statusCode: 201, data: mockNewProduct }),
@@ -122,32 +107,6 @@ describe('ProductController', () => {
     it('should return an product by slug', async () => {
       expect(await controller.findOneBySlug(mockProduct.slug));
       expect(service.findOneBySlug).toHaveBeenCalledTimes(1);
-    });
-
-    it('should call findByBrand product service', async () => {
-      expect(await controller.findByBrand('brand-test')).toEqual({
-        statusCode: 200,
-        data: mockProducts,
-        total: mockProducts.length,
-      });
-      expect(service.findByBrand).toHaveBeenCalledTimes(1);
-    });
-    it('should call findByCategory product service', async () => {
-      expect(await controller.findByCategory('category-test')).toEqual({
-        statusCode: 200,
-        data: mockProducts,
-        total: mockProducts.length,
-      });
-      expect(service.findByCategory).toHaveBeenCalledTimes(1);
-    });
-
-    it('should call findBySubcategory product service', async () => {
-      expect(await controller.findBySubcategory(1)).toEqual({
-        statusCode: 200,
-        data: mockProducts,
-        total: mockProducts.length,
-      });
-      expect(service.findBySubcategory).toHaveBeenCalledTimes(1);
     });
   });
 
