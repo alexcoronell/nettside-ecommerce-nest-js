@@ -7,5 +7,6 @@ import { UploadModule } from '@upload/upload.module';
 @Module({
   imports: [TypeOrmModule.forFeature([ProductImage]), UploadModule],
   providers: [ProductImagesService],
+  exports: [ProductImagesService],
 })
 export class ProductImagesModule {}

@@ -5,6 +5,8 @@ import { ProductImage } from '@product_images/entities/product-image.entity';
 
 /* DTO */
 import { CreateProductImageDto } from '@product_images/dto/create-product-image.dto';
+import { Product } from '@product/entities/product.entity';
+import { User } from '@user/entities/user.entity';
 
 /* Fakers */
 import { generateBaseEntity } from '@faker/base.faker';
@@ -16,7 +18,8 @@ export const createProductImage = (): CreateProductImageDto => ({
   title: faker.lorem.words(3),
   isMain: faker.datatype.boolean(),
   isActive: faker.datatype.boolean(),
-  product: faker.number.int({ min: 1, max: 10 }),
+  createdBy: { id: faker.number.int({ min: 1, max: 10 }) } as User,
+  product: { id: faker.number.int({ min: 1, max: 10 }) } as Product,
 });
 
 export const generateNewProductImage = (
