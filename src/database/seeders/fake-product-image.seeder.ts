@@ -54,6 +54,7 @@ export class FakeProductImageSeeder {
           const image: CreateProductImageDto = createProductImage();
           const newImage = this.productImageRepository.create({
             ...image,
+            isMain: i === 0, // Mark the first image as main
             product: { id: product.id } as Product,
             createdBy: {
               id: faker.helpers.arrayElement(adminUsers).id,

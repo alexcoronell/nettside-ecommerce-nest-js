@@ -173,13 +173,14 @@ All SOLID principles are now implemented!
 | `FakeSuppliersSeeder`         | Fake    | Creates fake suppliers              |
 | `FakeTagsSeeder`              | Fake    | Creates fake tags                   |
 | `FakeProductsSeeder`          | Fake    | Creates fake products               |
+| `FakeProductImageSeeder`      | Fake    | Creates 1-10 images per product     |
 | `FakePurchasesSeeder`         | Fake    | Creates 500 fake purchases          |
 | `FakeSalesSeeder`             | Fake    | Creates 500 fake sales              |
 
 ### Seed Order (BootstrapService)
 
 1. **Default Seeds** (Production mode): UserSeeder → DefaultStoreDetailsSeeder
-2. **Fake Seeds**: FakeUsersSeeder → FakeShippingCompaniesSeeder → FakeStoreDetailsSeeder → FakeBrandsSeeder → FakeCategoriesSeeder → FakeDiscountsSeeder → FakePaymentMethodsSeeder → FakeSubcategoriesSeeder → FakeSuppliersSeeder → FakeTagsSeeder → FakeProductsSeeder → FakePurchasesSeeder → FakeSalesSeeder
+2. **Fake Seeds**: FakeUsersSeeder → FakeShippingCompaniesSeeder → FakeStoreDetailsSeeder → FakeBrandsSeeder → FakeCategoriesSeeder → FakeDiscountsSeeder → FakePaymentMethodsSeeder → FakeSubcategoriesSeeder → FakeSuppliersSeeder → FakeTagsSeeder → FakeProductsSeeder → **FakeProductImageSeeder** → FakePurchasesSeeder → FakeSalesSeeder
 
 ---
 
@@ -187,10 +188,10 @@ All SOLID principles are now implemented!
 
 - **Branch**: `dev`
 - **Status**: 1 commit ahead of `origin/dev` ⚠️
-- **Último commit**: `bc7d684` refactor(product-images): remove controller to start internal module pattern
+- **Último commit**: `7f783b3` feat(seeders): add FakeProductImageSeeder and update faker with entity types
 - **ISP Refactor**: ✅ COMPLETADO (19 módulos)
-- **Seeders**: ✅ COMPLETADOS (15 seeders)
-- **Internal Modules**: 🔄 EN PROGRESO (product-images Fase 1 completada)
+- **Seeders**: ✅ COMPLETADOS (16 seeders - FakeProductImageSeeder added)
+- **Internal Modules**: 🔄 EN PROGRESO (product-images Fase 1 ✅ COMPLETADA)
 
 ---
 
@@ -214,12 +215,12 @@ Módulos de relación (junction tables) deben ser **internos** - gestionados por
 
 #### Fases de Implementación
 
-| Fase | Módulo             | Acción                                             |
-| ---- | ------------------ | -------------------------------------------------- |
-| 1    | `product-images`   | Eliminar controller, mover lógica a ProductService |
-| 2    | `product-discount` | Eliminar controller, mover lógica a ProductService |
-| 3    | `product-supplier` | Eliminar controller, mover lógica a ProductService |
-| 4    | `product-tag`      | Eliminar controller, mover lógica a ProductService |
+| Fase | Módulo             | Acción                                             | Status     |
+| ---- | ------------------ | -------------------------------------------------- | ---------- |
+| 1    | `product-images`   | Eliminar controller, mover lógica a ProductService | ✅ DONE    |
+| 2    | `product-discount` | Eliminar controller, mover lógica a ProductService | 🔄 PENDING |
+| 3    | `product-supplier` | Eliminar controller, mover lógica a ProductService | 🔄 PENDING |
+| 4    | `product-tag`      | Eliminar controller, mover lógica a ProductService | 🔄 PENDING |
 
 #### Por cada fase:
 
@@ -233,3 +234,4 @@ Módulos de relación (junction tables) deben ser **internos** - gestionados por
 #### Referencia
 
 - Pattern: `sale` con `sale-detail` (internal module)
+- **Completed**: `product-images` now integrated with ProductService (image upload on create/update, Fase 1 complete in commit b115e98)
