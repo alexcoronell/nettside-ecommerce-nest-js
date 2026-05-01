@@ -2,11 +2,13 @@ import { Injectable, NotFoundException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 
-/* Interfaces */
-import { IBaseService } from '@commons/interfaces/i-base-service';
+/* Services */
+import { UploadService } from '@upload/upload.service';
 
 /* Entities */
 import { ProductImage } from './entities/product-image.entity';
+import { Product } from '@product/entities/product.entity';
+import { User } from '@user/entities/user.entity';
 
 /* DTO's */
 import { CreateProductImageDto } from '@product_images/dto/create-product-image.dto';
@@ -21,13 +23,11 @@ import {
 import { Result } from '@commons/types/result.type';
 
 @Injectable()
-export class ProductImagesService
-  implements
-    IBaseService<ProductImage, CreateProductImageDto, UpdateProductImageDto>
-{
+export class ProductImagesService {
   constructor(
     @InjectRepository(ProductImage)
     private readonly repo: Repository<ProductImage>,
+    private readonly uploadService: UploadService,
   ) {}
 
   async count() {
@@ -104,18 +104,34 @@ export class ProductImagesService
     };
   }
 
-  async create(dto: CreateProductImageDto, userId: number) {
-    const productId = dto.product;
-    const newProductImage = this.repo.create({
-      ...dto,
-      product: { id: productId },
-      createdBy: { id: userId },
-    });
-    const productImage = await this.repo.save(newProductImage);
+  async create(
+    images: Express.Multer.File[],
+    userId: number,
+    productId: number,
+  ) {
+    if (!images || images.length === 0) {
+      throw new NotFoundException(`No images provided for upload`);
+    }
+    let countImages = 0;
+    for (const image of images) {
+      const uploadResult = await this.uploadService.uploadProductImage(image);
+      const newProductImage: CreateProductImageDto = {
+        filePath: uploadResult.url,
+        title: image.originalname,
+        isMain: countImages === 0,
+        isActive: true,
+        product: { id: productId } as Product,
+        createdBy: { id: userId } as User,
+      };
+      this.repo.create();
+      await this.repo.save(newProductImage);
+      countImages++;
+    }
+
     return {
       statusCode: HttpStatus.CREATED,
-      data: productImage,
-      message: 'The Product was created',
+      data: null,
+      message: 'Total images uploaded: ' + countImages,
     };
   }
 

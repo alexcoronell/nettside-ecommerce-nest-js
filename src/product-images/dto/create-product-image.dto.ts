@@ -9,6 +9,9 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { Trim } from '@commons/decorators/trim.decorator';
 
+import { Product } from '@product/entities/product.entity';
+import { User } from '@user/entities/user.entity';
+
 export class CreateProductImageDto {
   @Trim()
   @IsString()
@@ -30,7 +33,12 @@ export class CreateProductImageDto {
   @IsNumber()
   @Min(0)
   @ApiProperty()
-  product!: number;
+  product!: Product;
+
+  @IsNumber()
+  @Min(0)
+  @ApiProperty()
+  createdBy!: User;
 
   @IsBoolean()
   @IsOptional()
