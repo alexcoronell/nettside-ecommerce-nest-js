@@ -86,7 +86,14 @@ export class ProductService
 
     const [products, total] = await this.repo.findAndCount({
       where: searchConditions.length > 0 ? searchConditions : where,
-      relations: ['createdBy', 'updatedBy', 'brand', 'category', 'subcategory'],
+      relations: [
+        'createdBy',
+        'updatedBy',
+        'brand',
+        'category',
+        'subcategory',
+        'product_images',
+      ],
       order: {
         [sortBy]: sortOrder,
       },
